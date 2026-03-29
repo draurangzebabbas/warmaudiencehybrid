@@ -1,0 +1,36 @@
+import { AppSidebar } from "@/components/app-sidebar"
+import { SiteHeader } from "@/components/site-header"
+import {
+    SidebarInset,
+    SidebarProvider,
+} from "@/components/ui/sidebar"
+
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+
+export default async function MainLayout({ children }: { children: React.ReactNode }) {
+    const cookieStore = await cookies();
+    const token = cookieStore.get("better-auth.session_token") || cookieStore.get("__Secure-better-auth.session_token");
+
+    if (!token) {
+        redirect("/login");
+    }
+    return (
+        <SidebarProvider
+            style={
+                {
+                    "--sidebar-width": "calc(var(--spacing) * 72)",
+                    "--header-height": "calc(var(--spacing) * 12)",
+                } as React.CSSProperties
+            }
+        >
+            <AppSidebar />
+            <SidebarInset>
+                <SiteHeader />
+                <div className="flex flex-1 flex-col">
+                    {children}
+                </div>
+            </SidebarInset>
+        </SidebarProvider>
+    )
+}
