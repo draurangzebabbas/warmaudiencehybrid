@@ -191,12 +191,15 @@ async function upsertGoogleMapsLeadsBulk(leads) {
         title: l.title,
         total_score: l.totalScore,
         reviews_count: l.reviewsCount,
+        category: l.category,
+        address: l.address,
         phone: l.phone,
         emails: l.emails || [],
         website: l.website,
         city: l.city,
         image_url: l.imageUrl,
         socials: l.socials || {},
+        place_id: l.placeId,
         updated_at: new Date().toISOString()
     }));
 
