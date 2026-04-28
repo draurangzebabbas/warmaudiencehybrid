@@ -128,44 +128,62 @@ function mapCompanyFields(c: any) {
 /**
  * New: Link a Supabase profile to the user
  */
-export const linkSupabaseProfile = mutation({
+export const linkSupabaseProfilesBulk = mutation({
     args: {
         userId: v.string(),
-        supabaseId: v.string(),
-        type: v.string(), // "personal" | "company"
+        supabaseIds: v.array(v.string()),
+        type: v.string(), // "personal" | "company" | "google_maps"
         tags: v.optional(v.array(v.string())),
     },
     handler: async (ctx, args) => {
-        // We still check the user's plan limits here!
-        await checkProfileLimit(ctx, args.userId as any);
-
-        const existing = await ctx.db
+        // 1. Check plan limits for the whole batch
+        const plan = await checkProfileLimit(ctx, args.userId as any);
+        
+        // 2. We only allow adding up to the remaining limit
+        const now = new Date();
+        const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+        const currentCount = await ctx.db
             .query("userSavedProfiles")
-            .withIndex("by_user_type", (q) => q.eq("userId", args.userId).eq("profileType", args.type))
-            .filter(q => q.or(
-                q.eq(q.field("supabaseId"), args.supabaseId),
-                q.eq(q.field("googleMapsId"), args.supabaseId)
-            ))
-            .first();
+            .withIndex("by_user", (q) => q.eq("userId", args.userId as any))
+            .filter(q => q.gte(q.field("createdAt"), firstDayOfMonth))
+            .collect();
+        
+        const remaining = plan.profilesLimit - currentCount.length;
+        const toProcess = args.supabaseIds.slice(0, Math.max(0, remaining));
 
-        if (!existing) {
-            const data: any = {
-                userId: args.userId,
-                profileType: args.type,
-                tags: args.tags || [],
-                createdAt: Date.now(),
-                updatedAt: Date.now(),
-            };
+        const results = [];
+        for (const sid of toProcess) {
+            const existing = await ctx.db
+                .query("userSavedProfiles")
+                .withIndex("by_user_type", (q) => q.eq("userId", args.userId).eq("profileType", args.type))
+                .filter(q => q.or(
+                    q.eq(q.field("supabaseId"), sid),
+                    q.eq(q.field("googleMapsId"), sid)
+                ))
+                .first();
 
-            if (args.type === "google_maps") {
-                data.googleMapsId = args.supabaseId;
+            if (!existing) {
+                const data: any = {
+                    userId: args.userId,
+                    profileType: args.type,
+                    tags: args.tags || [],
+                    createdAt: Date.now(),
+                    updatedAt: Date.now(),
+                };
+
+                if (args.type === "google_maps") {
+                    data.googleMapsId = sid;
+                } else {
+                    data.supabaseId = sid;
+                }
+
+                const newId = await ctx.db.insert("userSavedProfiles", data);
+                results.push(newId);
             } else {
-                data.supabaseId = args.supabaseId;
+                results.push(existing._id);
             }
-
-            return await ctx.db.insert("userSavedProfiles", data);
         }
-        return existing._id;
+        return results;
     }
 });
 

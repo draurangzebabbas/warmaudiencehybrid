@@ -23,7 +23,12 @@ import {
     IconTrash,
     IconDownload,
     IconFilter,
-    IconDotsVertical
+    IconDotsVertical,
+    IconBrandFacebook,
+    IconBrandInstagram,
+    IconBrandLinkedin,
+    IconBrandTwitter,
+    IconBrandTiktok
 } from "@tabler/icons-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from "@/components/ui/sheet";
 import { Label } from "@/components/ui/label";
@@ -122,6 +127,8 @@ type GoogleMapsLead = {
     emails?: string[];
     city?: string;
     website?: string;
+    address?: string;
+    socials?: any;
     imageUrl?: string;
     tags?: string[];
     updatedAt: number;
@@ -241,6 +248,8 @@ export default function ProfilesPage() {
                     ...s,
                     totalScore: s.total_score,
                     reviewsCount: s.reviews_count,
+                    address: s.address,
+                    socials: s.socials,
                     imageUrl: s.image_url,
                     updatedAt: new Date(s.updated_at).getTime(),
                 };
@@ -831,9 +840,35 @@ export default function ProfilesPage() {
             ),
         },
         {
+            accessorKey: "address",
+            header: "Address",
+            cell: ({ row }) => (
+                <div className="max-w-[150px] truncate text-xs" title={row.original.address}>
+                    {row.original.address || "-"}
+                </div>
+            ),
+        },
+        {
             accessorKey: "city",
             header: "City",
             cell: ({ row }) => row.original.city || "-",
+        },
+        {
+            id: "socials",
+            header: "Socials",
+            cell: ({ row }) => {
+                const s = row.original.socials;
+                if (!s) return "-";
+                return (
+                    <div className="flex gap-1.5">
+                        {s.facebook && <a href={s.facebook} target="_blank" className="text-blue-600 hover:opacity-80"><IconBrandFacebook size={14} /></a>}
+                        {s.instagram && <a href={s.instagram} target="_blank" className="text-pink-600 hover:opacity-80"><IconBrandInstagram size={14} /></a>}
+                        {s.linkedin && <a href={s.linkedin} target="_blank" className="text-blue-700 hover:opacity-80"><IconBrandLinkedin size={14} /></a>}
+                        {s.twitter && <a href={s.twitter} target="_blank" className="text-sky-500 hover:opacity-80"><IconBrandTwitter size={14} /></a>}
+                        {s.tiktok && <a href={s.tiktok} target="_blank" className="text-black hover:opacity-80"><IconBrandTiktok size={14} /></a>}
+                    </div>
+                )
+            }
         },
         {
             accessorKey: "tags",
@@ -1173,11 +1208,17 @@ function GenericProfileTable<TData, TValue>({
                                 } else {
                                     return {
                                         "Business Name": item.title || "",
+                                        "Address": item.address || "",
                                         "Rating": item.totalScore || 0,
                                         "Reviews": item.reviewsCount || 0,
                                         "Phone": item.phone || "",
                                         "Emails": (item.emails || []).join(", "),
                                         "Website": item.website || "",
+                                        "Facebook": item.socials?.facebook || "",
+                                        "Instagram": item.socials?.instagram || "",
+                                        "LinkedIn": item.socials?.linkedin || "",
+                                        "Twitter": item.socials?.twitter || "",
+                                        "TikTok": item.socials?.tiktok || "",
                                         "City": item.city || "",
                                         "Google Maps URL": item.url || "",
                                         "Tags": (item.tags || []).join(", "),
@@ -1213,7 +1254,9 @@ function GenericProfileTable<TData, TValue>({
                                                 column.toggleVisibility(!!value)
                                             }
                                         >
-                                            {column.id}
+                                            {typeof column.columnDef.header === 'string' 
+                                                ? column.columnDef.header 
+                                                : column.id.replace(/([A-Z])/g, ' $1').trim()}
                                         </DropdownMenuCheckboxItem>
                                     )
                                 })}

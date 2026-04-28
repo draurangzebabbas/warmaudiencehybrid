@@ -148,10 +148,25 @@ async function getUsage(userId) {
 /**
  * Link a Supabase profile to the user
  */
+/**
+ * Link a Supabase profile to the user
+ */
 async function linkSupabaseProfile(userId, supabaseId, type, tags = []) {
-    return convex.mutation("profiles:linkSupabaseProfile", {
+    return convex.mutation("profiles:linkSupabaseProfilesBulk", {
         userId,
-        supabaseId,
+        supabaseIds: [supabaseId],
+        type,
+        tags,
+    });
+}
+
+/**
+ * Link multiple Supabase profiles to the user (Bulk)
+ */
+async function linkSupabaseProfilesBulk(userId, supabaseIds, type, tags = []) {
+    return convex.mutation("profiles:linkSupabaseProfilesBulk", {
+        userId,
+        supabaseIds,
         type,
         tags,
     });
@@ -171,5 +186,6 @@ module.exports = {
     markTrackerExecuted,
     createTracker,
     updateTrackerStatus,
-    linkSupabaseProfile, // Added
+    linkSupabaseProfile,
+    linkSupabaseProfilesBulk,
 };

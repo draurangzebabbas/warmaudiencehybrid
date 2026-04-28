@@ -16,10 +16,12 @@ import {
   IconListDetails,
   IconReport,
   IconSearch,
-  IconSettings,
   IconUsers,
   IconWebhook,
   IconAward,
+  IconBrandLinkedin,
+  IconBrandGoogleMaps,
+  IconLayoutDashboard
 } from "@tabler/icons-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -45,17 +47,17 @@ const data = {
     {
       title: "Dashboard",
       url: "/dashboard",
-      icon: IconDashboard,
+      icon: IconLayoutDashboard,
     },
     {
       title: "Linkedin Lead",
       url: "/researchers",
-      icon: IconSearch,
+      icon: IconBrandLinkedin,
     },
     {
       title: "Google Map Lead",
       url: "/google-maps-researcher",
-      icon: IconInnerShadowTop,
+      icon: IconBrandGoogleMaps,
     },
     {
       title: "My Leads",

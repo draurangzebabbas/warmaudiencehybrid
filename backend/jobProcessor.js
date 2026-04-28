@@ -58,12 +58,39 @@ async function handleGoogleMapsScrape(userId, input, keyManager, tags = ["Google
 
         if (results && results.length > 0) {
             console.log(`✨ Found ${results.length} Google Maps leads. Persistence started...`);
-            const saved = await supabaseApi.upsertGoogleMapsLeadsBulk(results);
-            for (const s of saved) {
+            
+            // Map Apify results to our database format
+            const formatted = results.map(l => ({
+                url: l.url,
+                title: l.title,
+                totalScore: l.totalScore,
+                reviewsCount: l.reviewsCount,
+                address: l.address || "", // Map address if available
+                phone: l.phone,
+                emails: l.emails || [],
+                website: l.website,
+                city: l.city,
+                imageUrl: l.imageUrl || null,
+                socials: {
+                    facebook: (l.facebooks && l.facebooks.length > 0) ? l.facebooks[0] : null,
+                    instagram: (l.instagrams && l.instagrams.length > 0) ? l.instagrams[0] : null,
+                    twitter: (l.twitters && l.twitters.length > 0) ? l.twitters[0] : null,
+                    linkedin: (l.linkedIns && l.linkedIns.length > 0) ? l.linkedIns[0] : null,
+                    youtube: (l.youtubes && l.youtubes.length > 0) ? l.youtubes[0] : null,
+                    tiktok: (l.tiktoks && l.tiktoks.length > 0) ? l.tiktoks[0] : null
+                },
+                placeId: l.query_place_id || l.placeId // Handle both variants
+            }));
+
+            const saved = await supabaseApi.upsertGoogleMapsLeadsBulk(formatted);
+            
+            // Bulk link in Convex
+            if (saved && saved.length > 0) {
                 try {
-                    await convexApi.linkSupabaseProfile(userId, s.id, "google_maps", tags);
+                    const sids = saved.map(s => s.id);
+                    await convexApi.linkSupabaseProfilesBulk(userId, sids, "google_maps", tags);
                 } catch (err) {
-                    console.error(`   Link Convex failed for Google Map lead ${s.id}:`, err.message);
+                    console.error(`   Bulk Link Convex failed for Google Map leads:`, err.message);
                 }
             }
             console.log(`✅ Successfully saved and linked ${saved.length} Google Maps leads`);
@@ -315,20 +342,22 @@ async function scrapeBatch(userId, urls, type, keyManager, tags) {
 
                 if (type === "personal") {
                     const saved = await supabaseApi.upsertPersonalProfilesBulk(formatted);
-                    for (const s of saved) {
+                    if (saved && saved.length > 0) {
                         try {
-                            await convexApi.linkSupabaseProfile(userId, s.id, "personal", tags);
+                            const sids = saved.map(s => s.id);
+                            await convexApi.linkSupabaseProfilesBulk(userId, sids, "personal", tags);
                         } catch (err) {
-                            console.error(`   Link Convex failed for ${s.id}:`, err.message);
+                            console.error(`   Bulk Link Convex failed for personal profiles:`, err.message);
                         }
                     }
                 } else {
                     const saved = await supabaseApi.upsertCompanyProfilesBulk(formatted);
-                    for (const s of saved) {
+                    if (saved && saved.length > 0) {
                         try {
-                            await convexApi.linkSupabaseProfile(userId, s.id, "company", tags);
+                            const sids = saved.map(s => s.id);
+                            await convexApi.linkSupabaseProfilesBulk(userId, sids, "company", tags);
                         } catch (err) {
-                            console.error(`   Link Convex failed for ${s.id}:`, err.message);
+                            console.error(`   Bulk Link Convex failed for company profiles:`, err.message);
                         }
                     }
                 }
