@@ -105,6 +105,45 @@ app.post(["/api/scrape-profiles", "/api/scrape-linkedin"], async (req, res) => {
 });
 
 // ─────────────────────────────────────────
+// POST /api/scrape-google-maps
+// ─────────────────────────────────────────
+app.post("/api/scrape-google-maps", async (req, res) => {
+    try {
+        const { searchStringsArray, locationQuery, maxCrawledPlacesPerSearch, tags = [] } = req.body;
+
+        if (!searchStringsArray || !Array.isArray(searchStringsArray) || searchStringsArray.length === 0) {
+            return res.status(400).json({ error: "searchStringsArray is required" });
+        }
+        if (!locationQuery) {
+            return res.status(400).json({ error: "locationQuery is required" });
+        }
+
+        // 0. Check Usage Limit
+        const usage = await convexApi.getUsage(req.userId);
+        if (usage && usage.usage.profiles >= usage.usage.profilesLimit) {
+            return res.status(403).json({
+                error: `Limit Reached: You have consumed all your lead storage for this month (${usage.usage.profilesLimit} leads). Please upgrade your plan for more capacity.`,
+                code: "LIMIT_REACHED"
+            });
+        }
+
+        processJob({
+            userId: req.userId,
+            type: "google_maps",
+            input: { searchStringsArray, locationQuery, maxCrawledPlacesPerSearch, tags },
+        }).catch((err) => console.error("❌ Google Maps scrape failed:", err));
+
+        res.json({
+            status: "processing",
+            message: `Google Maps research started for: ${searchStringsArray.join(", ")} in ${locationQuery}`,
+        });
+    } catch (e) {
+        console.error("scrape-google-maps error:", e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// ─────────────────────────────────────────
 // POST /api/scrape-engagers
 // Extract profiles from post commenters/reactors
 // ─────────────────────────────────────────

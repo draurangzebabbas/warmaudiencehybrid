@@ -15,6 +15,7 @@ const ACTORS = {
     POST_COMMENTS: "ZI6ykbLlGS3APaPE8",
     POST_REACTIONS: "S6mgSO5lezSZKi0zN",
     PROFILE_COMMENTS: "FiHYLewnJwS6GnRpo",
+    GOOGLE_MAPS: "WnMxbsRLNbPeYL6ge",
 };
 
 // ─────────────────────────────────────────
@@ -124,6 +125,26 @@ async function scrapeCompanyProfiles(urls, token) {
     return callApifyActor(ACTORS.COMPANY_PROFILE, {
         identifier: urls,
     }, token);
+}
+
+/**
+ * Scrape Google Maps leads
+ */
+async function scrapeGoogleMaps(options, token) {
+    const {
+        searchStringsArray = [],
+        locationQuery = "",
+        maxCrawledPlacesPerSearch = 10
+    } = options;
+
+    return callApifyActor(ACTORS.GOOGLE_MAPS, {
+        searchStringsArray,
+        locationQuery,
+        maxCrawledPlacesPerSearch,
+        // Recommended defaults for stability
+        language: "en",
+        allPlacesNoSearchAction: "enlargeArea",
+    }, token, 600000); // 10 min timeout for larger scrapes
 }
 
 // ─────────────────────────────────────────

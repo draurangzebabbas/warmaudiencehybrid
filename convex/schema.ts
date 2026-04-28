@@ -76,7 +76,8 @@ export default defineSchema({
         profileId: v.optional(v.id("linkedinProfiles")), // Legacy Convex ID
         companyProfileId: v.optional(v.id("companyProfiles")), // Legacy Convex ID
         supabaseId: v.optional(v.string()), // New Supabase UUID
-        profileType: v.string(), // "personal" | "company"
+        googleMapsId: v.optional(v.string()), // New Supabase UUID for Google Maps
+        profileType: v.string(), // "personal" | "company" | "google_maps"
         personalNotes: v.optional(v.string()),
         tags: v.array(v.string()),
         createdAt: v.number(),

@@ -182,11 +182,42 @@ async function upsertCompanyProfilesBulk(companies) {
     return data;
 }
 
+/**
+ * Upsert multiple Google Maps leads
+ */
+async function upsertGoogleMapsLeadsBulk(leads) {
+    const items = leads.map(l => ({
+        url: l.url,
+        title: l.title,
+        total_score: l.totalScore,
+        reviews_count: l.reviewsCount,
+        phone: l.phone,
+        emails: l.emails || [],
+        website: l.website,
+        city: l.city,
+        image_url: l.imageUrl,
+        socials: l.socials || {},
+        updated_at: new Date().toISOString()
+    }));
+
+    const { data, error } = await supabase
+        .from("google_maps_leads")
+        .upsert(items, { onConflict: 'url' })
+        .select("id, url");
+
+    if (error) {
+        console.error("❌ Supabase Google Maps bulk upsert error:", error.message);
+        throw error;
+    }
+    return data;
+}
+
 module.exports = {
     getCachedProfile,
     upsertPersonalProfile,
     upsertPersonalProfilesBulk,
     upsertCompanyProfile,
     upsertCompanyProfilesBulk,
+    upsertGoogleMapsLeadsBulk,
     supabase
 };

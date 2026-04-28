@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Loader2, Tag } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { formatError } from "@/src/lib/utils";
+import { formatError } from "@/lib/utils";
 
 export default function ResearchersPage() {
     const [profileUrls, setProfileUrls] = useState("");
@@ -140,7 +140,7 @@ export default function ResearchersPage() {
     return (
         <div className="p-0 space-y-6">
             <div className="px-6 pt-6 md:px-8 md:pt-8 flex flex-col gap-2">
-                <h1 className="text-3xl font-bold tracking-tight">Profile Research Dashboard</h1>
+                <h1 className="text-3xl font-bold tracking-tight">Linkedin Lead Research Dashboard</h1>
                 <p className="text-muted-foreground text-sm">
                     Collect and organize professional data for market research and internal analysis.
                 </p>

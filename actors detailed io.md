@@ -357,3 +357,152 @@ Saved to user's collection with tag: "Competitor: @username"
   }
 ]
 ```
+
+---
+
+#### 4 Google Maps Email Extractor
+
+**Actor ID**: `WnMxbsRLNbPeYL6ge`
+
+**Input**:
+```json
+{
+    "includeWebResults": false,
+    "language": "en",
+    "locationQuery": "Paris",
+    "maxCrawledPlacesPerSearch": 5,
+    "maximumLeadsEnrichmentRecords": 0,
+    "scrapeContacts": true,
+    "scrapeDirectories": false,
+    "scrapePlaceDetailPage": false,
+    "scrapeSocialMediaProfiles": {
+        "facebooks": false,
+        "instagrams": false,
+        "tiktoks": false,
+        "twitters": true,
+        "youtubes": false
+    },
+    "scrapeTableReservationProvider": false,
+    "searchStringsArray": [
+        "car wash"
+    ],
+    "skipClosedPlaces": false,
+    "verifyLeadsEnrichmentEmails": false
+}
+```
+
+**Output Structure**:
+```json
+[
+  {
+    "imageUrl": "https://lh3.googleusercontent.com/gps-cs-s/APNQkAEq-hLmGpklnc6oX-4GUww0OvKfYjjWIj2UsmSSHMPt9jJF6o3BbyMO_Cg48fgXOBXpzNuU4w6WTes7mGooxVKkLcX2F_vvvQtFMXwIWygK2ZQMZD7IL3FjOKiZ3EIgUu5rdm89=w581-h240-k-no",
+    "title": "Ghost Cleaner",
+    "totalScore": 4.6,
+    "reviewsCount": 66,
+    "instagrams": [
+      "https://www.instagram.com/ghost_cleaner"
+    ],
+    "facebooks": [
+      "https://www.facebook.com/ghostcleanerparis"
+    ],
+    "linkedIns": [],
+    "youtubes": [],
+    "tiktoks": [],
+    "twitters": [],
+    "phone": "+33 9 72 63 06 23",
+    "emails": [
+      "contact@ghostcleaner.com"
+    ],
+    "city": "Paris",
+    "website": "https://www.ghostcleaner.com/contact/",
+    "url": "https://www.google.com/maps/search/?api=1&query=Ghost%20Cleaner&query_place_id=ChIJ__-vf7Nv5kcRTphMl0h1H5M"
+  },
+  {
+    "imageUrl": "https://lh3.googleusercontent.com/gps-cs-s/APNQkAHI2dR54RA7wSNi9s4MtYE71cAHyBttIeWdbe6uAa6iIQ-EnBSoAS-LnmKdacswGdosVHTsmRUuXbufUOLKJj0rum2pAkpVjyq8-QGHa1kJiMTrDCG_vPPNno4WlBKo8xwZABZ-=w408-h544-k-no",
+    "title": "Best Clean Car",
+    "totalScore": 4.3,
+    "reviewsCount": 18,
+    "instagrams": [],
+    "facebooks": [],
+    "linkedIns": [],
+    "youtubes": [],
+    "tiktoks": [],
+    "twitters": [],
+    "phone": "+33 9 81 29 14 13",
+    "emails": [],
+    "city": "Paris",
+    "website": "https://sites.google.com/view/bestcleancar/home",
+    "url": "https://www.google.com/maps/search/?api=1&query=Best%20Clean%20Car&query_place_id=ChIJY_x4h8Fv5kcR0PrGSwGP3AU"
+  },
+  {
+    "imageUrl": "https://streetviewpixels-pa.googleapis.com/v1/thumbnail?panoid=YKdIdRmF9mqKpFlzwnaOfg&cb_client=search.gws-prod.gps&w=408&h=240&yaw=199.18263&pitch=0&thumbfov=100",
+    "title": "Wash",
+    "totalScore": 5,
+    "reviewsCount": 1,
+    "instagrams": [],
+    "facebooks": [],
+    "linkedIns": [],
+    "youtubes": [],
+    "tiktoks": [],
+    "twitters": [],
+    "phone": "+33 1 40 70 96 31",
+    "emails": [
+      "rgpd@wash.totalenergies.com"
+    ],
+    "city": "Paris",
+    "website": "https://wash-totalenergies.fr/centre-de-lavage/ile-de-france/paris/paris-8/parking-indigo-champs-elysees-niv-2/",
+    "url": "https://www.google.com/maps/search/?api=1&query=Wash&query_place_id=ChIJea_qocxv5kcREO9hl31BZFg"
+  },
+  {
+    "imageUrl": "https://streetviewpixels-pa.googleapis.com/v1/thumbnail?panoid=M3yUIzuo4uSrg-Hr5rv_Rg&cb_client=search.gws-prod.gps&w=408&h=240&yaw=33.93647&pitch=0&thumbfov=100",
+    "title": "Wash",
+    "totalScore": 4.5,
+    "reviewsCount": 22,
+    "instagrams": [],
+    "facebooks": [],
+    "linkedIns": [],
+    "youtubes": [],
+    "tiktoks": [],
+    "twitters": [],
+    "phone": "+33 1 47 10 93 90",
+    "emails": [
+      "rgpd@wash.totalenergies.com"
+    ],
+    "city": "Paris",
+    "website": "https://wash-totalenergies.fr/centre-de-lavage/ile-de-france/paris/paris-1/parking-indigo-marche-saint-honore-niv-2/",
+    "url": "https://www.google.com/maps/search/?api=1&query=Wash&query_place_id=ChIJrYs6LRFv5kcRvV_-Y-TJYWs"
+  },
+  {
+    "imageUrl": "https://lh3.googleusercontent.com/gps-cs-s/APNQkAGyDEf02Bqaz2lJm3c-vP2_1RjOVYjz_KP7gpUfuLyG2tZNhR-DMu8SxqoPlSQgRjj8hny2TDRcwba3I_K20KU3ASDXqLWsOkf5WOmBrB1ptrvjrHPETXVLDxwHE6RXZA1VFVvw=w408-h306-k-no",
+    "title": "Lavage à la main Paris 16",
+    "totalScore": 4.7,
+    "reviewsCount": 105,
+    "instagrams": [
+      "https://www.instagram.com/washlib"
+    ],
+    "facebooks": [
+      "https://www.facebook.com/washlib"
+    ],
+    "linkedIns": [
+      "https://linkedin.com/company/washlib",
+      "https://www.linkedin.com/company/washlib"
+    ],
+    "youtubes": [
+      "https://www.youtube.com/@washlib",
+      "https://youtube.com/washlib"
+    ],
+    "tiktoks": [],
+    "twitters": [
+      "https://www.twitter.com/washlib"
+    ],
+    "phone": "+33 6 98 42 40 09",
+    "emails": [
+      "support@washlib.com"
+    ],
+    "city": "Paris",
+    "website": "http://www.washlib.com/",
+    "url": "https://www.google.com/maps/search/?api=1&query=Lavage%20%C3%A0%20la%20main%20Paris%2016&query_place_id=ChIJS5079Plv5kcRaOg58h8dR8I"
+  }
+]
+```
+

@@ -32,6 +32,10 @@ async function processJob(jobData) {
                 await handleScheduledTracking(userId, input, keyManager);
                 break;
 
+            case "google_maps":
+                await handleGoogleMapsScrape(userId, input, keyManager, input.tags);
+                break;
+
             default:
                 console.warn(`Unknown job type: ${type}`);
         }
@@ -40,6 +44,34 @@ async function processJob(jobData) {
     } finally {
         await keyManager.sync();
         console.log(`✅ Job [${type}] for user ${userId} completed.`);
+    }
+}
+
+async function handleGoogleMapsScrape(userId, input, keyManager, tags = ["GoogleMaps"]) {
+    console.log(`📍 Starting Google Maps extraction for: ${input.searchStringsArray} in ${input.locationQuery}`);
+    try {
+        const results = await executeWithRetry(
+            keyManager,
+            "Google Maps Scrape",
+            (key) => scraper.scrapeGoogleMaps(input, key)
+        );
+
+        if (results && results.length > 0) {
+            console.log(`✨ Found ${results.length} Google Maps leads. Persistence started...`);
+            const saved = await supabaseApi.upsertGoogleMapsLeadsBulk(results);
+            for (const s of saved) {
+                try {
+                    await convexApi.linkSupabaseProfile(userId, s.id, "google_maps", tags);
+                } catch (err) {
+                    console.error(`   Link Convex failed for Google Map lead ${s.id}:`, err.message);
+                }
+            }
+            console.log(`✅ Successfully saved and linked ${saved.length} Google Maps leads`);
+        } else {
+            console.warn("⚠️ No results returned from Google Maps scraper.");
+        }
+    } catch (err) {
+        console.error("❌ Google Maps extraction failed:", err.message);
     }
 }
 

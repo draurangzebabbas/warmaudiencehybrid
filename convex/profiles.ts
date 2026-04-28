@@ -141,18 +141,29 @@ export const linkSupabaseProfile = mutation({
 
         const existing = await ctx.db
             .query("userSavedProfiles")
-            .withIndex("by_user_supabase", (q) => q.eq("userId", args.userId).eq("supabaseId", args.supabaseId))
+            .withIndex("by_user_type", (q) => q.eq("userId", args.userId).eq("profileType", args.type))
+            .filter(q => q.or(
+                q.eq(q.field("supabaseId"), args.supabaseId),
+                q.eq(q.field("googleMapsId"), args.supabaseId)
+            ))
             .first();
 
         if (!existing) {
-            return await ctx.db.insert("userSavedProfiles", {
+            const data: any = {
                 userId: args.userId,
-                supabaseId: args.supabaseId,
                 profileType: args.type,
                 tags: args.tags || [],
                 createdAt: Date.now(),
                 updatedAt: Date.now(),
-            });
+            };
+
+            if (args.type === "google_maps") {
+                data.googleMapsId = args.supabaseId;
+            } else {
+                data.supabaseId = args.supabaseId;
+            }
+
+            return await ctx.db.insert("userSavedProfiles", data);
         }
         return existing._id;
     }
@@ -495,6 +506,36 @@ export const listCompany = query({
             );
 
             return results.filter(Boolean);
+        } catch (e) {
+            return [];
+        }
+    },
+});
+
+/**
+ * Convenience query for Google Map leads
+ */
+export const listGoogleMaps = query({
+    args: {},
+    handler: async (ctx: QueryCtx) => {
+        try {
+            const user = await authComponent.getAuthUser(ctx);
+            if (!user) return [];
+
+            const saved = await ctx.db
+                .query("userSavedProfiles")
+                .withIndex("by_user_type", (q) => q.eq("userId", user._id).eq("profileType", "google_maps"))
+                .collect();
+
+            const results = saved.map((s) => {
+                return {
+                    junctionId: s._id,
+                    tags: s.tags,
+                    googleMapsId: s.googleMapsId,
+                };
+            });
+
+            return results;
         } catch (e) {
             return [];
         }

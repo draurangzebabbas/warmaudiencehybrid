@@ -48,13 +48,18 @@ const data = {
       icon: IconDashboard,
     },
     {
-      title: "Researcher",
+      title: "Linkedin Lead",
       url: "/researchers",
       icon: IconSearch,
     },
     {
-      title: "My profiles",
-      url: "/my-profiles",
+      title: "Google Map Lead",
+      url: "/google-maps-researcher",
+      icon: IconInnerShadowTop,
+    },
+    {
+      title: "My Leads",
+      url: "/my-leads",
       icon: IconUsers,
     },
     {
@@ -83,7 +88,7 @@ const data = {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
-    <Sidebar collapsible="offcanvas" {...props}>
+    <Sidebar collapsible="icon" variant="inset" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>

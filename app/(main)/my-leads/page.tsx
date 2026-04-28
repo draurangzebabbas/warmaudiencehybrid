@@ -111,15 +111,33 @@ type CompanyProfile = {
     junctionId: any;
 };
 
+type GoogleMapsLead = {
+    junctionId: any;
+    googleMapsId?: string;
+    url: string;
+    title?: string;
+    totalScore?: number;
+    reviewsCount?: number;
+    phone?: string;
+    emails?: string[];
+    city?: string;
+    website?: string;
+    imageUrl?: string;
+    tags?: string[];
+    updatedAt: number;
+};
+
 // --- Page Component ---
 
 export default function ProfilesPage() {
     const personalRaw = useQuery(api.profiles.listPersonal);
     const companyRaw = useQuery(api.profiles.listCompany);
+    const googleMapsRaw = useQuery(api.profiles.listGoogleMaps);
     
     // --- New: Supabase Enrichment State ---
     const [sbPersonal, setSbPersonal] = useState<Record<string, any>>({});
     const [sbCompany, setSbCompany] = useState<Record<string, any>>({});
+    const [sbGoogleMaps, setSbGoogleMaps] = useState<Record<string, any>>({});
 
     // 1. Fetch data from Supabase for any profiles that have a supabaseId
     useEffect(() => {
@@ -157,6 +175,24 @@ export default function ProfilesPage() {
                 });
         }
     }, [companyRaw]);
+
+    useEffect(() => {
+        if (!googleMapsRaw) return;
+        const missingIds = googleMapsRaw
+            .filter(g => g.googleMapsId && !sbGoogleMaps[g.googleMapsId])
+            .map(g => g.googleMapsId);
+        
+        if (missingIds.length > 0) {
+            supabase.from("google_maps_leads").select("*").in("id", missingIds)
+                .then(({ data }) => {
+                    if (data) {
+                        const newBatch = { ...sbGoogleMaps };
+                        data.forEach(d => { newBatch[d.id] = d; });
+                        setSbGoogleMaps(newBatch);
+                    }
+                });
+        }
+    }, [googleMapsRaw]);
 
     // 2. Merge Convex + Supabase data
     const personal = useMemo(() => {
@@ -196,15 +232,32 @@ export default function ProfilesPage() {
         }) as CompanyProfile[];
     }, [companyRaw, sbCompany]);
 
+    const googleMaps = useMemo(() => {
+        return (googleMapsRaw || []).map(g => {
+            if (g.googleMapsId && sbGoogleMaps[g.googleMapsId]) {
+                const s = sbGoogleMaps[g.googleMapsId];
+                return {
+                    ...g,
+                    ...s,
+                    totalScore: s.total_score,
+                    reviewsCount: s.reviews_count,
+                    imageUrl: s.image_url,
+                    updatedAt: new Date(s.updated_at).getTime(),
+                };
+            }
+            return g;
+        }) as GoogleMapsLead[];
+    }, [googleMapsRaw, sbGoogleMaps]);
+
     const removeProfile = useMutation(api.profiles.removeProfile);
     const removeProfiles = useMutation(api.profiles.removeProfiles);
     const getOrCreateKey = useMutation(api.apikeys.getOrCreateKey);
 
     const handleDeleteProfile = async (id: any) => {
-        if (!confirm("Are you sure you want to remove this profile from your list? (Global data will be preserved)")) return;
+        if (!confirm("Are you sure you want to remove this lead from your list? (Global data will be preserved)")) return;
         try {
             await removeProfile({ id });
-            toast.success("Profile removed");
+            toast.success("Lead removed");
         } catch (e: any) {
             toast.error(e.message);
         }
@@ -240,6 +293,16 @@ export default function ProfilesPage() {
         location: "",
         tags: "",
         isVerified: "all" as "all" | "yes" | "no",
+    });
+
+    const [googleMapsFilters, setGoogleMapsFilters] = useState({
+        hasEmail: "all" as "all" | "yes" | "no",
+        hasPhone: "all" as "all" | "yes" | "no",
+        hasWebsite: "all" as "all" | "yes" | "no",
+        minScore: 0,
+        minReviews: 0,
+        location: "",
+        tags: "",
     });
 
     // --- Filtered Data ---
@@ -340,6 +403,32 @@ export default function ProfilesPage() {
             return true;
         });
     }, [company, companyFilters]);
+
+    const filteredGoogleMaps = useMemo(() => {
+        return googleMaps.filter((g) => {
+            if (googleMapsFilters.hasEmail === "yes" && (!g.emails || g.emails.length === 0)) return false;
+            if (googleMapsFilters.hasEmail === "no" && g.emails && g.emails.length > 0) return false;
+
+            if (googleMapsFilters.hasPhone === "yes" && !g.phone) return false;
+            if (googleMapsFilters.hasPhone === "no" && g.phone) return false;
+
+            if (googleMapsFilters.hasWebsite === "yes" && !g.website) return false;
+            if (googleMapsFilters.hasWebsite === "no" && g.website) return false;
+
+            if (g.totalScore && g.totalScore < googleMapsFilters.minScore) return false;
+            if (g.reviewsCount && g.reviewsCount < googleMapsFilters.minReviews) return false;
+
+            if (googleMapsFilters.location && !g.city?.toLowerCase().includes(googleMapsFilters.location.toLowerCase())) return false;
+
+            if (googleMapsFilters.tags) {
+                const q = googleMapsFilters.tags.toLowerCase();
+                const hasMatch = (g.tags || []).some(t => t.toLowerCase().includes(q));
+                if (!hasMatch) return false;
+            }
+
+            return true;
+        });
+    }, [googleMaps, googleMapsFilters]);
 
     const handleUpdateProfile = async (url: string) => {
         try {
@@ -520,7 +609,7 @@ export default function ProfilesPage() {
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteProfile(row.original.junctionId)}>
-                            Delete Profile
+                            Delete Lead
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
@@ -661,7 +750,140 @@ export default function ProfilesPage() {
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteProfile(row.original.junctionId)}>
-                            Delete Profile
+                            Delete Lead
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            ),
+        }
+    ], []);
+
+    const googleMapsColumns = useMemo<ColumnDef<GoogleMapsLead>[]>(() => [
+        {
+            id: "select",
+            header: ({ table }) => (
+                <Checkbox
+                    checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")}
+                    onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+                    aria-label="Select all"
+                />
+            ),
+            cell: ({ row }) => (
+                <Checkbox
+                    checked={row.getIsSelected()}
+                    onCheckedChange={(value) => row.toggleSelected(!!value)}
+                    aria-label="Select row"
+                />
+            ),
+            enableSorting: false,
+            enableHiding: false,
+        },
+        {
+            accessorKey: "imageUrl",
+            header: "Photo",
+            cell: ({ row }) => (
+                <Avatar className="h-9 w-9 rounded-md">
+                    <AvatarImage src={row.original.imageUrl || undefined} alt={row.original.title} />
+                    <AvatarFallback className="rounded-md">{row.original.title?.slice(0, 2) || "GM"}</AvatarFallback>
+                </Avatar>
+            ),
+        },
+        {
+            accessorKey: "title",
+            header: "Business Name",
+            cell: ({ row }) => (
+                <div className="flex flex-col">
+                    <span className="font-medium">{row.original.title || "Unknown"}</span>
+                    <div className="flex items-center gap-1 text-[10px] text-amber-500">
+                        <span>★ {row.original.totalScore || "0"}</span>
+                        <span className="text-muted-foreground">({row.original.reviewsCount || "0"} reviews)</span>
+                    </div>
+                </div>
+            ),
+        },
+        {
+            accessorKey: "phone",
+            header: "Phone",
+            cell: ({ row }) => row.original.phone || "-",
+        },
+        {
+            accessorKey: "emails",
+            header: "Emails",
+            cell: ({ row }) => (
+                <div className="flex flex-col gap-0.5 max-w-[150px]">
+                    {row.original.emails?.slice(0, 2).map((email, idx) => (
+                        <span key={idx} className="text-[10px] truncate">{email}</span>
+                    ))}
+                    {(row.original.emails?.length || 0) > 2 && <span className="text-[9px] text-muted-foreground">+{row.original.emails!.length - 2} more</span>}
+                    {(!row.original.emails || row.original.emails.length === 0) && "-"}
+                </div>
+            ),
+        },
+        {
+            accessorKey: "website",
+            header: "Website",
+            cell: ({ row }) => (
+                row.original.website ? (
+                    <a href={row.original.website} target="_blank" className="text-xs text-blue-500 hover:underline truncate max-w-[120px]">
+                        {row.original.website.replace(/^https?:\/\//, '')}
+                    </a>
+                ) : "-"
+            ),
+        },
+        {
+            accessorKey: "city",
+            header: "City",
+            cell: ({ row }) => row.original.city || "-",
+        },
+        {
+            accessorKey: "tags",
+            header: "Tags",
+            cell: ({ row }) => (
+                <div className="flex flex-wrap gap-1 max-w-[120px]">
+                    {row.original.tags?.map((tag, idx) => (
+                        <Badge key={idx} variant="outline" className="text-[9px] px-1 h-3.5 bg-muted/30">
+                            {tag}
+                        </Badge>
+                    ))}
+                    {(!row.original.tags || row.original.tags.length === 0) && <span className="text-muted-foreground text-[10px]">-</span>}
+                </div>
+            )
+        },
+        {
+            accessorKey: "updatedAt",
+            header: "Added",
+            cell: ({ row }) => {
+                if (!row.original.updatedAt) return "-";
+                return (
+                    <div className="flex items-center text-xs text-muted-foreground">
+                        {formatDistanceToNow(row.original.updatedAt, { addSuffix: true })}
+                    </div>
+                )
+            }
+        },
+        {
+            id: "actions",
+            cell: ({ row }) => (
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                            <IconDotsVertical className="h-4 w-4" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => navigator.clipboard.writeText(row.original.url)}>
+                            Copy Maps URL
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild>
+                            <a href={row.original.url} target="_blank" rel="noopener noreferrer">
+                                <IconExternalLink className="mr-2 h-4 w-4" /> View on Maps
+                            </a>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteProfile(row.original.junctionId)}>
+                            Delete Lead
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
@@ -674,9 +896,9 @@ export default function ProfilesPage() {
         <div className="p-0 space-y-6">
             <div className="px-6 pt-6 md:px-8 md:pt-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">My profiles</h1>
+                    <h1 className="text-3xl font-bold tracking-tight">My Leads</h1>
                     <p className="text-muted-foreground text-sm">
-                        View and manage all extracted LinkedIn target profiles.
+                        View and manage all extracted target leads from LinkedIn and Google Maps.
                     </p>
                 </div>
             </div>
@@ -686,8 +908,9 @@ export default function ProfilesPage() {
                     <CardContent className="p-0">
                         <Tabs defaultValue="personal">
                             <TabsList className="mb-4">
-                                <TabsTrigger value="personal">Personal Profiles</TabsTrigger>
-                                <TabsTrigger value="company">Company Profiles</TabsTrigger>
+                                <TabsTrigger value="personal">Linkedin Personal Profiles</TabsTrigger>
+                                <TabsTrigger value="company">Linkedin Company Profiles</TabsTrigger>
+                                <TabsTrigger value="google_maps">Google Map Lead</TabsTrigger>
                             </TabsList>
 
                             <TabsContent value="personal">
@@ -763,6 +986,24 @@ export default function ProfilesPage() {
                                     }}
                                 />
                             </TabsContent>
+
+                            <TabsContent value="google_maps">
+                                <GenericProfileTable
+                                    data={filteredGoogleMaps}
+                                    columns={googleMapsColumns}
+                                    isLoading={googleMapsRaw === undefined}
+                                    filterColumn="title"
+                                    type="google_maps"
+                                    filters={googleMapsFilters}
+                                    setFilters={setGoogleMapsFilters}
+                                    onBulkDelete={async (ids) => {
+                                        if (confirm(`Are you sure you want to remove ${ids.length} Google Maps leads?`)) {
+                                            await removeProfiles({ ids });
+                                            toast.success("Leads removed");
+                                        }
+                                    }}
+                                />
+                            </TabsContent>
                         </Tabs>
                     </CardContent>
                 </Card>
@@ -773,12 +1014,14 @@ export default function ProfilesPage() {
 
 // --- Generic Table Implementation ---
 
+// --- Generic Table Implementation ---
+
 interface DataTableProps<TData, TValue> {
     columns: ColumnDef<TData, TValue>[]
     data: TData[]
     isLoading?: boolean
     filterColumn: string
-    type: "personal" | "company"
+    type: "personal" | "company" | "google_maps"
     filters: any
     setFilters: (filters: any) => void
     onBulkDelete?: (ids: any[]) => Promise<void>
@@ -912,7 +1155,7 @@ function GenericProfileTable<TData, TValue>({
                                         "Tags": (item.tags || []).join(", "),
                                         "About": (item.about || "").replace(/\n/g, " "),
                                     };
-                                } else {
+                                } else if (type === "company") {
                                     return {
                                         "Company Name": item.companyName || "",
                                         "Website": item.websiteUrl || "",
@@ -926,6 +1169,19 @@ function GenericProfileTable<TData, TValue>({
                                         "Country": item.country || "",
                                         "Verified": item.isVerified ? "Yes" : "No",
                                         "Tags": (item.tags || []).join(", "),
+                                    };
+                                } else {
+                                    return {
+                                        "Business Name": item.title || "",
+                                        "Rating": item.totalScore || 0,
+                                        "Reviews": item.reviewsCount || 0,
+                                        "Phone": item.phone || "",
+                                        "Emails": (item.emails || []).join(", "),
+                                        "Website": item.website || "",
+                                        "City": item.city || "",
+                                        "Google Maps URL": item.url || "",
+                                        "Tags": (item.tags || []).join(", "),
+                                        "Updated At": item.updatedAt ? new Date(item.updatedAt).toISOString() : ""
                                     };
                                 }
                             });
@@ -1095,7 +1351,7 @@ function GenericProfileTable<TData, TValue>({
     )
 }
 
-function FilterSheet({ type, filters, setFilters }: { type: "personal" | "company", filters: any, setFilters: (f: any) => void }) {
+function FilterSheet({ type, filters, setFilters }: { type: "personal" | "company" | "google_maps", filters: any, setFilters: (f: any) => void }) {
     return (
         <Sheet>
             <SheetTrigger asChild>
