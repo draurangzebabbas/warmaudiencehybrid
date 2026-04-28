@@ -267,7 +267,7 @@ async function scrapeBatch(userId, urls, type, keyManager, tags) {
                 // Map fields for Supabase
                 const formatted = results.map(r => {
                     const b = r.basic_info || r;
-                    const linkedinUrl = b.profile_url || b.linkedinUrl || (type === "personal" ? null : b.url);
+                    const linkedinUrl = b.profile_url || b.linkedinUrl || b.linkedin_url || r.linkedinUrl || r.linkedin_url || (type === "personal" ? null : (b.url || r.url));
                     if (!linkedinUrl) return null;
 
                     if (type === "personal") {
@@ -332,7 +332,7 @@ async function scrapeBatch(userId, urls, type, keyManager, tags) {
                         }
                     }
                 }
-                console.log(`   ✅ Bulk saved ${results.length} profiles to Supabase and linked in Convex`);
+                console.log(`   ✅ Bulk saved ${formatted.length} profiles to Supabase and linked in Convex`);
             } catch (saveErr) {
                 console.error(`   Bulk save failed:`, saveErr.message);
             }

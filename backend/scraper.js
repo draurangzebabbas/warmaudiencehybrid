@@ -269,12 +269,17 @@ function normalizeUrl(rawUrl) {
         const candidate = trimmed.startsWith('http') ? trimmed : `https://${trimmed}`;
         const url = new URL(candidate);
 
-        if (!url.hostname.includes('linkedin.com')) return rawUrl;
-
-        url.search = '';
-        url.hash = '';
-        let path = url.pathname.replace(/\/+$/, '');
-        return `${url.protocol}//${url.hostname}${path}`;
+        if (url.hostname.includes('linkedin.com')) {
+            url.search = '';
+            url.hash = '';
+            let path = url.pathname.replace(/\/+$/, '');
+            // Ensure company URLs are normalized consistently
+            if (path.includes('/company/')) {
+                path = path.split('/life')[0].split('/about')[0].split('/jobs')[0].split('/people')[0];
+            }
+            return `${url.protocol}//${url.hostname}${path}`;
+        }
+        return rawUrl;
     } catch {
         return rawUrl.split('#')[0].split('?')[0].replace(/\/+$/, '');
     }
@@ -285,6 +290,7 @@ module.exports = {
     callApifyActor,
     scrapePersonalProfiles,
     scrapeCompanyProfiles,
+    scrapeGoogleMaps,
     scrapePersonalPosts,
     searchKeywords,
     scrapePostEngagement,
