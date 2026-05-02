@@ -62,24 +62,24 @@ async function handleGoogleMapsScrape(userId, input, keyManager, tags = ["Google
             // Map Apify results to our database format
             const formatted = results.map(l => ({
                 url: l.url,
-                title: l.title,
-                totalScore: l.totalScore,
-                reviewsCount: l.reviewsCount,
-                address: l.address || "", // Map address if available
-                phone: l.phone,
+                title: l.title || l.companyName || "Unknown",
+                totalScore: l.totalScore || l.reviewsScore || l.stars || 0,
+                reviewsCount: l.reviewsCount || l.reviews || 0,
+                address: l.address || l.fullAddress || "",
+                phone: l.phone || l.phoneNumber || "",
                 emails: l.emails || [],
-                website: l.website,
-                city: l.city,
-                imageUrl: l.imageUrl || null,
+                website: l.website || l.websiteUrl || "",
+                city: l.city || "",
+                imageUrl: l.image_url || l.imageUrl || l.img_url || l.imgUrl || l.photo || l.photoUrl || l.thumbnail || (l.photos && l.photos.length > 0 ? l.photos[0] : null),
                 socials: {
-                    facebook: (l.facebooks && l.facebooks.length > 0) ? l.facebooks[0] : null,
-                    instagram: (l.instagrams && l.instagrams.length > 0) ? l.instagrams[0] : null,
-                    twitter: (l.twitters && l.twitters.length > 0) ? l.twitters[0] : null,
-                    linkedin: (l.linkedIns && l.linkedIns.length > 0) ? l.linkedIns[0] : null,
-                    youtube: (l.youtubes && l.youtubes.length > 0) ? l.youtubes[0] : null,
-                    tiktok: (l.tiktoks && l.tiktoks.length > 0) ? l.tiktoks[0] : null
+                    facebook: (l.facebooks && l.facebooks.length > 0) ? l.facebooks[0] : (l.facebook || l.facebookUrl || null),
+                    instagram: (l.instagrams && l.instagrams.length > 0) ? l.instagrams[0] : (l.instagram || l.instagramUrl || null),
+                    twitter: (l.twitters && l.twitters.length > 0) ? l.twitters[0] : (l.twitter || l.twitterUrl || l.xUrl || null),
+                    linkedin: (l.linkedIns && l.linkedIns.length > 0) ? l.linkedIns[0] : (l.linkedin || l.linkedinUrl || null),
+                    youtube: (l.youtubes && l.youtubes.length > 0) ? l.youtubes[0] : (l.youtube || l.youtubeUrl || null),
+                    tiktok: (l.tiktoks && l.tiktoks.length > 0) ? l.tiktoks[0] : (l.tiktok || l.tiktokUrl || null)
                 },
-                placeId: l.query_place_id || l.placeId // Handle both variants
+                placeId: l.query_place_id || l.placeId || l.id || l.fid
             }));
 
             const saved = await supabaseApi.upsertGoogleMapsLeadsBulk(formatted);
@@ -324,18 +324,18 @@ async function scrapeBatch(userId, urls, type, keyManager, tags) {
                     } else {
                         return {
                             url: linkedinUrl,
-                            companyName: b.name || b.companyName || "Unknown",
+                            companyName: b.name || b.companyName || r.name || "Unknown",
                             linkedinUrl: linkedinUrl,
-                            websiteUrl: b.website || b.websiteUrl,
-                            logoUrl: r.media?.logo_url || b.logoUrl,
-                            description: b.description,
-                            employeeCount: r.stats?.employee_count || b.employeeCount,
-                            employeeCountRange: r.stats?.employee_count_range || b.employeeCountRange,
-                            followerCount: r.stats?.follower_count || b.followerCount,
-                            city: r.locations?.headquarters?.city || b.city,
-                            country: r.locations?.headquarters?.country || b.country,
-                            postalCode: r.locations?.headquarters?.postal_code || b.postalCode,
-                            isVerified: b.is_verified ?? b.isVerified
+                            websiteUrl: b.website || b.websiteUrl || r.website || r.websiteUrl,
+                            logoUrl: r.media?.logo_url || b.logoUrl || r.logoUrl || b.profile_picture_url || b.logo_url || r.media?.logo,
+                            description: b.description || r.description,
+                            employeeCount: r.stats?.employee_count || b.employeeCount || r.employeeCount,
+                            employeeCountRange: r.stats?.employee_count_range || b.employeeCountRange || r.employeeCountRange,
+                            followerCount: r.stats?.follower_count || b.followerCount || r.followerCount,
+                            city: r.locations?.headquarters?.city || b.city || r.city,
+                            country: r.locations?.headquarters?.country || b.country || r.country,
+                            postalCode: r.locations?.headquarters?.postal_code || b.postalCode || r.postalCode,
+                            isVerified: b.is_verified ?? b.isVerified ?? r.isVerified
                         };
                     }
                 }).filter(Boolean);

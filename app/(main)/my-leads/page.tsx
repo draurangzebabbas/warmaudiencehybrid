@@ -27,7 +27,7 @@ import {
     IconBrandFacebook,
     IconBrandInstagram,
     IconBrandLinkedin,
-    IconBrandTwitter,
+    IconBrandX,
     IconBrandTiktok
 } from "@tabler/icons-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from "@/components/ui/sheet";
@@ -209,12 +209,19 @@ export default function ProfilesPage() {
                 return {
                     ...p,
                     ...s, // Overwrite with Supabase data
-                    firstName: s.first_name,
-                    lastName: s.last_name,
-                    fullName: s.full_name,
-                    profilePic: s.profile_pic,
-                    companyName: s.company_name,
-                    updatedAt: new Date(s.updated_at).getTime(),
+                    _id: p._id || s.id,
+                    linkedinUrl: s.linkedin_url || p.linkedinUrl,
+                    firstName: s.first_name || p.firstName,
+                    lastName: s.last_name || p.lastName,
+                    fullName: s.full_name || p.fullName,
+                    profilePic: s.profile_pic || p.profilePic,
+                    companyName: s.company_name || p.companyName,
+                    jobTitle: s.job_title || p.jobTitle,
+                    isPremium: s.is_premium ?? p.isPremium,
+                    isInfluencer: s.is_influencer ?? p.isInfluencer,
+                    openToWork: s.open_to_work ?? p.openToWork,
+                    isVerified: s.is_verified ?? p.isVerified,
+                    updatedAt: s.updated_at ? new Date(s.updated_at).getTime() : p.updatedAt,
                 };
             }
             return p;
@@ -228,11 +235,16 @@ export default function ProfilesPage() {
                 return {
                     ...c,
                     ...s,
-                    logoUrl: s.logo_url,
-                    websiteUrl: s.website_url,
-                    employeeCount: s.employee_count,
-                    followerCount: s.follower_count,
-                    updatedAt: new Date(s.updated_at).getTime(),
+                    _id: c._id || s.id,
+                    linkedinUrl: s.linkedin_url || s.url || c.linkedinUrl,
+                    companyName: s.company_name || c.companyName,
+                    logoUrl: s.logo_url || c.logoUrl,
+                    websiteUrl: s.website_url || c.websiteUrl,
+                    description: s.description || c.description,
+                    employeeCount: s.employee_count ?? c.employeeCount,
+                    followerCount: s.follower_count ?? c.followerCount,
+                    isVerified: s.is_verified ?? c.isVerified,
+                    updatedAt: s.updated_at ? new Date(s.updated_at).getTime() : c.updatedAt,
                 };
             }
             return c;
@@ -246,12 +258,12 @@ export default function ProfilesPage() {
                 return {
                     ...g,
                     ...s,
-                    totalScore: s.total_score,
-                    reviewsCount: s.reviews_count,
-                    address: s.address,
-                    socials: s.socials,
-                    imageUrl: s.image_url,
-                    updatedAt: new Date(s.updated_at).getTime(),
+                    totalScore: s.total_score ?? g.totalScore,
+                    reviewsCount: s.reviews_count ?? g.reviewsCount,
+                    address: s.address || g.address,
+                    socials: s.socials || g.socials,
+                    imageUrl: s.image_url || g.imageUrl,
+                    updatedAt: s.updated_at ? new Date(s.updated_at).getTime() : g.updatedAt,
                 };
             }
             return g;
@@ -308,6 +320,11 @@ export default function ProfilesPage() {
         hasEmail: "all" as "all" | "yes" | "no",
         hasPhone: "all" as "all" | "yes" | "no",
         hasWebsite: "all" as "all" | "yes" | "no",
+        hasInstagram: "all" as "all" | "yes" | "no",
+        hasTikTok: "all" as "all" | "yes" | "no",
+        hasFacebook: "all" as "all" | "yes" | "no",
+        hasTwitter: "all" as "all" | "yes" | "no",
+        hasLinkedIn: "all" as "all" | "yes" | "no",
         minScore: 0,
         minReviews: 0,
         location: "",
@@ -423,6 +440,21 @@ export default function ProfilesPage() {
 
             if (googleMapsFilters.hasWebsite === "yes" && !g.website) return false;
             if (googleMapsFilters.hasWebsite === "no" && g.website) return false;
+
+            if (googleMapsFilters.hasInstagram === "yes" && !g.socials?.instagram) return false;
+            if (googleMapsFilters.hasInstagram === "no" && g.socials?.instagram) return false;
+
+            if (googleMapsFilters.hasTikTok === "yes" && !g.socials?.tiktok) return false;
+            if (googleMapsFilters.hasTikTok === "no" && g.socials?.tiktok) return false;
+
+            if (googleMapsFilters.hasFacebook === "yes" && !g.socials?.facebook) return false;
+            if (googleMapsFilters.hasFacebook === "no" && g.socials?.facebook) return false;
+
+            if (googleMapsFilters.hasTwitter === "yes" && !g.socials?.twitter) return false;
+            if (googleMapsFilters.hasTwitter === "no" && g.socials?.twitter) return false;
+
+            if (googleMapsFilters.hasLinkedIn === "yes" && !g.socials?.linkedin) return false;
+            if (googleMapsFilters.hasLinkedIn === "no" && g.socials?.linkedin) return false;
 
             if (g.totalScore && g.totalScore < googleMapsFilters.minScore) return false;
             if (g.reviewsCount && g.reviewsCount < googleMapsFilters.minReviews) return false;
@@ -864,8 +896,8 @@ export default function ProfilesPage() {
                         {s.facebook && <a href={s.facebook} target="_blank" className="text-blue-600 hover:opacity-80"><IconBrandFacebook size={14} /></a>}
                         {s.instagram && <a href={s.instagram} target="_blank" className="text-pink-600 hover:opacity-80"><IconBrandInstagram size={14} /></a>}
                         {s.linkedin && <a href={s.linkedin} target="_blank" className="text-blue-700 hover:opacity-80"><IconBrandLinkedin size={14} /></a>}
-                        {s.twitter && <a href={s.twitter} target="_blank" className="text-sky-500 hover:opacity-80"><IconBrandTwitter size={14} /></a>}
-                        {s.tiktok && <a href={s.tiktok} target="_blank" className="text-black hover:opacity-80"><IconBrandTiktok size={14} /></a>}
+                        {s.twitter && <a href={s.twitter} target="_blank" className="text-foreground hover:opacity-80"><IconBrandX size={14} /></a>}
+                        {s.tiktok && <a href={s.tiktok} target="_blank" className="text-black dark:text-white hover:opacity-80"><IconBrandTiktok size={14} /></a>}
                     </div>
                 )
             }
@@ -1423,11 +1455,17 @@ function FilterSheet({ type, filters, setFilters }: { type: "personal" | "compan
                                     minConnections: 0, maxConnections: 1000000, minFollowers: 0, maxFollowers: 10000000,
                                     location: "", tags: "", isPremium: "all", isInfluencer: "all", isOpenToWork: "all", isVerified: "all"
                                 });
-                            } else {
+                            } else if (type === "company") {
                                 setFilters({
                                     hasWebsite: "all", hasLogo: "all", hasDescription: "all",
                                     minEmployees: 0, maxEmployees: 1000000, minFollowers: 0, maxFollowers: 10000000,
                                     location: "", tags: "", isVerified: "all"
+                                });
+                            } else {
+                                setFilters({
+                                    hasEmail: "all", hasPhone: "all", hasWebsite: "all",
+                                    hasInstagram: "all", hasTikTok: "all", hasFacebook: "all", hasTwitter: "all", hasLinkedIn: "all",
+                                    minScore: 0, minReviews: 0, location: "", tags: ""
                                 });
                             }
                         }}>Clear All</Button>
@@ -1472,9 +1510,9 @@ function FilterSheet({ type, filters, setFilters }: { type: "personal" | "compan
                                     <ThreeStateFilter label="Verified Profile" value={filters.isVerified} onChange={(v) => setFilters({ ...filters, isVerified: v })} />
                                     <ThreeStateFilter label="Open To Work" value={filters.isOpenToWork} onChange={(v) => setFilters({ ...filters, isOpenToWork: v })} />
                                 </>
-                            ) : (
+                            ) : type === "company" ? (
                                 <ThreeStateFilter label="Verified Page" value={filters.isVerified} onChange={(v) => setFilters({ ...filters, isVerified: v })} />
-                            )}
+                            ) : null}
                         </div>
                     </div>
 
@@ -1490,11 +1528,23 @@ function FilterSheet({ type, filters, setFilters }: { type: "personal" | "compan
                                     <ThreeStateFilter label="Has About Section" value={filters.hasAbout} onChange={(v) => setFilters({ ...filters, hasAbout: v })} />
                                     <ThreeStateFilter label="Has Profile Pic" value={filters.hasProfilePic} onChange={(v) => setFilters({ ...filters, hasProfilePic: v })} />
                                 </>
-                            ) : (
+                            ) : type === "company" ? (
                                 <>
                                     <ThreeStateFilter label="Has Website" value={filters.hasWebsite} onChange={(v) => setFilters({ ...filters, hasWebsite: v })} />
                                     <ThreeStateFilter label="Has Logo" value={filters.hasLogo} onChange={(v) => setFilters({ ...filters, hasLogo: v })} />
                                     <ThreeStateFilter label="Has Description" value={filters.hasDescription} onChange={(v) => setFilters({ ...filters, hasDescription: v })} />
+                                </>
+                            ) : (
+                                <>
+                                    <ThreeStateFilter label="Has Email" value={filters.hasEmail} onChange={(v) => setFilters({ ...filters, hasEmail: v })} />
+                                    <ThreeStateFilter label="Has Phone" value={filters.hasPhone} onChange={(v) => setFilters({ ...filters, hasPhone: v })} />
+                                    <ThreeStateFilter label="Has Website" value={filters.hasWebsite} onChange={(v) => setFilters({ ...filters, hasWebsite: v })} />
+                                    <Separator className="my-1 opacity-50" />
+                                    <ThreeStateFilter label="Has Instagram" value={filters.hasInstagram} onChange={(v) => setFilters({ ...filters, hasInstagram: v })} />
+                                    <ThreeStateFilter label="Has TikTok" value={filters.hasTikTok} onChange={(v) => setFilters({ ...filters, hasTikTok: v })} />
+                                    <ThreeStateFilter label="Has Facebook" value={filters.hasFacebook} onChange={(v) => setFilters({ ...filters, hasFacebook: v })} />
+                                    <ThreeStateFilter label="Has X (Twitter)" value={filters.hasTwitter} onChange={(v) => setFilters({ ...filters, hasTwitter: v })} />
+                                    <ThreeStateFilter label="Has LinkedIn" value={filters.hasLinkedIn} onChange={(v) => setFilters({ ...filters, hasLinkedIn: v })} />
                                 </>
                             )}
                         </div>
@@ -1502,47 +1552,82 @@ function FilterSheet({ type, filters, setFilters }: { type: "personal" | "compan
 
                     <Separator className="opacity-50" />
 
-                    <div className="space-y-4">
-                        <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{type === "personal" ? "Network Size" : "Company Size"}</Label>
-                        <div className="flex items-center gap-2">
-                            <Input
-                                type="number"
-                                placeholder="Min"
-                                value={type === "personal" ? filters.minConnections : filters.minEmployees}
-                                onChange={(e) => setFilters({ ...filters, [type === "personal" ? "minConnections" : "minEmployees"]: parseInt(e.target.value) || 0 })}
-                                className="h-8 text-xs"
-                            />
-                            <span className="text-muted-foreground">to</span>
-                            <Input
-                                type="number"
-                                placeholder="Max"
-                                value={type === "personal" ? filters.maxConnections : filters.maxEmployees}
-                                onChange={(e) => setFilters({ ...filters, [type === "personal" ? "maxConnections" : "maxEmployees"]: parseInt(e.target.value) || 0 })}
-                                className="h-8 text-xs"
-                            />
+                    {type !== "google_maps" && (
+                        <div className="space-y-4">
+                            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{type === "personal" ? "Connections" : "Company Size"}</Label>
+                            <div className="flex items-center gap-2">
+                                <Input
+                                    type="number"
+                                    placeholder="Min"
+                                    value={(type === "personal" ? filters.minConnections : filters.minEmployees) || ""}
+                                    onChange={(e) => setFilters({ ...filters, [type === "personal" ? "minConnections" : "minEmployees"]: e.target.value === "" ? 0 : parseInt(e.target.value) })}
+                                    className="h-8 text-xs"
+                                />
+                                <span className="text-muted-foreground">to</span>
+                                <Input
+                                    type="number"
+                                    placeholder="Max"
+                                    value={(type === "personal" ? (filters.maxConnections === 1000000 ? "" : filters.maxConnections) : (filters.maxEmployees === 1000000 ? "" : filters.maxEmployees)) || ""}
+                                    onChange={(e) => setFilters({ ...filters, [type === "personal" ? "maxConnections" : "maxEmployees"]: e.target.value === "" ? 0 : parseInt(e.target.value) })}
+                                    className="h-8 text-xs"
+                                />
+                            </div>
                         </div>
-                    </div>
+                    )}
 
-                    <div className="space-y-4">
-                        <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Followers</Label>
-                        <div className="flex items-center gap-2">
-                            <Input
-                                type="number"
-                                placeholder="Min"
-                                value={filters.minFollowers}
-                                onChange={(e) => setFilters({ ...filters, minFollowers: parseInt(e.target.value) || 0 })}
-                                className="h-8 text-xs"
-                            />
-                            <span className="text-muted-foreground">to</span>
-                            <Input
-                                type="number"
-                                placeholder="Max"
-                                value={filters.maxFollowers}
-                                onChange={(e) => setFilters({ ...filters, maxFollowers: parseInt(e.target.value) || 0 })}
-                                className="h-8 text-xs"
-                            />
+                    {type === "google_maps" && (
+                        <>
+                            <div className="space-y-4">
+                                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Rating & Reviews</Label>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div className="space-y-1">
+                                        <Label className="text-[10px]">Min Rating</Label>
+                                        <Input
+                                            type="number"
+                                            step="0.1"
+                                            placeholder="0.0"
+                                            value={filters.minScore || ""}
+                                            onChange={(e) => setFilters({ ...filters, minScore: e.target.value === "" ? 0 : parseFloat(e.target.value) })}
+                                            className="h-8 text-xs"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label className="text-[10px]">Min Reviews</Label>
+                                        <Input
+                                            type="number"
+                                            placeholder="0"
+                                            value={filters.minReviews || ""}
+                                            onChange={(e) => setFilters({ ...filters, minReviews: e.target.value === "" ? 0 : parseInt(e.target.value) })}
+                                            className="h-8 text-xs"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </>
+                    )}
+
+                    {type !== "google_maps" && (
+                        <div className="space-y-4">
+                            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Followers</Label>
+                            <div className="flex items-center gap-2">
+                                <Input
+                                    type="number"
+                                    placeholder="Min"
+                                    value={filters.minFollowers || ""}
+                                    onChange={(e) => setFilters({ ...filters, minFollowers: e.target.value === "" ? 0 : parseInt(e.target.value) })}
+                                    className="h-8 text-xs"
+                                />
+                                <span className="text-muted-foreground">to</span>
+                                <Input
+                                    type="number"
+                                    placeholder="Max"
+                                    value={(filters.maxFollowers === 10000000 ? "" : filters.maxFollowers) || ""}
+                                    onChange={(e) => setFilters({ ...filters, maxFollowers: e.target.value === "" ? 0 : parseInt(e.target.value) })}
+                                    className="h-8 text-xs"
+                                />
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
             </SheetContent>
         </Sheet>

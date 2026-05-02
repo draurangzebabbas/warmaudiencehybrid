@@ -123,8 +123,8 @@ export default function GoogleMapsResearcherPage() {
                                     type="number"
                                     min={1}
                                     max={100}
-                                    value={maxListings}
-                                    onChange={(e) => setMaxListings(parseInt(e.target.value) || 0)}
+                                    value={maxListings || ""}
+                                    onChange={(e) => setMaxListings(e.target.value === "" ? 0 : parseInt(e.target.value))}
                                     className="bg-muted/20"
                                 />
                             </div>

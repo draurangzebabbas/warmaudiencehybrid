@@ -481,10 +481,11 @@ export const listPersonal = query({
                 saved.map(async (s) => {
                     const profile = s.profileId ? await ctx.db.get(s.profileId) : null;
                     return {
+                        _id: profile?._id || s._id, // Fallback to junction ID
                         ...profile,
-                        junctionId: s._id, // Return the junction ID for deletion
+                        junctionId: s._id,
                         tags: s.tags,
-                        supabaseId: s.supabaseId // Include Supabase ID
+                        supabaseId: s.supabaseId
                     };
                 })
             );
@@ -515,10 +516,11 @@ export const listCompany = query({
                 saved.map(async (s) => {
                     const company = s.companyProfileId ? await ctx.db.get(s.companyProfileId) : null;
                     return {
+                        _id: company?._id || s._id, // Fallback to junction ID
                         ...company,
-                        junctionId: s._id, // Return the junction ID for deletion
+                        junctionId: s._id,
                         tags: s.tags,
-                        supabaseId: s.supabaseId // Include Supabase ID
+                        supabaseId: s.supabaseId
                     };
                 })
             );
