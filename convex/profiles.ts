@@ -28,8 +28,7 @@ async function checkProfileLimit(ctx: MutationCtx, userId: any) {
 
     const profiles = await ctx.db
         .query("userSavedProfiles")
-        .withIndex("by_user", (q) => q.eq("userId", userId))
-        .filter(q => q.gte(q.field("createdAt"), firstDayOfMonth))
+        .withIndex("by_user_created", (q) => q.eq("userId", userId).gte("createdAt", firstDayOfMonth))
         .collect();
 
     if (profiles.length >= plan.profilesLimit) {
@@ -144,8 +143,7 @@ export const linkSupabaseProfilesBulk = mutation({
         const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
         const currentCount = await ctx.db
             .query("userSavedProfiles")
-            .withIndex("by_user", (q) => q.eq("userId", args.userId as any))
-            .filter(q => q.gte(q.field("createdAt"), firstDayOfMonth))
+            .withIndex("by_user_created", (q) => q.eq("userId", args.userId as any).gte("createdAt", firstDayOfMonth))
             .collect();
         
         const remaining = plan.profilesLimit - currentCount.length;
