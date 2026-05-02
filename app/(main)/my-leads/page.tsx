@@ -70,7 +70,7 @@ import {
 import { toast } from "sonner";
 import { useState, useMemo } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { supabase } from "@/src/lib/supabase";
+import { supabase, getAuthenticatedSupabaseClient } from "@/src/lib/supabase";
 import { useEffect } from "react";
 
 // --- Types ---
@@ -146,6 +146,7 @@ export default function ProfilesPage() {
     function useLeadsFromSupabase(userId: string | undefined, profileType: string) {
         const [leads, setLeads] = useState<any[]>([]);
         const [loading, setLoading] = useState(false);
+        const getToken = useAction(api.actions.supabaseAuth.getSupabaseToken);
 
         useEffect(() => {
             if (!userId) return;
@@ -154,17 +155,25 @@ export default function ProfilesPage() {
             const table = profileType === "google_maps" ? "google_maps_leads" : 
                          profileType === "company" ? "company_profiles" : "linkedin_profiles";
 
-            supabase
-                .from("user_leads")
-                .select(`
-                    id,
-                    tags,
-                    created_at,
-                    details: ${table} (*)
-                `)
-                .eq("user_id", userId)
-                .eq("profile_type", profileType)
-                .then(({ data, error }) => {
+            getToken().then((token) => {
+                if (!token) {
+                    setLoading(false);
+                    return;
+                }
+
+                const secureClient = getAuthenticatedSupabaseClient(token);
+
+                secureClient
+                    .from("user_leads")
+                    .select(`
+                        id,
+                        tags,
+                        created_at,
+                        details: ${table} (*)
+                    `)
+                    .eq("user_id", userId)
+                    .eq("profile_type", profileType)
+                    .then(({ data, error }) => {
                     if (error) {
                         console.error("Supabase fetch error:", error);
                         setLoading(false);
@@ -184,6 +193,7 @@ export default function ProfilesPage() {
                     }
                     setLoading(false);
                 });
+            });
         }, [userId, profileType]);
 
         return { leads, loading };
@@ -248,7 +258,15 @@ export default function ProfilesPage() {
     const handleDeleteProfile = async (id: any) => {
         if (!confirm("Are you sure you want to remove this lead from your list? (Global data will be preserved)")) return;
         try {
-            const { error } = await supabase.from("user_leads").delete().eq("id", id);
+            const token = await getToken();
+            if (!token) throw new Error("Unauthorized");
+            const secureClient = getAuthenticatedSupabaseClient(token);
+
+            const { error } = await secureClient
+                .from("user_leads")
+                .delete()
+                .eq("id", id);
+            
             if (error) throw error;
 
             toast.success("Lead removed");

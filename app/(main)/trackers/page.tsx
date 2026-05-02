@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useAction } from "convex/react";
 
 import { api } from "@/convex/_generated/api";
-import { supabase } from "@/src/lib/supabase";
+import { supabase, getAuthenticatedSupabaseClient } from "@/src/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -51,6 +51,8 @@ export default function TrackersPage() {
     const getOrCreateKey = useAction(api.actions.supabase.getOrCreateWebhookKey);
 
 
+    const getToken = useAction(api.actions.supabaseAuth.getSupabaseToken);
+
     const [trackers, setTrackers] = useState<any[] | undefined>(undefined);
     const [loading, setLoading] = useState(false);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -59,7 +61,11 @@ export default function TrackersPage() {
     const fetchTrackers = async () => {
         if (!user?._id) return;
         try {
-            const { data, error } = await supabase
+            const token = await getToken();
+            if (!token) return;
+            const secureClient = getAuthenticatedSupabaseClient(token);
+
+            const { data, error } = await secureClient
                 .from("trackers")
                 .select("*")
                 .eq("user_id", user._id)
@@ -126,7 +132,11 @@ export default function TrackersPage() {
 
     const handleToggle = async (id: string, isActive: boolean) => {
         try {
-            const { error } = await supabase
+            const token = await getToken();
+            if (!token) throw new Error("Unauthorized");
+            const secureClient = getAuthenticatedSupabaseClient(token);
+
+            const { error } = await secureClient
                 .from("trackers")
                 .update({ is_active: isActive })
                 .eq("id", id);
@@ -142,7 +152,11 @@ export default function TrackersPage() {
     const handleDelete = async (id: string) => {
         if (!confirm("Are you sure you want to delete this tracker?")) return;
         try {
-            const { error } = await supabase
+            const token = await getToken();
+            if (!token) throw new Error("Unauthorized");
+            const secureClient = getAuthenticatedSupabaseClient(token);
+
+            const { error } = await secureClient
                 .from("trackers")
                 .delete()
                 .eq("id", id);

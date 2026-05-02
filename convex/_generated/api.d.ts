@@ -9,6 +9,7 @@
  */
 
 import type * as actions_supabase from "../actions/supabase.js";
+import type * as actions_supabaseAuth from "../actions/supabaseAuth.js";
 import type * as affiliate_program from "../affiliate_program.js";
 import type * as auth from "../auth.js";
 import type * as billing from "../billing.js";
@@ -27,6 +28,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   "actions/supabase": typeof actions_supabase;
+  "actions/supabaseAuth": typeof actions_supabaseAuth;
   affiliate_program: typeof affiliate_program;
   auth: typeof auth;
   billing: typeof billing;
