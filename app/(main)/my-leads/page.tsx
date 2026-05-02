@@ -141,12 +141,12 @@ type GoogleMapsLead = {
 
 export default function ProfilesPage() {
     const user = useQuery(api.auth.getCurrentUser);
+    const getToken = useAction(api.actions.supabaseAuth.getSupabaseToken);
     
     // --- Helper hook for Supabase fetching ---
     function useLeadsFromSupabase(userId: string | undefined, profileType: string) {
         const [leads, setLeads] = useState<any[]>([]);
         const [loading, setLoading] = useState(false);
-        const getToken = useAction(api.actions.supabaseAuth.getSupabaseToken);
 
         useEffect(() => {
             if (!userId) return;
@@ -182,13 +182,60 @@ export default function ProfilesPage() {
                     if (data) {
                         const formatted = data
                             .filter(d => d.details)
-                            .map(d => ({
-                                ...d.details,
-                                tags: d.tags,
-                                updatedAt: new Date(d.created_at).getTime(),
-                                junctionId: d.id,
-                                _id: d.id 
-                            }));
+                            .map(d => {
+                                const details = Array.isArray(d.details) ? d.details[0] : d.details;
+                                if (!details) return null;
+                                if (profileType === "personal") {
+                                    return {
+                                        ...details,
+                                        linkedinUrl: details.linkedin_url,
+                                        publicIdentifier: details.public_identifier,
+                                        firstName: details.first_name,
+                                        lastName: details.last_name,
+                                        fullName: details.full_name,
+                                        companyName: details.company_name,
+                                        jobTitle: details.job_title,
+                                        isPremium: details.is_premium,
+                                        isInfluencer: details.is_influencer,
+                                        openToWork: details.open_to_work,
+                                        isVerified: details.is_verified,
+                                        profilePic: details.profile_pic,
+                                        updatedAt: new Date(details.updated_at || d.created_at).getTime(),
+                                        tags: d.tags,
+                                        junctionId: d.id,
+                                        _id: d.id 
+                                    };
+                                } else if (profileType === "company") {
+                                    return {
+                                        ...details,
+                                        companyName: details.company_name,
+                                        linkedinUrl: details.linkedin_url,
+                                        websiteUrl: details.website_url,
+                                        logoUrl: details.logo_url,
+                                        employeeCount: details.employee_count,
+                                        employeeCountRange: details.employee_count_range,
+                                        followerCount: details.follower_count,
+                                        isVerified: details.is_verified,
+                                        updatedAt: new Date(details.updated_at || d.created_at).getTime(),
+                                        tags: d.tags,
+                                        junctionId: d.id,
+                                        _id: d.id 
+                                    };
+                                } else { // google_maps
+                                    return {
+                                        ...details,
+                                        totalScore: details.total_score,
+                                        reviewsCount: details.reviews_count,
+                                        imageUrl: details.image_url,
+                                        placeId: details.place_id,
+                                        updatedAt: new Date(details.updated_at || d.created_at).getTime(),
+                                        tags: d.tags,
+                                        junctionId: d.id,
+                                        _id: d.id 
+                                    };
+                                }
+                            })
+                            .filter(Boolean);
                         setLeads(formatted);
                     }
                     setLoading(false);
@@ -330,7 +377,7 @@ export default function ProfilesPage() {
 
             if (personalFilters.tags) {
                 const q = personalFilters.tags.toLowerCase();
-                const hasMatch = (p.tags || []).some(t => t.toLowerCase().includes(q));
+                const hasMatch = (p.tags || []).some((t: string) => t.toLowerCase().includes(q));
                 if (!hasMatch) return false;
             }
 
@@ -373,7 +420,7 @@ export default function ProfilesPage() {
 
             if (companyFilters.tags) {
                 const q = companyFilters.tags.toLowerCase();
-                const hasMatch = (c.tags || []).some(t => t.toLowerCase().includes(q));
+                const hasMatch = (c.tags || []).some((t: string) => t.toLowerCase().includes(q));
                 if (!hasMatch) return false;
             }
 
@@ -409,7 +456,7 @@ export default function ProfilesPage() {
 
             if (googleMapsFilters.tags) {
                 const q = googleMapsFilters.tags.toLowerCase();
-                const hasMatch = (g.tags || []).some(t => t.toLowerCase().includes(q));
+                const hasMatch = (g.tags || []).some((t: string) => t.toLowerCase().includes(q));
                 if (!hasMatch) return false;
             }
 

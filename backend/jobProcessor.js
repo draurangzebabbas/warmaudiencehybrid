@@ -98,7 +98,8 @@ async function handleGoogleMapsScrape(userId, input, keyManager, tags = ["Google
                             youtube: (l.youtubes && l.youtubes.length > 0) ? l.youtubes[0] : (l.youtube || l.youtubeUrl || null),
                             tiktok: (l.tiktoks && l.tiktoks.length > 0) ? l.tiktoks[0] : (l.tiktok || l.tiktokUrl || null)
                         },
-                        placeId: l.query_place_id || l.placeId || l.id || l.fid || l.place_id
+                        placeId: l.query_place_id || l.placeId || l.id || l.fid || l.place_id,
+                        extraData: l
                     };
                 });
 
@@ -114,7 +115,7 @@ async function handleGoogleMapsScrape(userId, input, keyManager, tags = ["Google
 
                 
                 await supabaseApi.updateJobProgress(jobId, 100, saved.length);
-                console.log(`✅ Successfully saved and linked ${saved.length} Google Maps leads`);
+                console.log(`✅ Successfully saved and linked ${saved.length} Google Maps leads in Supabase`);
             } else {
                 console.warn("⚠️ No results returned from Google Maps scraper.");
             }
@@ -356,7 +357,8 @@ async function scrapeBatch(userId, urls, type, keyManager, tags) {
                             openToWork: b.open_to_work ?? b.openToWork,
                             isVerified: b.is_verified ?? b.isVerified,
                             profilePic: b.profile_picture_url || b.profilePic,
-                            about: b.about
+                            about: b.about,
+                            extraData: r
                         };
                     } else {
                         return {
@@ -372,7 +374,8 @@ async function scrapeBatch(userId, urls, type, keyManager, tags) {
                             city: r.locations?.headquarters?.city || b.city || r.city,
                             country: r.locations?.headquarters?.country || b.country || r.country,
                             postalCode: r.locations?.headquarters?.postal_code || b.postalCode || r.postalCode,
-                            isVerified: b.is_verified ?? b.isVerified ?? r.isVerified
+                            isVerified: b.is_verified ?? b.isVerified ?? r.isVerified,
+                            extraData: r
                         };
                     }
                 }).filter(Boolean);
@@ -381,18 +384,16 @@ async function scrapeBatch(userId, urls, type, keyManager, tags) {
                     const saved = await supabaseApi.upsertPersonalProfilesBulk(formatted);
                     if (saved && saved.length > 0) {
                         const sids = saved.map(s => s.id);
-                        // Link in Supabase
-                        try { await supabaseApi.linkUserToLeadsBulk(userId, sids, "personal", tags); } catch (e) {}
+                        await supabaseApi.linkUserToLeadsBulk(userId, sids, "personal", tags);
+                        console.log(`   ✅ Linked ${saved.length} personal profiles in Supabase`);
                     }
-
                 } else {
                     const saved = await supabaseApi.upsertCompanyProfilesBulk(formatted);
                     if (saved && saved.length > 0) {
                         const sids = saved.map(s => s.id);
-                        // Link in Supabase
-                        try { await supabaseApi.linkUserToLeadsBulk(userId, sids, "company", tags); } catch (e) {}
+                        await supabaseApi.linkUserToLeadsBulk(userId, sids, "company", tags);
+                        console.log(`   ✅ Linked ${saved.length} company profiles in Supabase`);
                     }
-
                 }
                 console.log(`   ✅ Bulk saved ${formatted.length} profiles to Supabase and linked in Convex`);
             } catch (saveErr) {

@@ -102,6 +102,7 @@ async function upsertPersonalProfilesBulk(profiles) {
         is_verified: p.isVerified,
         profile_pic: p.profilePic,
         about: p.about,
+        extra_data: p.extraData || {},
         updated_at: new Date().toISOString()
     }));
 
@@ -167,6 +168,7 @@ async function upsertCompanyProfilesBulk(companies) {
         country: c.country,
         postal_code: c.postalCode,
         is_verified: c.isVerified,
+        extra_data: c.extraData || {},
         updated_at: new Date().toISOString()
     }));
 
@@ -191,7 +193,6 @@ async function upsertGoogleMapsLeadsBulk(leads) {
         title: l.title,
         total_score: l.totalScore,
         reviews_count: l.reviewsCount,
-        category: l.category,
         address: l.address,
         phone: l.phone,
         emails: l.emails || [],
@@ -200,6 +201,7 @@ async function upsertGoogleMapsLeadsBulk(leads) {
         image_url: l.imageUrl,
         socials: l.socials || {},
         place_id: l.placeId,
+        extra_data: l.extraData || {},
         updated_at: new Date().toISOString()
     }));
 
@@ -217,7 +219,6 @@ async function upsertGoogleMapsLeadsBulk(leads) {
 
 /**
  * Link a user to multiple leads in Supabase (Junction Table)
- * This offloads the "heavy lifting" from Convex to Supabase
  */
 async function linkUserToLeadsBulk(userId, leadIds, type, tags = []) {
     const items = leadIds.map(id => {
@@ -336,13 +337,12 @@ async function createScrapeJob(userId, type, inputData, totalLeads = 0) {
  * Update job progress
  */
 async function updateJobProgress(jobId, progress, resultsCount) {
+    const updateData = { progress, updated_at: new Date().toISOString() };
+    if (resultsCount !== undefined) updateData.results_count = resultsCount;
+    
     await supabase
         .from("scrape_jobs")
-        .update({ 
-            progress, 
-            results_count: resultsCount,
-            updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq("id", jobId);
 }
 
@@ -350,14 +350,16 @@ async function updateJobProgress(jobId, progress, resultsCount) {
  * Mark job as completed
  */
 async function completeJob(jobId, resultsCount) {
+    const updateData = { 
+        status: "completed", 
+        progress: 100, 
+        updated_at: new Date().toISOString() 
+    };
+    if (resultsCount !== undefined) updateData.results_count = resultsCount;
+    
     await supabase
         .from("scrape_jobs")
-        .update({ 
-            status: "completed", 
-            progress: 100,
-            results_count: resultsCount,
-            updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq("id", jobId);
 }
 
