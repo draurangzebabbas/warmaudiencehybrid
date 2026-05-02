@@ -121,18 +121,9 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
                     console.log(`🆕 [Auth Event] User Created: ${user.id} (${user.email})`);
 
                     try {
-                        // Automatically generate a webhook API key
-                        await (ctx as any).runMutation(internal.apikeys.createKeyForUser, {
-                            userId: user.id,
-                        });
-                        console.log(`✅ [Auth Event] API Key created for ${user.id}`);
-                    } catch (e) {
-                        console.error(`❌ [Auth Event] API Key failed for ${user.id}:`, e);
-                    }
-
-                    try {
                         // INITIALIZE Subscription table row immediately on signup
                         await (ctx as any).runMutation(internal.subscriptions.createInitialSubscriptionRecord, {
+
                             userId: user.id,
                             email: user.email,
                         });

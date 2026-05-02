@@ -1,7 +1,8 @@
 "use client";
 
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "@/convex/_generated/api";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -193,7 +194,8 @@ export default function ProfilesPage() {
     const { leads: company, loading: loadingCompany } = useLeadsFromSupabase(user?._id, "company");
     const { leads: googleMaps, loading: loadingGoogleMaps } = useLeadsFromSupabase(user?._id, "google_maps");
 
-    const getOrCreateKey = useMutation(api.apikeys.getOrCreateKey);
+    const getOrCreateKey = useAction(api.actions.supabase.getOrCreateWebhookKey);
+
 
 
     // --- Filter State ---
@@ -476,6 +478,11 @@ export default function ProfilesPage() {
             cell: ({ row }) => row.original.connections?.toLocaleString() || "-",
         },
         {
+            accessorKey: "companyName",
+            header: "Company",
+            cell: ({ row }) => row.original.companyName || <span className="text-muted-foreground text-xs">N/A</span>,
+        },
+        {
             accessorKey: "updatedAt",
             header: "Last Updated",
             cell: ({ row }) => {
@@ -578,6 +585,33 @@ export default function ProfilesPage() {
             cell: ({ row }) => row.original.employeeCount?.toLocaleString() || "-",
         },
         {
+            accessorKey: "followerCount",
+            header: "Followers",
+            cell: ({ row }) => row.original.followerCount?.toLocaleString() || "-",
+        },
+        {
+            accessorKey: "country",
+            header: "Location",
+            cell: ({ row }) => {
+                if (!row.original.city && !row.original.country) return "-";
+                return (
+                    <div className="flex flex-col text-xs">
+                        <span>{row.original.city}</span>
+                        <span className="text-muted-foreground">{row.original.country}</span>
+                    </div>
+                );
+            },
+        },
+        {
+            accessorKey: "description",
+            header: "Description",
+            cell: ({ row }) => (
+                <span className="text-xs text-muted-foreground truncate max-w-[200px] inline-block" title={row.original.description}>
+                    {row.original.description || "-"}
+                </span>
+            ),
+        },
+        {
             accessorKey: "tags",
             header: "Tags",
             cell: ({ row }) => (
@@ -670,8 +704,52 @@ export default function ProfilesPage() {
             ),
         },
         {
+            id: "rating",
+            header: "Rating",
+            cell: ({ row }) => row.original.totalScore ? (
+                <div className="flex items-center gap-1 text-xs">
+                    <span className="font-medium">{row.original.totalScore}</span>
+                    <span className="text-yellow-500">★</span>
+                    <span className="text-muted-foreground">({row.original.reviewsCount || 0})</span>
+                </div>
+            ) : "-",
+        },
+        {
+            accessorKey: "emails",
+            header: "Emails",
+            cell: ({ row }) => {
+                const emails = row.original.emails || [];
+                if (emails.length === 0) return "-";
+                return (
+                    <div className="flex flex-col gap-0.5">
+                        {emails.slice(0, 2).map((email, i) => (
+                            <span key={i} className="text-xs truncate max-w-[150px]" title={email}>{email}</span>
+                        ))}
+                        {emails.length > 2 && <span className="text-[10px] text-muted-foreground">+{emails.length - 2} more</span>}
+                    </div>
+                );
+            }
+        },
+        {
+            id: "socials",
+            header: "Socials",
+            cell: ({ row }) => {
+                const s = row.original.socials;
+                if (!s) return "-";
+                return (
+                    <div className="flex gap-1.5 text-muted-foreground">
+                        {s.linkedin && <a href={s.linkedin} target="_blank" className="hover:text-blue-600"><IconBrandLinkedin size={16} /></a>}
+                        {s.facebook && <a href={s.facebook} target="_blank" className="hover:text-blue-600"><IconBrandFacebook size={16} /></a>}
+                        {s.instagram && <a href={s.instagram} target="_blank" className="hover:text-pink-600"><IconBrandInstagram size={16} /></a>}
+                        {s.twitter && <a href={s.twitter} target="_blank" className="hover:text-sky-500"><IconBrandX size={16} /></a>}
+                        {s.tiktok && <a href={s.tiktok} target="_blank" className="hover:text-black dark:hover:text-white"><IconBrandTiktok size={16} /></a>}
+                    </div>
+                );
+            }
+        },
+        {
             accessorKey: "url",
-            header: "Maps Link",
+            header: "Google Maps Url",
             cell: ({ row }) => (
                 <a 
                     href={row.original.url} 

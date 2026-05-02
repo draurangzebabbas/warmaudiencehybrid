@@ -28,13 +28,9 @@ export const getPlanLimits = query({
         const planKey = getPlanFromSlug(planSlug);
         const plan = PLANS[planKey];
 
-        // 2. Count current month profiles
-        const now = new Date();
-        const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
-        const profilesCount = (await ctx.db
-            .query("userSavedProfiles")
-            .withIndex("by_user_created", (q) => q.eq("userId", args.userId).gte("createdAt", firstDayOfMonth))
-            .collect()).length;
+        // 2. Count current month profiles - MIGRATED TO SUPABASE
+        const profilesCount = 0; // TODO: Fetch from Supabase via backend if needed
+
 
         return {
             planName: plan.name,

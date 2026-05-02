@@ -445,6 +445,49 @@ async function getActiveTrackerCount(userId) {
     return count || 0;
 }
 
+
+/**
+ * Validate an internal webhook API key in Supabase
+ */
+async function validateWebhookKey(key) {
+    const { data, error } = await supabase
+        .from('webhook_api_keys')
+        .select('user_id, is_active')
+        .eq('key', key)
+        .single();
+    
+    if (error || !data || !data.is_active) {
+        return null;
+    }
+    return { userId: data.user_id, isValid: true };
+}
+
+/**
+ * Get or create an internal webhook API key in Supabase
+ */
+async function getOrCreateWebhookKey(userId) {
+    const { data, error } = await supabase
+        .from('webhook_api_keys')
+        .select('key')
+        .eq('user_id', userId)
+        .maybeSingle();
+    
+    if (data) return { key: data.key };
+
+    const newKey = require('crypto').randomBytes(16).toString('hex');
+    const { data: inserted, error: insertError } = await supabase
+        .from('webhook_api_keys')
+        .insert({ user_id: userId, key: newKey })
+        .select('key')
+        .single();
+    
+    if (insertError) {
+        console.error('? Error creating webhook key:', insertError);
+        return null;
+    }
+    return { key: inserted.key };
+}
+
 module.exports = {
     getCachedProfile,
     upsertPersonalProfile,
@@ -465,5 +508,7 @@ module.exports = {
     markTrackerExecuted,
     getMonthlyLeadCount,
     getActiveTrackerCount,
+    validateWebhookKey,
+    getOrCreateWebhookKey,
     supabase
 };

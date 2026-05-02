@@ -8,19 +8,16 @@
  * @module
  */
 
+import type * as actions_supabase from "../actions/supabase.js";
 import type * as affiliate_program from "../affiliate_program.js";
-import type * as apikeys from "../apikeys.js";
 import type * as auth from "../auth.js";
-import type * as crons from "../crons.js";
+import type * as billing from "../billing.js";
 import type * as dashboard from "../dashboard.js";
-import type * as heartbeat from "../heartbeat.js";
 import type * as http from "../http.js";
 import type * as plans from "../plans.js";
 import type * as polar from "../polar.js";
-import type * as profiles from "../profiles.js";
 import type * as subscriptions from "../subscriptions.js";
 import type * as usage from "../usage.js";
-import type * as userApiKeys from "../userApiKeys.js";
 
 import type {
   ApiFromModules,
@@ -29,19 +26,16 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  "actions/supabase": typeof actions_supabase;
   affiliate_program: typeof affiliate_program;
-  apikeys: typeof apikeys;
   auth: typeof auth;
-  crons: typeof crons;
+  billing: typeof billing;
   dashboard: typeof dashboard;
-  heartbeat: typeof heartbeat;
   http: typeof http;
   plans: typeof plans;
   polar: typeof polar;
-  profiles: typeof profiles;
   subscriptions: typeof subscriptions;
   usage: typeof usage;
-  userApiKeys: typeof userApiKeys;
 }>;
 
 /**

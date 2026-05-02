@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation } from "convex/react";
+import { useMutation, useAction } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,7 +22,8 @@ export default function ResearchersPage() {
     const [loading, setLoading] = useState(false);
     const [tags, setTags] = useState("");
 
-    const getOrCreateKey = useMutation(api.apikeys.getOrCreateKey);
+    const getOrCreateKey = useAction(api.actions.supabase.getOrCreateWebhookKey);
+
 
     const handleScrapeProfiles = async () => {
         setLoading(true);

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation } from "convex/react";
+import { useMutation, useAction } from "convex/react";
+
 import { api } from "@/convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,7 +19,8 @@ export default function GoogleMapsResearcherPage() {
     const [tags, setTags] = useState("");
     const [loading, setLoading] = useState(false);
 
-    const getOrCreateKey = useMutation(api.apikeys.getOrCreateKey);
+    const getOrCreateKey = useAction(api.actions.supabase.getOrCreateWebhookKey);
+
 
     const handleScrapeGoogleMaps = async () => {
         setLoading(true);

@@ -44,12 +44,16 @@ app.use(async (req, res, next) => {
 
     const token = authHeader.split(" ")[1];
     try {
-        const userId = await convexApi.getUserIdFromToken(token);
-        req.userId = userId;
+        const result = await supabaseApi.validateWebhookKey(token);
+        if (!result || !result.isValid) {
+            throw new Error("Invalid API Key");
+        }
+        req.userId = result.userId;
         next();
     } catch (e) {
         return res.status(403).json({ error: "Forbidden: Invalid Token" });
     }
+
 });
 
 // ─────────────────────────────────────────
@@ -126,8 +130,12 @@ app.post("/api/scrape-google-maps", async (req, res) => {
         }
 
         // 0. Check Usage Limit
-        const usage = await convexApi.getUsage(req.userId);
-        if (usage && usage.usage.profiles >= usage.usage.profilesLimit) {
+        const [usage, currentCount] = await Promise.all([
+            convexApi.getUsage(req.userId),
+            supabaseApi.getMonthlyLeadCount(req.userId)
+        ]);
+        
+        if (usage && currentCount >= usage.usage.profilesLimit) {
             return res.status(403).json({
                 error: `Limit Reached: You have consumed all your lead storage for this month (${usage.usage.profilesLimit} leads). Please upgrade your plan for more capacity.`,
                 code: "LIMIT_REACHED"

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useMutation } from "convex/react";
+import { useMutation, useAction } from "convex/react";
+
 import { api } from "@/convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,7 +14,8 @@ import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
 
 export default function WebhookPage() {
-    const getOrCreateKey = useMutation(api.apikeys.getOrCreateKey);
+    const getOrCreateKey = useAction(api.actions.supabase.getOrCreateWebhookKey);
+
     const { data: session } = authClient.useSession();
     const [apiKey, setApiKey] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);

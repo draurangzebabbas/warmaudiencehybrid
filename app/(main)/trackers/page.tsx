@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useMutation, useAction } from "convex/react";
+
 import { api } from "@/convex/_generated/api";
 import { supabase } from "@/src/lib/supabase";
 import { Button } from "@/components/ui/button";
@@ -47,7 +48,8 @@ type Tracker = {
 
 export default function TrackersPage() {
     const user = useQuery(api.auth.getCurrentUser);
-    const getOrCreateKey = useMutation(api.apikeys.getOrCreateKey);
+    const getOrCreateKey = useAction(api.actions.supabase.getOrCreateWebhookKey);
+
 
     const [trackers, setTrackers] = useState<any[] | undefined>(undefined);
     const [loading, setLoading] = useState(false);

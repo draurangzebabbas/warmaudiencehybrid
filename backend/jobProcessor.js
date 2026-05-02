@@ -1,5 +1,4 @@
 const scraper = require("./scraper");
-const convexApi = require("./convexApi");
 const supabaseApi = require("./supabaseApi");
 const KeyManager = require("./keyManager");
 
@@ -10,7 +9,8 @@ async function processJob(jobData) {
     const { userId, type, input } = jobData;
     console.log(`🚀 Executing research module [${type}] for user: ${userId}`);
 
-    const keyManager = new KeyManager(userId, "apify", convexApi);
+    const keyManager = new KeyManager(userId, "apify");
+
     const keysCount = await keyManager.initialize();
 
     if (keysCount === 0) {

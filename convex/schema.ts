@@ -2,23 +2,8 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 export default defineSchema({
-    // Auth & API Management
-    webhook_api_keys: defineTable({
-        userId: v.string(),
-        key: v.string(),
-        isActive: v.boolean(),
-    }).index("by_key", ["key"])
-        .index("by_user", ["userId"]),
+    // Auth & API Management is now in Supabase (webhook_api_keys table)
 
-    // User Collections (Junction Table linking to Supabase) - MIGRATED TO SUPABASE
-    // userSavedProfiles table removed to save Convex quota
-
-
-    userSettings: defineTable({
-        userId: v.string(),
-        primaryColor: v.optional(v.string()),
-        secondaryColor: v.optional(v.string()),
-    }).index("by_user", ["userId"]),
 
     subscription: defineTable({
         userId: v.string(),
