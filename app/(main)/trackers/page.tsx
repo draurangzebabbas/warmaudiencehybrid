@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { supabase } from "@/src/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -29,36 +30,58 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { IconTrash, IconPlayerPause, IconPlayerPlay, IconClock } from "@tabler/icons-react";
 import { formatDistanceToNow } from "date-fns";
-import { Id } from "@/convex/_generated/dataModel";
 import { formatError } from "@/src/lib/utils";
 
 // --- Types ---
 
 type Tracker = {
-    _id: Id<"competitorTracking">;
-    targetType: "keyword" | "profile";
-    targetValue: string;
+    id: string;
+    target_type: "keyword" | "profile";
+    target_value: string;
     schedule: string;
-    isActive: boolean;
-    lastExecutedAt?: number;
-    nextExecutionAt: number;
-    createdAt: number;
+    is_active: boolean;
+    last_run_at?: string;
+    next_run_at: string;
+    created_at: string;
 };
 
 export default function TrackersPage() {
-    const trackers = useQuery(api.competitorTracking.list);
-    const toggleStatus = useMutation(api.competitorTracking.toggleStatus);
-    const removeTracker = useMutation(api.competitorTracking.remove);
+    const user = useQuery(api.auth.getCurrentUser);
     const getOrCreateKey = useMutation(api.apikeys.getOrCreateKey);
 
+    const [trackers, setTrackers] = useState<any[] | undefined>(undefined);
+    const [loading, setLoading] = useState(false);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    
+    // --- Supabase Logic ---
+    const fetchTrackers = async () => {
+        if (!user?._id) return;
+        try {
+            const { data, error } = await supabase
+                .from("trackers")
+                .select("*")
+                .eq("user_id", user._id)
+                .order("created_at", { ascending: false });
+            
+            if (error) throw error;
+            setTrackers(data || []);
+        } catch (error) {
+            console.error("Fetch trackers error:", error);
+            toast.error("Failed to load trackers");
+        }
+    };
+
+    useEffect(() => {
+        fetchTrackers();
+    }, [user?._id]);
+
     const [targetType, setTargetType] = useState<"keyword" | "profile">("keyword");
     const [targetValue, setTargetValue] = useState("");
     const [schedule, setSchedule] = useState<"daily" | "weekly">("daily");
-    const [loading, setLoading] = useState(false);
+    const [actionLoading, setActionLoading] = useState(false);
 
     const handleCreateTracker = async () => {
-        setLoading(true);
+        setActionLoading(true);
         try {
             const apiKeyData = await getOrCreateKey();
             if (!apiKeyData?.key) throw new Error("Could not retrieve API Key");
@@ -90,63 +113,41 @@ export default function TrackersPage() {
             toast.success(`Tracker created successfully`);
             setTargetValue("");
             setIsDialogOpen(false);
+            fetchTrackers();
         } catch (e: any) {
             const formatted = formatError(e);
-            if (formatted.includes("Limit Reached")) {
-                toast.error(formatted, {
-                    action: {
-                        label: "Upgrade Plan",
-                        onClick: () => window.location.href = "/#pricing"
-                    }
-                });
-            } else {
-                toast.error(formatted);
-            }
+            toast.error(formatted);
         } finally {
-            setLoading(false);
+            setActionLoading(false);
         }
     };
 
-    const handleToggle = async (id: Id<"competitorTracking">, isActive: boolean) => {
+    const handleToggle = async (id: string, isActive: boolean) => {
         try {
-            const apiKeyData = await getOrCreateKey();
-            if (!apiKeyData?.key) throw new Error("Could not retrieve API Key");
-
-            const res = await fetch(`${process.env.NEXT_PUBLIC_RENDER_BACKEND_URL || "http://localhost:8000"}/api/competitor-tracking/status`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${apiKeyData.key}`
-                },
-                body: JSON.stringify({
-                    trackerId: id,
-                    isActive
-                })
-            });
-
-            if (!res.ok) throw new Error("Failed to update status");
-
+            const { error } = await supabase
+                .from("trackers")
+                .update({ is_active: isActive })
+                .eq("id", id);
+            
+            if (error) throw error;
             toast.success(isActive ? "Tracker resumed" : "Tracker paused");
+            fetchTrackers();
         } catch (e: any) {
-            const formatted = formatError(e);
-            if (formatted.includes("Limit Reached")) {
-                toast.error(formatted, {
-                    action: {
-                        label: "Upgrade Plan",
-                        onClick: () => window.location.href = "/#pricing"
-                    }
-                });
-            } else {
-                toast.error(formatted);
-            }
+            toast.error("Failed to update status");
         }
     };
 
-    const handleDelete = async (id: Id<"competitorTracking">) => {
+    const handleDelete = async (id: string) => {
         if (!confirm("Are you sure you want to delete this tracker?")) return;
         try {
-            await removeTracker({ id });
+            const { error } = await supabase
+                .from("trackers")
+                .delete()
+                .eq("id", id);
+            
+            if (error) throw error;
             toast.success("Tracker deleted");
+            fetchTrackers();
         } catch (e: any) {
             toast.error("Failed to delete tracker");
         }
@@ -154,20 +155,20 @@ export default function TrackersPage() {
 
     const columns: ColumnDef<Tracker>[] = [
         {
-            accessorKey: "targetType",
+            accessorKey: "target_type",
             header: "Tracking Type",
             cell: ({ row }) => (
                 <Badge variant="outline" className="capitalize">
-                    {row.original.targetType}
+                    {row.original.target_type}
                 </Badge>
             ),
         },
         {
-            accessorKey: "targetValue",
+            accessorKey: "target_value",
             header: "Target",
             cell: ({ row }) => (
-                <span className="font-medium truncate max-w-[250px] block" title={row.original.targetValue}>
-                    {row.original.targetValue}
+                <span className="font-medium truncate max-w-[250px] block" title={row.original.target_value}>
+                    {row.original.target_value}
                 </span>
             ),
         },
@@ -181,26 +182,26 @@ export default function TrackersPage() {
             ),
         },
         {
-            accessorKey: "isActive",
+            accessorKey: "is_active",
             header: "Status",
             cell: ({ row }) => (
                 <Badge
-                    variant={row.original.isActive ? "default" : "secondary"}
-                    className={row.original.isActive ? "bg-green-100 text-green-800 hover:bg-green-100/80 dark:bg-green-900/40 dark:text-green-400 border-green-500/30" : ""}
+                    variant={row.original.is_active ? "default" : "secondary"}
+                    className={row.original.is_active ? "bg-green-100 text-green-800 hover:bg-green-100/80 dark:bg-green-900/40 dark:text-green-400 border-green-500/30" : ""}
                 >
-                    {row.original.isActive ? "Active" : "Paused"}
+                    {row.original.is_active ? "Active" : "Paused"}
                 </Badge>
             ),
         },
         {
-            accessorKey: "lastExecutedAt",
+            accessorKey: "last_run_at",
             header: "Last Tracked",
             cell: ({ row }) => {
-                if (!row.original.lastExecutedAt) return <span className="text-muted-foreground text-xs">Never</span>;
+                if (!row.original.last_run_at) return <span className="text-muted-foreground text-xs">Never</span>;
                 return (
                     <div className="flex items-center text-xs text-muted-foreground">
                         <IconClock className="mr-1 size-3" />
-                        {formatDistanceToNow(row.original.lastExecutedAt, { addSuffix: true })}
+                        {formatDistanceToNow(new Date(row.original.last_run_at), { addSuffix: true })}
                     </div>
                 );
             }
@@ -214,16 +215,16 @@ export default function TrackersPage() {
                         size="icon"
                         variant="ghost"
                         className="h-8 w-8"
-                        onClick={() => handleToggle(row.original._id, !row.original.isActive)}
-                        title={row.original.isActive ? "Pause" : "Resume"}
+                        onClick={() => handleToggle(row.original.id, !row.original.is_active)}
+                        title={row.original.is_active ? "Pause" : "Resume"}
                     >
-                        {row.original.isActive ? <IconPlayerPause className="size-4" /> : <IconPlayerPlay className="size-4" />}
+                        {row.original.is_active ? <IconPlayerPause className="size-4" /> : <IconPlayerPlay className="size-4" />}
                     </Button>
                     <Button
                         size="icon"
                         variant="ghost"
                         className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                        onClick={() => handleDelete(row.original._id)}
+                        onClick={() => handleDelete(row.original.id)}
                         title="Delete"
                     >
                         <IconTrash className="size-4" />
@@ -292,8 +293,8 @@ export default function TrackersPage() {
                         </div>
                         <DialogFooter>
                             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-                            <Button onClick={handleCreateTracker} disabled={loading}>
-                                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            <Button onClick={handleCreateTracker} disabled={actionLoading}>
+                                {actionLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 Start Tracking
                             </Button>
                         </DialogFooter>

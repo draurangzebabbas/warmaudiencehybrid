@@ -1,16 +1,56 @@
 "use client";
+import { useState, useEffect } from "react";
 
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { supabase } from "@/src/lib/supabase";
 import { Card, CardHeader, CardTitle, CardDescription, CardAction } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { IconTrendingUp, IconUsers, IconBuildingCommunity, IconRadar, IconDatabase } from "@tabler/icons-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function DashboardStats() {
-    const stats = useQuery(api.dashboard.getStats);
+    const user = useQuery(api.auth.getCurrentUser);
+    const [stats, setStats] = useState({
+        totalPersonalProfiles: 0,
+        totalCompanyProfiles: 0,
+        activeTrackers: 0,
+        totalProfiles: 0,
+    });
+    const [loading, setLoading] = useState(true);
 
-    if (stats === undefined) {
+    useEffect(() => {
+        if (!user?._id) return;
+
+        const fetchStats = async () => {
+            try {
+                const [personal, company, trackers] = await Promise.all([
+                    supabase.from("user_leads").select("*", { count: "exact", head: true }).eq("user_id", user._id).eq("profile_type", "personal"),
+                    supabase.from("user_leads").select("*", { count: "exact", head: true }).eq("user_id", user._id).eq("profile_type", "company"),
+                    supabase.from("trackers").select("*", { count: "exact", head: true }).eq("user_id", user._id).eq("is_active", true)
+                ]);
+
+                const pCount = personal.count || 0;
+                const cCount = company.count || 0;
+                const tCount = trackers.count || 0;
+
+                setStats({
+                    totalPersonalProfiles: pCount,
+                    totalCompanyProfiles: cCount,
+                    activeTrackers: tCount,
+                    totalProfiles: pCount + cCount,
+                });
+            } catch (error) {
+                console.error("Error fetching stats:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchStats();
+    }, [user?._id]);
+
+    if (loading) {
         return (
             <div className="grid grid-cols-1 gap-4 px-4 lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
                 {[...Array(4)].map((_, i) => (

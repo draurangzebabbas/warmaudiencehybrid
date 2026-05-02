@@ -215,6 +215,236 @@ async function upsertGoogleMapsLeadsBulk(leads) {
     return data;
 }
 
+/**
+ * Link a user to multiple leads in Supabase (Junction Table)
+ * This offloads the "heavy lifting" from Convex to Supabase
+ */
+async function linkUserToLeadsBulk(userId, leadIds, type, tags = []) {
+    const items = leadIds.map(id => {
+        const item = {
+            user_id: userId,
+            profile_type: type,
+            tags: tags,
+            created_at: new Date().toISOString()
+        };
+        if (type === "google_maps") item.lead_id = id;
+        else if (type === "company") item.company_id = id;
+        else if (type === "personal") item.linkedin_id = id;
+        return item;
+    });
+
+    const { data, error } = await supabase
+        .from("user_leads")
+        .upsert(items, { 
+            onConflict: type === "google_maps" ? "user_id, lead_id" : 
+                       type === "company" ? "user_id, company_id" : 
+                       "user_id, linkedin_id" 
+        });
+
+    if (error) {
+        console.error("❌ Supabase linking error:", error.message);
+        throw error;
+    }
+    return data;
+}
+
+/**
+ * Remove a lead link from a user in Supabase
+ */
+async function removeUserLead(junctionId) {
+    const { error } = await supabase
+        .from("user_leads")
+        .delete()
+        .eq("id", junctionId);
+
+    if (error) throw error;
+    return true;
+}
+
+/**
+ * Get API keys for a user from Supabase
+ */
+async function getUserApiKeys(userId, provider) {
+    let query = supabase
+        .from("user_api_keys")
+        .select("*")
+        .eq("user_id", userId);
+    
+    if (provider) {
+        query = query.eq("provider", provider);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return data;
+}
+
+/**
+ * Update API key status in Supabase
+ */
+async function updateUserApiKeyStatus(keyId, status) {
+    const { error } = await supabase
+        .from("user_api_keys")
+        .update({ status, last_used_at: new Date().toISOString() })
+        .eq("id", keyId);
+
+    if (error) throw error;
+}
+
+/**
+ * Increment API key usage count in Supabase
+ */
+async function incrementApiKeyUsage(keyId) {
+    const { data: current } = await supabase
+        .from("user_api_keys")
+        .select("usage_count")
+        .eq("id", keyId)
+        .single();
+    
+    const { error } = await supabase
+        .from("user_api_keys")
+        .update({ 
+            usage_count: (current?.usage_count || 0) + 1,
+            last_used_at: new Date().toISOString() 
+        })
+        .eq("id", keyId);
+
+    if (error) throw error;
+}
+
+/**
+ * Create a new scrape job for progress tracking
+ */
+async function createScrapeJob(userId, type, inputData, totalLeads = 0) {
+    const { data, error } = await supabase
+        .from("scrape_jobs")
+        .insert([{
+            user_id: userId,
+            type,
+            input_data: inputData,
+            total_leads: totalLeads,
+            status: "processing"
+        }])
+        .select()
+        .single();
+    
+    if (error) throw error;
+    return data.id;
+}
+
+/**
+ * Update job progress
+ */
+async function updateJobProgress(jobId, progress, resultsCount) {
+    await supabase
+        .from("scrape_jobs")
+        .update({ 
+            progress, 
+            results_count: resultsCount,
+            updated_at: new Date().toISOString()
+        })
+        .eq("id", jobId);
+}
+
+/**
+ * Mark job as completed
+ */
+async function completeJob(jobId, resultsCount) {
+    await supabase
+        .from("scrape_jobs")
+        .update({ 
+            status: "completed", 
+            progress: 100,
+            results_count: resultsCount,
+            updated_at: new Date().toISOString()
+        })
+        .eq("id", jobId);
+}
+
+/**
+ * Mark job as failed
+ */
+async function failJob(jobId, error) {
+    await supabase
+        .from("scrape_jobs")
+        .update({ 
+            status: "failed", 
+            error_message: error,
+            updated_at: new Date().toISOString()
+        })
+        .eq("id", jobId);
+}
+
+/**
+ * Get trackers that are due for execution
+ */
+async function getDueTrackers() {
+    const { data, error } = await supabase
+        .from("trackers")
+        .select("*")
+        .eq("is_active", true)
+        .lte("next_run_at", new Date().toISOString());
+    
+    if (error) throw error;
+    return data;
+}
+
+/**
+ * Mark tracker as executed and schedule next run
+ */
+async function markTrackerExecuted(trackerId, schedule) {
+    let delay = 24 * 60 * 60 * 1000; // default daily
+    if (schedule === "weekly") delay = 7 * 24 * 60 * 60 * 1000;
+    if (schedule === "monthly") delay = 30 * 24 * 60 * 60 * 1000;
+
+    const nextRun = new Date(Date.now() + delay).toISOString();
+
+    await supabase
+        .from("trackers")
+        .update({ 
+            last_run_at: new Date().toISOString(),
+            next_run_at: nextRun
+        })
+        .eq("id", trackerId);
+}
+
+/**
+ * Get lead count for the current month in Supabase
+ */
+async function getMonthlyLeadCount(userId) {
+    const now = new Date();
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    
+    const { count, error } = await supabase
+        .from("user_leads")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .gte("created_at", firstDayOfMonth);
+    
+    if (error) {
+        console.error("❌ Error fetching monthly lead count:", error);
+        return 0;
+    }
+    return count || 0;
+}
+
+/**
+ * Get active tracker count in Supabase
+ */
+async function getActiveTrackerCount(userId) {
+    const { count, error } = await supabase
+        .from("trackers")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .eq("is_active", true);
+    
+    if (error) {
+        console.error("❌ Error fetching active tracker count:", error);
+        return 0;
+    }
+    return count || 0;
+}
+
 module.exports = {
     getCachedProfile,
     upsertPersonalProfile,
@@ -222,5 +452,18 @@ module.exports = {
     upsertCompanyProfile,
     upsertCompanyProfilesBulk,
     upsertGoogleMapsLeadsBulk,
+    linkUserToLeadsBulk,
+    removeUserLead,
+    getUserApiKeys,
+    updateUserApiKeyStatus,
+    incrementApiKeyUsage,
+    createScrapeJob,
+    updateJobProgress,
+    completeJob,
+    failJob,
+    getDueTrackers,
+    markTrackerExecuted,
+    getMonthlyLeadCount,
+    getActiveTrackerCount,
     supabase
 };

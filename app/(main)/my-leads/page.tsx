@@ -28,7 +28,9 @@ import {
     IconBrandInstagram,
     IconBrandLinkedin,
     IconBrandX,
-    IconBrandTiktok
+    IconBrandTiktok,
+    IconMapPin,
+    IconBrandGoogleMaps
 } from "@tabler/icons-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from "@/components/ui/sheet";
 import { Label } from "@/components/ui/label";
@@ -137,159 +139,68 @@ type GoogleMapsLead = {
 // --- Page Component ---
 
 export default function ProfilesPage() {
-    const personalRaw = useQuery(api.profiles.listPersonal);
-    const companyRaw = useQuery(api.profiles.listCompany);
-    const googleMapsRaw = useQuery(api.profiles.listGoogleMaps);
+    const user = useQuery(api.auth.getCurrentUser);
     
-    // --- New: Supabase Enrichment State ---
-    const [sbPersonal, setSbPersonal] = useState<Record<string, any>>({});
-    const [sbCompany, setSbCompany] = useState<Record<string, any>>({});
-    const [sbGoogleMaps, setSbGoogleMaps] = useState<Record<string, any>>({});
+    // --- Helper hook for Supabase fetching ---
+    function useLeadsFromSupabase(userId: string | undefined, profileType: string) {
+        const [leads, setLeads] = useState<any[]>([]);
+        const [loading, setLoading] = useState(false);
 
-    // 1. Fetch data from Supabase for any profiles that have a supabaseId
-    useEffect(() => {
-        if (!personalRaw) return;
-        const missingIds = personalRaw
-            .filter(p => p.supabaseId && !sbPersonal[p.supabaseId])
-            .map(p => p.supabaseId);
-        
-        if (missingIds.length > 0) {
-            supabase.from("linkedin_profiles").select("*").in("id", missingIds)
-                .then(({ data }) => {
-                    if (data) {
-                        const newBatch = { ...sbPersonal };
-                        data.forEach(d => { newBatch[d.id] = d; });
-                        setSbPersonal(newBatch);
+        useEffect(() => {
+            if (!userId) return;
+            setLoading(true);
+
+            const table = profileType === "google_maps" ? "google_maps_leads" : 
+                         profileType === "company" ? "company_profiles" : "linkedin_profiles";
+
+            supabase
+                .from("user_leads")
+                .select(`
+                    id,
+                    tags,
+                    created_at,
+                    details: ${table} (*)
+                `)
+                .eq("user_id", userId)
+                .eq("profile_type", profileType)
+                .then(({ data, error }) => {
+                    if (error) {
+                        console.error("Supabase fetch error:", error);
+                        setLoading(false);
+                        return;
                     }
-                });
-        }
-    }, [personalRaw]);
-
-    useEffect(() => {
-        if (!companyRaw) return;
-        const missingIds = companyRaw
-            .filter(c => c.supabaseId && !sbCompany[c.supabaseId])
-            .map(c => c.supabaseId);
-        
-        if (missingIds.length > 0) {
-            supabase.from("company_profiles").select("*").in("id", missingIds)
-                .then(({ data }) => {
                     if (data) {
-                        const newBatch = { ...sbCompany };
-                        data.forEach(d => { newBatch[d.id] = d; });
-                        setSbCompany(newBatch);
+                        const formatted = data
+                            .filter(d => d.details)
+                            .map(d => ({
+                                ...d.details,
+                                tags: d.tags,
+                                updatedAt: new Date(d.created_at).getTime(),
+                                junctionId: d.id,
+                                _id: d.id 
+                            }));
+                        setLeads(formatted);
                     }
+                    setLoading(false);
                 });
-        }
-    }, [companyRaw]);
+        }, [userId, profileType]);
 
-    useEffect(() => {
-        if (!googleMapsRaw) return;
-        const missingIds = googleMapsRaw
-            .filter(g => g.googleMapsId && !sbGoogleMaps[g.googleMapsId])
-            .map(g => g.googleMapsId);
-        
-        if (missingIds.length > 0) {
-            supabase.from("google_maps_leads").select("*").in("id", missingIds)
-                .then(({ data }) => {
-                    if (data) {
-                        const newBatch = { ...sbGoogleMaps };
-                        data.forEach(d => { newBatch[d.id] = d; });
-                        setSbGoogleMaps(newBatch);
-                    }
-                });
-        }
-    }, [googleMapsRaw]);
+        return { leads, loading };
+    }
 
-    // 2. Merge Convex + Supabase data
-    const personal = useMemo(() => {
-        return (personalRaw || []).map(p => {
-            if (p.supabaseId && sbPersonal[p.supabaseId]) {
-                const s = sbPersonal[p.supabaseId];
-                return {
-                    ...p,
-                    ...s, // Overwrite with Supabase data
-                    _id: p._id || s.id,
-                    linkedinUrl: s.linkedin_url || p.linkedinUrl,
-                    firstName: s.first_name || p.firstName,
-                    lastName: s.last_name || p.lastName,
-                    fullName: s.full_name || p.fullName,
-                    profilePic: s.profile_pic || p.profilePic,
-                    companyName: s.company_name || p.companyName,
-                    jobTitle: s.job_title || p.jobTitle,
-                    isPremium: s.is_premium ?? p.isPremium,
-                    isInfluencer: s.is_influencer ?? p.isInfluencer,
-                    openToWork: s.open_to_work ?? p.openToWork,
-                    isVerified: s.is_verified ?? p.isVerified,
-                    updatedAt: s.updated_at ? new Date(s.updated_at).getTime() : p.updatedAt,
-                };
-            }
-            return p;
-        }) as PersonalProfile[];
-    }, [personalRaw, sbPersonal]);
+    // --- State & Mutations ---
+    const { leads: personal, loading: loadingPersonal } = useLeadsFromSupabase(user?._id, "personal");
+    const { leads: company, loading: loadingCompany } = useLeadsFromSupabase(user?._id, "company");
+    const { leads: googleMaps, loading: loadingGoogleMaps } = useLeadsFromSupabase(user?._id, "google_maps");
 
-    const company = useMemo(() => {
-        return (companyRaw || []).map(c => {
-            if (c.supabaseId && sbCompany[c.supabaseId]) {
-                const s = sbCompany[c.supabaseId];
-                return {
-                    ...c,
-                    ...s,
-                    _id: c._id || s.id,
-                    linkedinUrl: s.linkedin_url || s.url || c.linkedinUrl,
-                    companyName: s.company_name || c.companyName,
-                    logoUrl: s.logo_url || c.logoUrl,
-                    websiteUrl: s.website_url || c.websiteUrl,
-                    description: s.description || c.description,
-                    employeeCount: s.employee_count ?? c.employeeCount,
-                    followerCount: s.follower_count ?? c.followerCount,
-                    isVerified: s.is_verified ?? c.isVerified,
-                    updatedAt: s.updated_at ? new Date(s.updated_at).getTime() : c.updatedAt,
-                };
-            }
-            return c;
-        }) as CompanyProfile[];
-    }, [companyRaw, sbCompany]);
-
-    const googleMaps = useMemo(() => {
-        return (googleMapsRaw || []).map(g => {
-            if (g.googleMapsId && sbGoogleMaps[g.googleMapsId]) {
-                const s = sbGoogleMaps[g.googleMapsId];
-                return {
-                    ...g,
-                    ...s,
-                    totalScore: s.total_score ?? g.totalScore,
-                    reviewsCount: s.reviews_count ?? g.reviewsCount,
-                    address: s.address || g.address,
-                    socials: s.socials || g.socials,
-                    imageUrl: s.image_url || g.imageUrl,
-                    updatedAt: s.updated_at ? new Date(s.updated_at).getTime() : g.updatedAt,
-                };
-            }
-            return g;
-        }) as GoogleMapsLead[];
-    }, [googleMapsRaw, sbGoogleMaps]);
-
-    const removeProfile = useMutation(api.profiles.removeProfile);
-    const removeProfiles = useMutation(api.profiles.removeProfiles);
     const getOrCreateKey = useMutation(api.apikeys.getOrCreateKey);
 
-    const handleDeleteProfile = async (id: any) => {
-        if (!confirm("Are you sure you want to remove this lead from your list? (Global data will be preserved)")) return;
-        try {
-            await removeProfile({ id });
-            toast.success("Lead removed");
-        } catch (e: any) {
-            toast.error(e.message);
-        }
-    };
 
     // --- Filter State ---
     const [personalFilters, setPersonalFilters] = useState({
         hasEmail: "all" as "all" | "yes" | "no",
         hasAbout: "all" as "all" | "yes" | "no",
         hasHeadline: "all" as "all" | "yes" | "no",
-        hasJobTitle: "all" as "all" | "yes" | "no",
         hasProfilePic: "all" as "all" | "yes" | "no",
         minConnections: 0,
         maxConnections: 1000000,
@@ -331,158 +242,31 @@ export default function ProfilesPage() {
         tags: "",
     });
 
-    // --- Filtered Data ---
-    const filteredPersonal = useMemo(() => {
-        return personal.filter((p) => {
-            // 3-State Data Presence
-            if (personalFilters.hasEmail === "yes" && !p.email) return false;
-            if (personalFilters.hasEmail === "no" && p.email) return false;
+    // --- Handlers ---
+    const handleDeleteProfile = async (id: any) => {
+        if (!confirm("Are you sure you want to remove this lead from your list? (Global data will be preserved)")) return;
+        try {
+            const { error } = await supabase.from("user_leads").delete().eq("id", id);
+            if (error) throw error;
 
-            if (personalFilters.hasAbout === "yes" && !p.about) return false;
-            if (personalFilters.hasAbout === "no" && p.about) return false;
-
-            if (personalFilters.hasHeadline === "yes" && !p.headline) return false;
-            if (personalFilters.hasHeadline === "no" && p.headline) return false;
-
-            if (personalFilters.hasProfilePic === "yes" && !p.profilePic) return false;
-            if (personalFilters.hasProfilePic === "no" && p.profilePic) return false;
-
-            // Ranges
-            const connections = p.connections || 0;
-            if (connections < personalFilters.minConnections) return false;
-            if (personalFilters.maxConnections > 0 && connections > personalFilters.maxConnections) return false;
-
-            const followers = p.followers || 0;
-            if (followers < personalFilters.minFollowers) return false;
-            if (personalFilters.maxFollowers > 0 && followers > personalFilters.maxFollowers) return false;
-
-            // Search Fields
-            if (personalFilters.location) {
-                const loc = (p.country || p.location?.country || "").toLowerCase();
-                const city = (p.city || p.location?.city || "").toLowerCase();
-                const q = personalFilters.location.toLowerCase();
-                if (!loc.includes(q) && !city.includes(q)) return false;
-            }
-
-            if (personalFilters.tags) {
-                const q = personalFilters.tags.toLowerCase();
-                const hasMatch = (p.tags || []).some(t => t.toLowerCase().includes(q));
-                if (!hasMatch) return false;
-            }
-
-            // 3-State Badges
-            if (personalFilters.isPremium === "yes" && !p.isPremium) return false;
-            if (personalFilters.isPremium === "no" && p.isPremium) return false;
-
-            if (personalFilters.isInfluencer === "yes" && !p.isInfluencer) return false;
-            if (personalFilters.isInfluencer === "no" && p.isInfluencer) return false;
-
-            if (personalFilters.isOpenToWork === "yes" && !p.openToWork) return false;
-            if (personalFilters.isOpenToWork === "no" && p.openToWork) return false;
-
-            if (personalFilters.isVerified === "yes" && !p.isVerified) return false;
-            if (personalFilters.isVerified === "no" && p.isVerified) return false;
-
-            return true;
-        });
-    }, [personal, personalFilters]);
-
-    const filteredCompany = useMemo(() => {
-        return company.filter((c) => {
-            // 3-State Data Presence
-            if (companyFilters.hasWebsite === "yes" && !c.websiteUrl) return false;
-            if (companyFilters.hasWebsite === "no" && c.websiteUrl) return false;
-
-            if (companyFilters.hasLogo === "yes" && !c.logoUrl) return false;
-            if (companyFilters.hasLogo === "no" && c.logoUrl) return false;
-
-            if (companyFilters.hasDescription === "yes" && !c.description) return false;
-            if (companyFilters.hasDescription === "no" && c.description) return false;
-
-            // Ranges
-            const employees = c.employeeCount || 0;
-            if (employees < companyFilters.minEmployees) return false;
-            if (companyFilters.maxEmployees > 0 && employees > companyFilters.maxEmployees) return false;
-
-            const followers = c.followerCount || 0;
-            if (followers < companyFilters.minFollowers) return false;
-            if (companyFilters.maxFollowers > 0 && followers > companyFilters.maxFollowers) return false;
-
-            // Search Fields
-            if (companyFilters.location) {
-                const loc = (c.country || "").toLowerCase();
-                const city = (c.city || "").toLowerCase();
-                const q = companyFilters.location.toLowerCase();
-                if (!loc.includes(q) && !city.includes(q)) return false;
-            }
-
-            if (companyFilters.tags) {
-                const q = companyFilters.tags.toLowerCase();
-                const hasMatch = (c.tags || []).some(t => t.toLowerCase().includes(q));
-                if (!hasMatch) return false;
-            }
-
-            // 3-State Badges
-            if (companyFilters.isVerified === "yes" && !c.isVerified) return false;
-            if (companyFilters.isVerified === "no" && c.isVerified) return false;
-
-            return true;
-        });
-    }, [company, companyFilters]);
-
-    const filteredGoogleMaps = useMemo(() => {
-        return googleMaps.filter((g) => {
-            if (googleMapsFilters.hasEmail === "yes" && (!g.emails || g.emails.length === 0)) return false;
-            if (googleMapsFilters.hasEmail === "no" && g.emails && g.emails.length > 0) return false;
-
-            if (googleMapsFilters.hasPhone === "yes" && !g.phone) return false;
-            if (googleMapsFilters.hasPhone === "no" && g.phone) return false;
-
-            if (googleMapsFilters.hasWebsite === "yes" && !g.website) return false;
-            if (googleMapsFilters.hasWebsite === "no" && g.website) return false;
-
-            if (googleMapsFilters.hasInstagram === "yes" && !g.socials?.instagram) return false;
-            if (googleMapsFilters.hasInstagram === "no" && g.socials?.instagram) return false;
-
-            if (googleMapsFilters.hasTikTok === "yes" && !g.socials?.tiktok) return false;
-            if (googleMapsFilters.hasTikTok === "no" && g.socials?.tiktok) return false;
-
-            if (googleMapsFilters.hasFacebook === "yes" && !g.socials?.facebook) return false;
-            if (googleMapsFilters.hasFacebook === "no" && g.socials?.facebook) return false;
-
-            if (googleMapsFilters.hasTwitter === "yes" && !g.socials?.twitter) return false;
-            if (googleMapsFilters.hasTwitter === "no" && g.socials?.twitter) return false;
-
-            if (googleMapsFilters.hasLinkedIn === "yes" && !g.socials?.linkedin) return false;
-            if (googleMapsFilters.hasLinkedIn === "no" && g.socials?.linkedin) return false;
-
-            if (g.totalScore && g.totalScore < googleMapsFilters.minScore) return false;
-            if (g.reviewsCount && g.reviewsCount < googleMapsFilters.minReviews) return false;
-
-            if (googleMapsFilters.location && !g.city?.toLowerCase().includes(googleMapsFilters.location.toLowerCase())) return false;
-
-            if (googleMapsFilters.tags) {
-                const q = googleMapsFilters.tags.toLowerCase();
-                const hasMatch = (g.tags || []).some(t => t.toLowerCase().includes(q));
-                if (!hasMatch) return false;
-            }
-
-            return true;
-        });
-    }, [googleMaps, googleMapsFilters]);
+            toast.success("Lead removed");
+            window.location.reload(); 
+        } catch (e: any) {
+            toast.error(e.message);
+        }
+    };
 
     const handleUpdateProfile = async (url: string) => {
         try {
             toast.info("Queueing update...");
             const apiData = await getOrCreateKey();
             if (!apiData?.key) throw new Error("Could not retrieve API Key");
-            const key = apiData.key;
-
+            
             const res = await fetch(`${process.env.NEXT_PUBLIC_RENDER_BACKEND_URL || "http://localhost:8000"}/api/scrape-linkedin`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${key}`
+                    "Authorization": `Bearer ${apiData.key}`
                 },
                 body: JSON.stringify({ profileUrls: [url] })
             });
@@ -497,6 +281,123 @@ export default function ProfilesPage() {
         }
     };
 
+    // --- Filtered Data ---
+    const filteredPersonal = useMemo(() => {
+        return personal.filter((p) => {
+            if (personalFilters.hasEmail === "yes" && !p.email) return false;
+            if (personalFilters.hasEmail === "no" && p.email) return false;
+            if (personalFilters.hasAbout === "yes" && !p.about) return false;
+            if (personalFilters.hasAbout === "no" && p.about) return false;
+            if (personalFilters.hasHeadline === "yes" && !p.headline) return false;
+            if (personalFilters.hasHeadline === "no" && p.headline) return false;
+            if (personalFilters.hasProfilePic === "yes" && !p.profilePic) return false;
+            if (personalFilters.hasProfilePic === "no" && p.profilePic) return false;
+            
+            const connections = p.connections || 0;
+            if (connections < personalFilters.minConnections) return false;
+            if (personalFilters.maxConnections > 0 && connections > personalFilters.maxConnections) return false;
+
+            const followers = p.followers || 0;
+            if (followers < personalFilters.minFollowers) return false;
+            if (personalFilters.maxFollowers > 0 && followers > personalFilters.maxFollowers) return false;
+
+            if (personalFilters.location) {
+                const loc = (p.country || p.location?.country || "").toLowerCase();
+                const city = (p.city || p.location?.city || "").toLowerCase();
+                const q = personalFilters.location.toLowerCase();
+                if (!loc.includes(q) && !city.includes(q)) return false;
+            }
+
+            if (personalFilters.tags) {
+                const q = personalFilters.tags.toLowerCase();
+                const hasMatch = (p.tags || []).some(t => t.toLowerCase().includes(q));
+                if (!hasMatch) return false;
+            }
+
+            if (personalFilters.isPremium === "yes" && !p.isPremium) return false;
+            if (personalFilters.isPremium === "no" && p.isPremium) return false;
+            if (personalFilters.isInfluencer === "yes" && !p.isInfluencer) return false;
+            if (personalFilters.isInfluencer === "no" && p.isInfluencer) return false;
+            if (personalFilters.isOpenToWork === "yes" && !p.openToWork) return false;
+            if (personalFilters.isOpenToWork === "no" && p.openToWork) return false;
+            if (personalFilters.isVerified === "yes" && !p.isVerified) return false;
+            if (personalFilters.isVerified === "no" && p.isVerified) return false;
+
+            return true;
+        });
+    }, [personal, personalFilters]);
+
+    const filteredCompany = useMemo(() => {
+        return company.filter((c) => {
+            if (companyFilters.hasWebsite === "yes" && !c.websiteUrl) return false;
+            if (companyFilters.hasWebsite === "no" && c.websiteUrl) return false;
+            if (companyFilters.hasLogo === "yes" && !c.logoUrl) return false;
+            if (companyFilters.hasLogo === "no" && c.logoUrl) return false;
+            if (companyFilters.hasDescription === "yes" && !c.description) return false;
+            if (companyFilters.hasDescription === "no" && c.description) return false;
+
+            const employees = c.employeeCount || 0;
+            if (employees < companyFilters.minEmployees) return false;
+            if (companyFilters.maxEmployees > 0 && employees > companyFilters.maxEmployees) return false;
+
+            const followers = c.followerCount || 0;
+            if (followers < companyFilters.minFollowers) return false;
+            if (companyFilters.maxFollowers > 0 && followers > companyFilters.maxFollowers) return false;
+
+            if (companyFilters.location) {
+                const loc = (c.country || "").toLowerCase();
+                const city = (c.city || "").toLowerCase();
+                const q = companyFilters.location.toLowerCase();
+                if (!loc.includes(q) && !city.includes(q)) return false;
+            }
+
+            if (companyFilters.tags) {
+                const q = companyFilters.tags.toLowerCase();
+                const hasMatch = (c.tags || []).some(t => t.toLowerCase().includes(q));
+                if (!hasMatch) return false;
+            }
+
+            if (companyFilters.isVerified === "yes" && !c.isVerified) return false;
+            if (companyFilters.isVerified === "no" && c.isVerified) return false;
+
+            return true;
+        });
+    }, [company, companyFilters]);
+
+    const filteredGoogleMaps = useMemo(() => {
+        return googleMaps.filter((g) => {
+            if (googleMapsFilters.hasEmail === "yes" && (!g.emails || g.emails.length === 0)) return false;
+            if (googleMapsFilters.hasEmail === "no" && g.emails && g.emails.length > 0) return false;
+            if (googleMapsFilters.hasPhone === "yes" && !g.phone) return false;
+            if (googleMapsFilters.hasPhone === "no" && g.phone) return false;
+            if (googleMapsFilters.hasWebsite === "yes" && !g.website) return false;
+            if (googleMapsFilters.hasWebsite === "no" && g.website) return false;
+            if (googleMapsFilters.hasInstagram === "yes" && !g.socials?.instagram) return false;
+            if (googleMapsFilters.hasInstagram === "no" && g.socials?.instagram) return false;
+            if (googleMapsFilters.hasTikTok === "yes" && !g.socials?.tiktok) return false;
+            if (googleMapsFilters.hasTikTok === "no" && g.socials?.tiktok) return false;
+            if (googleMapsFilters.hasFacebook === "yes" && !g.socials?.facebook) return false;
+            if (googleMapsFilters.hasFacebook === "no" && g.socials?.facebook) return false;
+            if (googleMapsFilters.hasTwitter === "yes" && !g.socials?.twitter) return false;
+            if (googleMapsFilters.hasTwitter === "no" && g.socials?.twitter) return false;
+            if (googleMapsFilters.hasLinkedIn === "yes" && !g.socials?.linkedin) return false;
+            if (googleMapsFilters.hasLinkedIn === "no" && g.socials?.linkedin) return false;
+
+            if (g.totalScore && g.totalScore < googleMapsFilters.minScore) return false;
+            if (g.reviewsCount && g.reviewsCount < googleMapsFilters.minReviews) return false;
+            if (googleMapsFilters.location && !g.city?.toLowerCase().includes(googleMapsFilters.location.toLowerCase())) return false;
+
+            if (googleMapsFilters.tags) {
+                const q = googleMapsFilters.tags.toLowerCase();
+                const hasMatch = (g.tags || []).some(t => t.toLowerCase().includes(q));
+                if (!hasMatch) return false;
+            }
+
+            return true;
+        });
+    }, [googleMaps, googleMapsFilters]);
+
+    // --- Column Definitions ---
     const personalColumns = useMemo<ColumnDef<PersonalProfile>[]>(() => [
         {
             id: "select",
@@ -526,16 +427,6 @@ export default function ProfilesPage() {
                     <AvatarFallback>{row.original.fullName?.slice(0, 2) || "NA"}</AvatarFallback>
                 </Avatar>
             ),
-        },
-        {
-            accessorKey: "firstName",
-            header: "First Name",
-            cell: ({ row }) => row.original.firstName || "-",
-        },
-        {
-            accessorKey: "lastName",
-            header: "Last Name",
-            cell: ({ row }) => row.original.lastName || "-",
         },
         {
             accessorKey: "fullName",
@@ -585,34 +476,6 @@ export default function ProfilesPage() {
             cell: ({ row }) => row.original.connections?.toLocaleString() || "-",
         },
         {
-            accessorKey: "about",
-            header: "About",
-            cell: ({ row }) => (
-                <div className="max-w-[200px] truncate group relative" title={row.original.about}>
-                    {row.original.about || "-"}
-                </div>
-            )
-        },
-        {
-            accessorKey: "companyName",
-            header: "Company",
-            cell: ({ row }) => row.original.companyName || "-",
-        },
-        {
-            accessorKey: "tags",
-            header: "Tags",
-            cell: ({ row }) => (
-                <div className="flex flex-wrap gap-1 max-w-[150px]">
-                    {row.original.tags?.map((tag, idx) => (
-                        <Badge key={idx} variant="outline" className="text-[9px] px-1 h-3.5 bg-muted/30">
-                            {tag}
-                        </Badge>
-                    ))}
-                    {(!row.original.tags || row.original.tags.length === 0) && <span className="text-muted-foreground text-[10px]">-</span>}
-                </div>
-            )
-        },
-        {
             accessorKey: "updatedAt",
             header: "Last Updated",
             cell: ({ row }) => {
@@ -656,7 +519,6 @@ export default function ProfilesPage() {
                 </DropdownMenu>
             ),
         }
-
     ], []);
 
     const companyColumns = useMemo<ColumnDef<CompanyProfile>[]>(() => [
@@ -700,15 +562,6 @@ export default function ProfilesPage() {
             ),
         },
         {
-            accessorKey: "description",
-            header: "Description",
-            cell: ({ row }) => (
-                <div className="max-w-[300px] truncate text-xs text-muted-foreground" title={row.original.description}>
-                    {row.original.description || "N/A"}
-                </div>
-            ),
-        },
-        {
             accessorKey: "websiteUrl",
             header: "Website",
             cell: ({ row }) => (
@@ -720,24 +573,9 @@ export default function ProfilesPage() {
             ),
         },
         {
-            accessorKey: "country",
-            header: "Location",
-            cell: ({ row }) => (
-                <div className="flex flex-col text-xs">
-                    <span>{row.original.city}</span>
-                    <span className="text-muted-foreground">{row.original.country}</span>
-                </div>
-            ),
-        },
-        {
             accessorKey: "employeeCount",
             header: "Employees",
             cell: ({ row }) => row.original.employeeCount?.toLocaleString() || "-",
-        },
-        {
-            accessorKey: "followerCount",
-            header: "Followers",
-            cell: ({ row }) => row.original.followerCount?.toLocaleString() || "-",
         },
         {
             accessorKey: "tags",
@@ -752,19 +590,6 @@ export default function ProfilesPage() {
                     {(!row.original.tags || row.original.tags.length === 0) && <span className="text-muted-foreground text-[10px]">-</span>}
                 </div>
             )
-        },
-        {
-            accessorKey: "updatedAt",
-            header: "Last Updated",
-            cell: ({ row }) => {
-                if (!row.original.updatedAt) return "-";
-                return (
-                    <div className="flex items-center text-xs text-muted-foreground" title={new Date(row.original.updatedAt).toLocaleString()}>
-                        <IconClock className="mr-1 size-3" />
-                        {formatDistanceToNow(row.original.updatedAt, { addSuffix: true })}
-                    </div>
-                )
-            }
         },
         {
             id: "actions",
@@ -820,25 +645,11 @@ export default function ProfilesPage() {
             enableHiding: false,
         },
         {
-            accessorKey: "imageUrl",
-            header: "Photo",
-            cell: ({ row }) => (
-                <Avatar className="h-9 w-9 rounded-md">
-                    <AvatarImage src={row.original.imageUrl || undefined} alt={row.original.title} />
-                    <AvatarFallback className="rounded-md">{row.original.title?.slice(0, 2) || "GM"}</AvatarFallback>
-                </Avatar>
-            ),
-        },
-        {
             accessorKey: "title",
             header: "Business Name",
             cell: ({ row }) => (
                 <div className="flex flex-col">
                     <span className="font-medium">{row.original.title || "Unknown"}</span>
-                    <div className="flex items-center gap-1 text-[10px] text-amber-500">
-                        <span>★ {row.original.totalScore || "0"}</span>
-                        <span className="text-muted-foreground">({row.original.reviewsCount || "0"} reviews)</span>
-                    </div>
                 </div>
             ),
         },
@@ -846,19 +657,6 @@ export default function ProfilesPage() {
             accessorKey: "phone",
             header: "Phone",
             cell: ({ row }) => row.original.phone || "-",
-        },
-        {
-            accessorKey: "emails",
-            header: "Emails",
-            cell: ({ row }) => (
-                <div className="flex flex-col gap-0.5 max-w-[150px]">
-                    {row.original.emails?.slice(0, 2).map((email, idx) => (
-                        <span key={idx} className="text-[10px] truncate">{email}</span>
-                    ))}
-                    {(row.original.emails?.length || 0) > 2 && <span className="text-[9px] text-muted-foreground">+{row.original.emails!.length - 2} more</span>}
-                    {(!row.original.emails || row.original.emails.length === 0) && "-"}
-                </div>
-            ),
         },
         {
             accessorKey: "website",
@@ -872,61 +670,18 @@ export default function ProfilesPage() {
             ),
         },
         {
-            accessorKey: "address",
-            header: "Address",
+            accessorKey: "url",
+            header: "Maps Link",
             cell: ({ row }) => (
-                <div className="max-w-[150px] truncate text-xs" title={row.original.address}>
-                    {row.original.address || "-"}
-                </div>
+                <a 
+                    href={row.original.url} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="text-xs text-blue-500 hover:underline flex items-center gap-1"
+                >
+                    <IconBrandGoogleMaps size={14} className="text-red-500" /> View
+                </a>
             ),
-        },
-        {
-            accessorKey: "city",
-            header: "City",
-            cell: ({ row }) => row.original.city || "-",
-        },
-        {
-            id: "socials",
-            header: "Socials",
-            cell: ({ row }) => {
-                const s = row.original.socials;
-                if (!s) return "-";
-                return (
-                    <div className="flex gap-1.5">
-                        {s.facebook && <a href={s.facebook} target="_blank" className="text-blue-600 hover:opacity-80"><IconBrandFacebook size={14} /></a>}
-                        {s.instagram && <a href={s.instagram} target="_blank" className="text-pink-600 hover:opacity-80"><IconBrandInstagram size={14} /></a>}
-                        {s.linkedin && <a href={s.linkedin} target="_blank" className="text-blue-700 hover:opacity-80"><IconBrandLinkedin size={14} /></a>}
-                        {s.twitter && <a href={s.twitter} target="_blank" className="text-foreground hover:opacity-80"><IconBrandX size={14} /></a>}
-                        {s.tiktok && <a href={s.tiktok} target="_blank" className="text-black dark:text-white hover:opacity-80"><IconBrandTiktok size={14} /></a>}
-                    </div>
-                )
-            }
-        },
-        {
-            accessorKey: "tags",
-            header: "Tags",
-            cell: ({ row }) => (
-                <div className="flex flex-wrap gap-1 max-w-[120px]">
-                    {row.original.tags?.map((tag, idx) => (
-                        <Badge key={idx} variant="outline" className="text-[9px] px-1 h-3.5 bg-muted/30">
-                            {tag}
-                        </Badge>
-                    ))}
-                    {(!row.original.tags || row.original.tags.length === 0) && <span className="text-muted-foreground text-[10px]">-</span>}
-                </div>
-            )
-        },
-        {
-            accessorKey: "updatedAt",
-            header: "Added",
-            cell: ({ row }) => {
-                if (!row.original.updatedAt) return "-";
-                return (
-                    <div className="flex items-center text-xs text-muted-foreground">
-                        {formatDistanceToNow(row.original.updatedAt, { addSuffix: true })}
-                    </div>
-                )
-            }
         },
         {
             id: "actions",
@@ -945,7 +700,7 @@ export default function ProfilesPage() {
                         <DropdownMenuSeparator />
                         <DropdownMenuItem asChild>
                             <a href={row.original.url} target="_blank" rel="noopener noreferrer">
-                                <IconExternalLink className="mr-2 h-4 w-4" /> View on Maps
+                                <IconExternalLink className="mr-2 h-4 w-4" /> View on Google Maps
                             </a>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
@@ -958,10 +713,10 @@ export default function ProfilesPage() {
         }
     ], []);
 
-
+    // --- Main UI ---
     return (
-        <div className="p-0 space-y-6">
-            <div className="px-6 pt-6 md:px-8 md:pt-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
+            <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">My Leads</h1>
                     <p className="text-muted-foreground text-sm">
@@ -984,17 +739,23 @@ export default function ProfilesPage() {
                                 <GenericProfileTable
                                     data={filteredPersonal}
                                     columns={personalColumns}
-                                    isLoading={personalRaw === undefined}
+                                    isLoading={loadingPersonal}
+
                                     filterColumn="fullName"
                                     type="personal"
                                     filters={personalFilters}
                                     setFilters={setPersonalFilters}
                                     onBulkDelete={async (ids) => {
                                         if (confirm(`Are you sure you want to remove ${ids.length} profiles?`)) {
-                                            await removeProfiles({ ids });
-                                            toast.success("Profiles removed");
+                                            const { error } = await supabase.from("user_leads").delete().in("id", ids);
+                                            if (error) toast.error(error.message);
+                                            else {
+                                                toast.success("Profiles removed");
+                                                window.location.reload();
+                                            }
                                         }
                                     }}
+
                                     onBulkUpdate={async (urls) => {
                                         toast.info(`Queueing update for ${urls.length} profiles...`);
                                         try {
@@ -1021,17 +782,23 @@ export default function ProfilesPage() {
                                 <GenericProfileTable
                                     data={filteredCompany}
                                     columns={companyColumns}
-                                    isLoading={companyRaw === undefined}
+                                    isLoading={loadingCompany}
+
                                     filterColumn="companyName"
                                     type="company"
                                     filters={companyFilters}
                                     setFilters={setCompanyFilters}
                                     onBulkDelete={async (ids) => {
                                         if (confirm(`Are you sure you want to remove ${ids.length} companies?`)) {
-                                            await removeProfiles({ ids });
-                                            toast.success("Companies removed");
+                                            const { error } = await supabase.from("user_leads").delete().in("id", ids);
+                                            if (error) toast.error(error.message);
+                                            else {
+                                                toast.success("Companies removed");
+                                                window.location.reload();
+                                            }
                                         }
                                     }}
+
                                     onBulkUpdate={async (urls) => {
                                         toast.info(`Queueing update for ${urls.length} companies...`);
                                         try {
@@ -1058,15 +825,19 @@ export default function ProfilesPage() {
                                 <GenericProfileTable
                                     data={filteredGoogleMaps}
                                     columns={googleMapsColumns}
-                                    isLoading={googleMapsRaw === undefined}
+                                    isLoading={loadingGoogleMaps}
                                     filterColumn="title"
                                     type="google_maps"
                                     filters={googleMapsFilters}
                                     setFilters={setGoogleMapsFilters}
                                     onBulkDelete={async (ids) => {
                                         if (confirm(`Are you sure you want to remove ${ids.length} Google Maps leads?`)) {
-                                            await removeProfiles({ ids });
-                                            toast.success("Leads removed");
+                                            const { error } = await supabase.from("user_leads").delete().in("id", ids);
+                                            if (error) toast.error(error.message);
+                                            else {
+                                                toast.success("Leads removed");
+                                                window.location.reload();
+                                            }
                                         }
                                     }}
                                 />
@@ -1244,18 +1015,18 @@ function GenericProfileTable<TData, TValue>({
                                         "Rating": item.totalScore || 0,
                                         "Reviews": item.reviewsCount || 0,
                                         "Phone": item.phone || "",
-                                        "Emails": (item.emails || []).join(", "),
                                         "Website": item.website || "",
+                                        "Google Maps URL": item.url || "",
+                                        "Emails": (item.emails || []).join(", "),
                                         "Facebook": item.socials?.facebook || "",
                                         "Instagram": item.socials?.instagram || "",
-                                        "LinkedIn": item.socials?.linkedin || "",
                                         "Twitter": item.socials?.twitter || "",
                                         "TikTok": item.socials?.tiktok || "",
                                         "City": item.city || "",
-                                        "Google Maps URL": item.url || "",
                                         "Tags": (item.tags || []).join(", "),
                                         "Updated At": item.updatedAt ? new Date(item.updatedAt).toISOString() : ""
                                     };
+
                                 }
                             });
                             const filename = `${type}-profiles-${new Date().toISOString().split('T')[0]}.csv`;

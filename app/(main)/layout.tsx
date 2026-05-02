@@ -1,5 +1,6 @@
 import { AppSidebar } from "@/components/app-sidebar"
 import { SiteHeader } from "@/components/site-header"
+import { GlobalProgress } from "@/components/global-progress"
 import {
     SidebarInset,
     SidebarProvider,
@@ -30,6 +31,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
                 <div className="flex flex-1 flex-col">
                     {children}
                 </div>
+                <GlobalProgress />
             </SidebarInset>
         </SidebarProvider>
     )

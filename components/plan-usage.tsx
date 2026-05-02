@@ -8,9 +8,11 @@ import { IconBolt, IconUsers, IconRadar, IconAlertCircle } from "@tabler/icons-r
 import { Skeleton } from "./ui/skeleton";
 import { Button } from "./ui/button";
 import Link from "next/link";
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { authClient } from "@/lib/auth-client";
 import { Badge } from "./ui/badge";
+import { supabase } from "@/src/lib/supabase";
+
 
 export function PlanUsage() {
     const { data: session } = authClient.useSession();
@@ -18,12 +20,29 @@ export function PlanUsage() {
     const ensureSub = useMutation(api.usage.ensureSubscription);
     const syncFromPolar = useAction(api.polar.syncFromPolar);
 
+    const [counts, setCounts] = useState({ profiles: 0, trackers: 0 });
+
     useEffect(() => {
         if (session?.user?.email) {
             ensureSub();
             syncFromPolar({ email: session.user.email });
         }
     }, [session?.user?.email, ensureSub, syncFromPolar]);
+
+    useEffect(() => {
+        if (!session?.user?.id) return;
+        const fetchCounts = async () => {
+            const [profiles, trackers] = await Promise.all([
+                supabase.from("user_leads").select("*", { count: "exact", head: true }).eq("user_id", session.user.id),
+                supabase.from("trackers").select("*", { count: "exact", head: true }).eq("user_id", session.user.id).eq("is_active", true)
+            ]);
+            setCounts({ 
+                profiles: profiles.count || 0, 
+                trackers: trackers.count || 0 
+            });
+        };
+        fetchCounts();
+    }, [session?.user?.id]);
 
     if (usage === undefined) {
         return (
@@ -42,7 +61,13 @@ export function PlanUsage() {
 
     if (!usage) return null;
 
-    const { plan, usage: currentUsage } = usage;
+    const { plan } = usage;
+    const currentUsage = {
+        profiles: counts.profiles,
+        profilesLimit: usage.usage.profilesLimit,
+        trackers: counts.trackers,
+        trackersLimit: usage.usage.trackersLimit,
+    };
 
     // Calculate percentages for progress bars
     const profilePercent = Math.min((currentUsage.profiles / currentUsage.profilesLimit) * 100, 100);

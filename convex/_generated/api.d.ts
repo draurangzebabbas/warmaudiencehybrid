@@ -11,7 +11,6 @@
 import type * as affiliate_program from "../affiliate_program.js";
 import type * as apikeys from "../apikeys.js";
 import type * as auth from "../auth.js";
-import type * as competitorTracking from "../competitorTracking.js";
 import type * as crons from "../crons.js";
 import type * as dashboard from "../dashboard.js";
 import type * as heartbeat from "../heartbeat.js";
@@ -33,7 +32,6 @@ declare const fullApi: ApiFromModules<{
   affiliate_program: typeof affiliate_program;
   apikeys: typeof apikeys;
   auth: typeof auth;
-  competitorTracking: typeof competitorTracking;
   crons: typeof crons;
   dashboard: typeof dashboard;
   heartbeat: typeof heartbeat;

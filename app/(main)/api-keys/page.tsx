@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { supabase } from "@/src/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -61,10 +62,35 @@ import { Label } from "@/components/ui/label";
 
 
 export default function ApiKeysPage() {
-    const apiKeys = useQuery(api.userApiKeys.list);
-    const createApiKey = useMutation(api.userApiKeys.create);
-    const deleteApiKey = useMutation(api.userApiKeys.remove);
-    const toggleStatus = useMutation(api.userApiKeys.toggleStatus);
+    const user = useQuery(api.auth.getCurrentUser);
+    
+    // --- Supabase State ---
+    const [apiKeys, setApiKeys] = useState<any[] | undefined>(undefined);
+    const [loading, setLoading] = useState(true);
+
+    const fetchKeys = async () => {
+        if (!user?._id) return;
+        setLoading(true);
+        try {
+            const { data, error } = await supabase
+                .from("user_api_keys")
+                .select("*")
+                .eq("user_id", user._id)
+                .order("created_at", { ascending: false });
+            
+            if (error) throw error;
+            setApiKeys(data || []);
+        } catch (error) {
+            console.error("Fetch keys error:", error);
+            toast.error("Failed to load API keys");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchKeys();
+    }, [user?._id]);
 
     const [name, setName] = useState("");
     const [provider, setProvider] = useState("openrouter");
@@ -79,37 +105,62 @@ export default function ApiKeysPage() {
 
     const handleAddKey = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!name || !key) {
+        if (!name || !key || !user?._id) {
             toast.error("Please fill in all fields");
             return;
         }
 
         try {
-            await createApiKey({ name, provider, key });
+            const { error } = await supabase
+                .from("user_api_keys")
+                .insert([{ 
+                    user_id: user._id,
+                    name, 
+                    provider, 
+                    key, 
+                    status: "active" 
+                }]);
+            
+            if (error) throw error;
+
             toast.success("API Key added successfully");
             setName("");
             setKey("");
             setIsAdding(false);
-        } catch (error) {
-            toast.error("Failed to add API Key");
+            fetchKeys();
+        } catch (error: any) {
+            toast.error(`Failed to add API Key: ${error.message}`);
         }
     };
 
     const handleDelete = async (id: any) => {
         if (confirm("Are you sure you want to delete this API Key?")) {
             try {
-                await deleteApiKey({ id });
+                const { error } = await supabase
+                    .from("user_api_keys")
+                    .delete()
+                    .eq("id", id);
+                
+                if (error) throw error;
                 toast.success("API Key deleted");
+                fetchKeys();
             } catch (error) {
                 toast.error("Failed to delete API Key");
             }
         }
     };
 
-    const handleToggle = async (id: any) => {
+    const handleToggle = async (row: any) => {
         try {
-            await toggleStatus({ id });
+            const newStatus = row.status === "active" ? "inactive" : "active";
+            const { error } = await supabase
+                .from("user_api_keys")
+                .update({ status: newStatus })
+                .eq("id", row.id);
+            
+            if (error) throw error;
             toast.success("Status updated");
+            fetchKeys();
         } catch (error) {
             toast.error("Failed to update status");
         }
@@ -214,14 +265,14 @@ export default function ApiKeysPage() {
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-40">
-                                <DropdownMenuItem onClick={() => handleToggle(row.original._id)}>
+                                <DropdownMenuItem onClick={() => handleToggle(row.original)}>
                                     <IconPower className="mr-2 size-4" />
                                     {row.original.status === "active" ? "Deactivate" : "Activate"}
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
                                     variant="destructive"
-                                    onClick={() => handleDelete(row.original._id)}
+                                    onClick={() => handleDelete(row.original.id)}
                                 >
                                     <IconTrash className="mr-2 size-4" />
                                     Delete Key
@@ -322,9 +373,15 @@ export default function ApiKeysPage() {
                                                         pName = pName.trim();
                                                         pKey = pKey.trim();
 
-                                                        if (pName && pKey) {
+                                                        if (pName && pKey && user?._id) {
                                                             try {
-                                                                await createApiKey({ name: pName, provider, key: pKey });
+                                                                await supabase.from("user_api_keys").insert([{
+                                                                    user_id: user._id,
+                                                                    name: pName,
+                                                                    provider,
+                                                                    key: pKey,
+                                                                    status: "active"
+                                                                }]);
                                                                 count++;
                                                             } catch (err) {
                                                                 console.error("Import failed for", pName);

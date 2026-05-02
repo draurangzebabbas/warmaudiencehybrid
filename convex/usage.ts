@@ -51,32 +51,22 @@ async function calculateUsage(ctx: QueryCtx, userId: any) {
     const planKey = getPlanFromSlug(planSlug);
     const plan = PLANS[planKey];
 
-    // 2. Count profiles saved this month
-    const now = new Date();
-    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    // 2. Count profiles saved this month - MIGRATED TO SUPABASE
+    const profilesCount = 0; // TODO: Fetch from Supabase via backend if needed
 
-    const profiles = await ctx.db
-        .query("userSavedProfiles")
-        .withIndex("by_user", (q) => q.eq("userId", userId))
-        .filter(q => q.gte(q.field("createdAt"), firstDayOfMonth))
-        .collect();
-
-    // 3. Count active trackers
-    const trackers = await ctx.db
-        .query("competitorTracking")
-        .withIndex("by_user", (q) => q.eq("userId", userId))
-        .collect();
-    const activeTrackers = trackers.filter(t => t.isActive).length;
+    // 3. Count active trackers - MIGRATED TO SUPABASE
+    const activeTrackers = 0; // TODO: Fetch from Supabase via backend if needed
 
     return {
         plan: plan,
         usage: {
-            profiles: profiles.length,
+            profiles: profilesCount,
             profilesLimit: plan.profilesLimit,
             trackers: activeTrackers,
             trackersLimit: plan.trackersLimit,
         }
     };
+
 }
 
 /**

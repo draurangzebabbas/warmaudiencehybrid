@@ -1,7 +1,9 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { supabase } from "@/src/lib/supabase";
 import {
     IconLoader,
     IconExternalLink,
@@ -24,9 +26,70 @@ import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
 
 export function RecentActivityTable() {
-    const activity = useQuery(api.dashboard.getRecentActivity, { limit: 10 });
+    const user = useQuery(api.auth.getCurrentUser);
+    const [activity, setActivity] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    if (activity === undefined) {
+    useEffect(() => {
+        if (!user?._id) return;
+
+        const fetchActivity = async () => {
+            try {
+                const { data, error } = await supabase
+                    .from("user_leads")
+                    .select(`
+                        id,
+                        profile_type,
+                        tags,
+                        created_at,
+                        personal: linkedin_id (*),
+                        company: company_id (*),
+                        google_maps: lead_id (*)
+                    `)
+                    .eq("user_id", user._id)
+                    .order("created_at", { ascending: false })
+                    .limit(10);
+
+                if (error) throw error;
+
+                const formatted = data.map(item => {
+                    let name = "Unknown";
+                    let url = "";
+                    let type = item.profile_type;
+
+                    if (type === "personal" && item.personal) {
+                        name = item.personal.full_name || item.personal.linkedin_url;
+                        url = item.personal.linkedin_url;
+                    } else if (type === "company" && item.company) {
+                        name = item.company.company_name || item.company.linkedin_url;
+                        url = item.company.linkedin_url;
+                    } else if (type === "google_maps" && item.google_maps) {
+                        name = item.google_maps.title || item.google_maps.url;
+                        url = item.google_maps.url;
+                    }
+
+                    return {
+                        _id: item.id,
+                        name,
+                        type,
+                        url,
+                        tags: item.tags,
+                        createdAt: new Date(item.created_at).getTime(),
+                    };
+                });
+
+                setActivity(formatted);
+            } catch (error) {
+                console.error("Error fetching activity:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchActivity();
+    }, [user?._id]);
+
+    if (loading) {
         return (
             <Card>
                 <CardHeader>

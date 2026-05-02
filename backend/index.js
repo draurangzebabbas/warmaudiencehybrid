@@ -3,6 +3,8 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const { processJob } = require("./jobProcessor");
 const convexApi = require("./convexApi");
+const { runHeartbeat } = require("./heartbeat");
+const supabaseApi = require("./supabaseApi");
 
 dotenv.config();
 
@@ -78,13 +80,18 @@ app.post(["/api/scrape-profiles", "/api/scrape-linkedin"], async (req, res) => {
         }
 
         // 0. Check Usage Limit
-        const usage = await convexApi.getUsage(req.userId);
-        if (usage && usage.usage.profiles >= usage.usage.profilesLimit) {
+        const [usage, currentCount] = await Promise.all([
+            convexApi.getUsage(req.userId),
+            supabaseApi.getMonthlyLeadCount(req.userId)
+        ]);
+        
+        if (usage && currentCount >= usage.usage.profilesLimit) {
             return res.status(403).json({
                 error: `Limit Reached: You have consumed all your profile storage for this month (${usage.usage.profilesLimit} profiles). Please upgrade your plan for more capacity.`,
                 code: "LIMIT_REACHED"
             });
         }
+
 
         // Fire-and-forget: respond immediately, process in background
         processJob({
@@ -163,14 +170,19 @@ app.post("/api/scrape-engagers", async (req, res) => {
             return res.status(400).json({ error: "Select at least one engagement type (commenters or reactors)" });
         }
 
-        // 0. Check Usage Limit
-        const usage = await convexApi.getUsage(req.userId);
-        if (usage && usage.usage.profiles >= usage.usage.profilesLimit) {
+        // Check Usage Limit
+        const [usage, currentCount] = await Promise.all([
+            convexApi.getUsage(req.userId),
+            supabaseApi.getMonthlyLeadCount(req.userId)
+        ]);
+
+        if (usage && currentCount >= usage.usage.profilesLimit) {
             return res.status(403).json({
                 error: `Limit Reached: You have consumed all your profile storage for this month (${usage.usage.profilesLimit} profiles). Please upgrade your plan for more capacity.`,
                 code: "LIMIT_REACHED"
             });
         }
+
 
         processJob({
             userId: req.userId,
@@ -196,15 +208,21 @@ app.post("/api/competitor-tracking/schedule", async (req, res) => {
     try {
         const { type, targetValue, schedule, targets } = req.body;
 
-        const trackerId = await convexApi.createTracker(
-            req.userId,
-            type,
-            targetValue,
-            schedule,
-            targets
-        );
+        const { data, error } = await supabaseApi.supabase
+            .from("trackers")
+            .insert([{
+                user_id: req.userId,
+                target_type: type,
+                target_value: targetValue,
+                schedule,
+                targets,
+                next_run_at: new Date().toISOString()
+            }])
+            .select()
+            .single();
 
-        res.json({ status: "ok", trackerId });
+        if (error) throw error;
+        res.json({ status: "ok", trackerId: data.id });
     } catch (e) {
         console.error("Tracker schedule error:", e);
         res.status(500).json({ error: e.message });
@@ -215,8 +233,12 @@ app.post("/api/competitor-tracking/status", async (req, res) => {
     try {
         const { trackerId, isActive } = req.body;
 
-        await convexApi.updateTrackerStatus(req.userId, trackerId, isActive);
+        const { error } = await supabaseApi.supabase
+            .from("trackers")
+            .update({ is_active: isActive })
+            .eq("id", trackerId);
 
+        if (error) throw error;
         res.json({ status: "ok" });
     } catch (e) {
         console.error("Tracker status error:", e);
@@ -232,49 +254,11 @@ app.post("/api/competitor-tracking/status", async (req, res) => {
 // ─────────────────────────────────────────
 app.get("/api/heartbeat", async (req, res) => {
     try {
-        console.log("💓 Heartbeat received. Checking for scheduled trackers...");
-
-        const trackers = await convexApi.getTrackersToExecute();
-        console.log(`📡 Found ${trackers.length} tracker(s) due for execution`);
-
-        // Process each tracker in background (fire-and-forget)
-        for (const tracker of trackers) {
-            const input = {};
-
-            if (tracker.targetType === "profile") {
-                // Scrape posts from the tracked profile -> extract engagers
-                input.trackingUrl = tracker.targetValue;
-                input.engagementTypes = tracker.targets; // ["commenters", "reactors"]
-                input.schedule = tracker.schedule;       // "daily" | "weekly" | "monthly"
-            } else if (tracker.targetType === "keyword") {
-                input.keywords = [tracker.targetValue];
-                input.schedule = tracker.schedule;
-            }
-
-            // Generate automatic tracker tag
-            const trackerTag = tracker.targetType === "profile"
-                ? `tracked by profile: ${tracker.targetValue.split('/').filter(Boolean).pop()}`
-                : `tracked by keyword: ${tracker.targetValue}`;
-
-            processJob({
-                userId: tracker.userId,
-                trackerId: tracker._id,
-                type: "scheduled_tracking",
-                input: { ...input, tags: [trackerTag] },
-            })
-                .then(() => convexApi.markTrackerExecuted(tracker._id))
-                .catch((err) => console.error(`❌ Tracker ${tracker._id} failed:`, err));
-        }
-
-        res.json({
-            status: "ok",
-            trackersFound: trackers.length,
-            message: trackers.length > 0
-                ? `Processing ${trackers.length} tracker(s) in background`
-                : "No trackers due for execution",
-        });
+        // This is the "Ping" from Convex. It keeps the server alive and triggers checks.
+        await runHeartbeat();
+        res.json({ status: "ok", message: "Heartbeat processed" });
     } catch (e) {
-        console.error("Heartbeat error:", e);
+        console.error("Heartbeat endpoint error:", e);
         res.status(500).json({ error: e.message });
     }
 });

@@ -1,13 +1,14 @@
 const scraper = require("./scraper");
+const supabaseApi = require("./supabaseApi");
 
 /**
  * KeyManager handles rotation, health monitoring, and proactive recovery of API keys.
+ * Offloaded to Supabase for high-frequency updates.
  */
 class KeyManager {
-    constructor(userId, provider, convexApi) {
+    constructor(userId, provider) {
         this.userId = userId;
         this.provider = provider;
-        this.convex = convexApi;
         this.keys = [];
         this.currentIndex = 0;
         this.keyStatus = new Map(); // keyString -> status object
@@ -19,7 +20,7 @@ class KeyManager {
     }
 
     async initialize() {
-        const providerKeys = await this.convex.getApiKeys(this.userId, this.provider);
+        const providerKeys = await supabaseApi.getUserApiKeys(this.userId, this.provider);
 
         // Initial categorizing
         const activeKeys = providerKeys.filter(k => k.status === 'active');
@@ -31,7 +32,7 @@ class KeyManager {
             await this.recovery(candidateKeys);
 
             // Re-fetch after recovery to get fresh statuses
-            const refreshedKeys = await this.convex.getApiKeys(this.userId, this.provider);
+            const refreshedKeys = await supabaseApi.getUserApiKeys(this.userId, this.provider);
             this.keys = refreshedKeys.filter(k => k.status === 'active');
         } else {
             this.keys = activeKeys;
@@ -45,32 +46,35 @@ class KeyManager {
 
         this.keys.forEach(k => {
             this.keyStatus.set(k.key, {
-                id: k._id,
+                id: k.id,
                 name: k.name || "Unnamed Key",
                 originalStatus: k.status,
                 currentStatus: k.status,
                 used: false,
                 successes: 0,
                 failures: 0,
-                lastUsed: k.lastUsedAt || 0
+                lastUsed: k.last_used_at ? new Date(k.last_used_at).getTime() : 0
             });
         });
 
         // Sort by lastUsed to maintain LRU (Least Recently Used) rotation
-        this.keys.sort((a, b) => (a.lastUsedAt || 0) - (b.lastUsedAt || 0));
+        this.keys.sort((a, b) => {
+            const timeA = a.last_used_at ? new Date(a.last_used_at).getTime() : 0;
+            const timeB = b.last_used_at ? new Date(b.last_used_at).getTime() : 0;
+            return timeA - timeB;
+        });
 
         return this.keys.length;
     }
 
     /**
      * Parallel recovery of keys that are not currently active
-     * Only tests keys where cooldown has expired or status is just 'rate_limited'
      */
     async recovery(keysToTest) {
         const now = Date.now();
         const eligibeToTest = keysToTest.filter(k => {
-            if (!k.lastUsedAt) return true;
-            return (now - k.lastUsedAt) > this.COOLDOWN_MS;
+            const lastUsed = k.last_used_at ? new Date(k.last_used_at).getTime() : 0;
+            return (now - lastUsed) > this.COOLDOWN_MS;
         });
 
         if (eligibeToTest.length === 0) return;
@@ -81,13 +85,12 @@ class KeyManager {
             const test = await scraper.testKey(k.key);
             if (test.success) {
                 console.log(`   ✅ Key [${k.name || k.key.slice(-6)}] recovered!`);
-                await this.convex.updateApiKeyStatus(this.userId, this.provider, k.key, 'active', false);
+                await supabaseApi.updateUserApiKeyStatus(k.id, 'active');
                 return { key: k.key, status: 'active' };
             } else {
                 const newStatus = (test.status === 429) ? 'rate_limited' : 'failed';
                 console.log(`   ❌ Key [${k.name || k.key.slice(-6)}] recovery failed: ${test.message}`);
-                // Only update if status actually changed or to refresh lastUsedAt
-                await this.convex.updateApiKeyStatus(this.userId, this.provider, k.key, newStatus, false);
+                await supabaseApi.updateUserApiKeyStatus(k.id, newStatus);
                 return { key: k.key, status: newStatus };
             }
         }));
@@ -117,12 +120,11 @@ class KeyManager {
             }
         }
 
-        // Emergency recovery: If no active keys found in current set, try one last recovery check
+        // Emergency recovery
         if (!foundKey) {
             console.log("⚠️  No active keys found in set. Attempting emergency recovery check...");
             await this.ensureMaxAvailability();
 
-            // Try one more time after recovery
             for (let i = 0; i < this.keys.length; i++) {
                 const key = this.keys[i];
                 const status = this.keyStatus.get(key.key);
@@ -134,9 +136,9 @@ class KeyManager {
             }
         }
 
-        // Final fallback: just return the next one even if it was previously rate_limited
+        // Final fallback
         if (!foundKey) {
-            console.warn("⚠️  Still no active keys after recovery attempt. Falling back to next available key in rotation.");
+            console.warn("⚠️  Still no active keys after recovery attempt. Falling back to next available key.");
             foundKey = this.keys[this.currentIndex % this.keys.length];
             this.currentIndex++;
         }
@@ -159,9 +161,7 @@ class KeyManager {
         const status = this.keyStatus.get(keyString);
         if (!status) return;
 
-        // 401: Unauthorized, 402: Payment, 403: Forbidden/Restricted, 429: Rate limited
         if (![401, 402, 403, 429].includes(errorStatus)) {
-            console.log(`      🧪 Key [${status.name}]: Error status ${errorStatus} is NOT a key problem. Maintaining active status.`);
             return;
         }
 
@@ -177,34 +177,29 @@ class KeyManager {
         }
     }
 
-    /**
-     * Aggressively try to recover ALL potentially usable keys (for big parallel jobs)
-     */
     async ensureMaxAvailability() {
-        console.log("⚡ Proactively checking all potentially usable keys to maximize parallel research capacity...");
-        const providerKeys = await this.convex.getApiKeys(this.userId, this.provider);
+        console.log("⚡ Proactively checking all potentially usable keys in Supabase...");
+        const providerKeys = await supabaseApi.getUserApiKeys(this.userId, this.provider);
         const candidates = providerKeys.filter(k => k.status !== 'active' && k.status !== 'inactive');
 
         if (candidates.length > 0) {
             await this.recovery(candidates);
 
-            // Re-sync this.keys and this.keyStatus
-            const freshKeys = await this.convex.getApiKeys(this.userId, this.provider);
+            const freshKeys = await supabaseApi.getUserApiKeys(this.userId, this.provider);
             this.keys = freshKeys.filter(k => k.status === 'active');
 
-            // Update internal status map
             this.keys.forEach(k => {
                 const existingStatus = this.keyStatus.get(k.key);
                 if (!existingStatus) {
                     this.keyStatus.set(k.key, {
-                        id: k._id,
+                        id: k.id,
                         name: k.name || "Unnamed Key",
                         originalStatus: k.status,
                         currentStatus: k.status,
                         used: false,
                         successes: 0,
                         failures: 0,
-                        lastUsed: k.lastUsedAt || 0
+                        lastUsed: k.last_used_at ? new Date(k.last_used_at).getTime() : 0
                     });
                 } else {
                     existingStatus.currentStatus = 'active';
@@ -219,7 +214,6 @@ class KeyManager {
             .filter(s => s.currentStatus === 'active').length;
 
         if (activeCount < 2) {
-            console.log("🚨 Critical key shortage during job. Refreshing...");
             await this.ensureMaxAvailability();
         }
     }
@@ -227,13 +221,13 @@ class KeyManager {
     async sync() {
         for (const [keyString, status] of this.keyStatus.entries()) {
             if (status.used) {
-                await this.convex.updateApiKeyStatus(
-                    this.userId,
-                    this.provider,
-                    keyString,
-                    status.currentStatus,
-                    status.successes > 0  // incrementUsage
-                );
+                // Update status in Supabase
+                await supabaseApi.updateUserApiKeyStatus(status.id, status.currentStatus);
+                
+                // If successful use, increment usage count
+                if (status.successes > 0) {
+                    await supabaseApi.incrementApiKeyUsage(status.id);
+                }
             }
         }
     }
