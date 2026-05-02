@@ -59,28 +59,37 @@ async function handleGoogleMapsScrape(userId, input, keyManager, tags = ["Google
         if (results && results.length > 0) {
             console.log(`✨ Found ${results.length} Google Maps leads. Persistence started...`);
             
-            // Map Apify results to our database format
-            const formatted = results.map(l => ({
-                url: l.url,
-                title: l.title || l.companyName || "Unknown",
-                totalScore: l.totalScore || l.reviewsScore || l.stars || 0,
-                reviewsCount: l.reviewsCount || l.reviews || 0,
-                address: l.address || l.fullAddress || "",
-                phone: l.phone || l.phoneNumber || "",
-                emails: l.emails || [],
-                website: l.website || l.websiteUrl || "",
-                city: l.city || "",
-                imageUrl: l.image_url || l.imageUrl || l.img_url || l.imgUrl || l.photo || l.photoUrl || l.thumbnail || (l.photos && l.photos.length > 0 ? l.photos[0] : null),
-                socials: {
-                    facebook: (l.facebooks && l.facebooks.length > 0) ? l.facebooks[0] : (l.facebook || l.facebookUrl || null),
-                    instagram: (l.instagrams && l.instagrams.length > 0) ? l.instagrams[0] : (l.instagram || l.instagramUrl || null),
-                    twitter: (l.twitters && l.twitters.length > 0) ? l.twitters[0] : (l.twitter || l.twitterUrl || l.xUrl || null),
-                    linkedin: (l.linkedIns && l.linkedIns.length > 0) ? l.linkedIns[0] : (l.linkedin || l.linkedinUrl || null),
-                    youtube: (l.youtubes && l.youtubes.length > 0) ? l.youtubes[0] : (l.youtube || l.youtubeUrl || null),
-                    tiktok: (l.tiktoks && l.tiktoks.length > 0) ? l.tiktoks[0] : (l.tiktok || l.tiktokUrl || null)
-                },
-                placeId: l.query_place_id || l.placeId || l.id || l.fid
-            }));
+            // Map Apify results to our database format with extreme defensiveness
+            const formatted = results.map(l => {
+                // Find any possible image URL
+                const potentialImage = l.imageUrl || l.image_url || l.img_url || l.imgUrl || 
+                                     l.photo || l.photoUrl || l.thumbnail || l.thumbnailUrl || 
+                                     l.mainImage || l.featuredImage ||
+                                     (l.photos && l.photos.length > 0 ? l.photos[0] : null) ||
+                                     (l.images && l.images.length > 0 ? l.images[0] : null);
+
+                return {
+                    url: l.url,
+                    title: l.title || l.companyName || l.name || "Unknown",
+                    totalScore: l.totalScore || l.reviewsScore || l.stars || l.rating || 0,
+                    reviewsCount: l.reviewsCount || l.reviews || l.reviewCount || 0,
+                    address: l.address || l.fullAddress || l.location?.address || "",
+                    phone: l.phone || l.phoneNumber || "",
+                    emails: l.emails || [],
+                    website: l.website || l.websiteUrl || "",
+                    city: l.city || l.location?.city || "",
+                    imageUrl: potentialImage,
+                    socials: {
+                        facebook: (l.facebooks && l.facebooks.length > 0) ? l.facebooks[0] : (l.facebook || l.facebookUrl || null),
+                        instagram: (l.instagrams && l.instagrams.length > 0) ? l.instagrams[0] : (l.instagram || l.instagramUrl || null),
+                        twitter: (l.twitters && l.twitters.length > 0) ? l.twitters[0] : (l.twitter || l.twitterUrl || l.xUrl || null),
+                        linkedin: (l.linkedIns && l.linkedIns.length > 0) ? l.linkedIns[0] : (l.linkedin || l.linkedinUrl || null),
+                        youtube: (l.youtubes && l.youtubes.length > 0) ? l.youtubes[0] : (l.youtube || l.youtubeUrl || null),
+                        tiktok: (l.tiktoks && l.tiktoks.length > 0) ? l.tiktoks[0] : (l.tiktok || l.tiktokUrl || null)
+                    },
+                    placeId: l.query_place_id || l.placeId || l.id || l.fid || l.place_id
+                };
+            });
 
             const saved = await supabaseApi.upsertGoogleMapsLeadsBulk(formatted);
             
