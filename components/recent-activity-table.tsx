@@ -133,7 +133,7 @@ export function RecentActivityTable() {
                     <CardDescription>Latest profiles and companies added to your database.</CardDescription>
                 </div>
                 <Button variant="outline" size="sm" asChild>
-                    <Link href="/my-profiles">View All</Link>
+                    <Link href="/my-leads">View All</Link>
                 </Button>
             </CardHeader>
             <CardContent>

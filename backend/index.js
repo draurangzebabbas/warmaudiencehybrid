@@ -2,7 +2,6 @@ const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const { processJob } = require("./jobProcessor");
-const convexApi = require("./convexApi");
 const { runHeartbeat } = require("./heartbeat");
 const supabaseApi = require("./supabaseApi");
 
@@ -83,15 +82,25 @@ app.post(["/api/scrape-profiles", "/api/scrape-linkedin"], async (req, res) => {
             return res.status(400).json({ error: "No valid LinkedIn profile or company URLs found" });
         }
 
-        // 0. Check Usage Limit
-        const [usage, currentCount] = await Promise.all([
-            convexApi.getUsage(req.userId),
+        // 0. Check Usage Limit (Migrated to Supabase)
+        const [subscription, currentCount] = await Promise.all([
+            supabaseApi.getUserSubscription(req.userId),
             supabaseApi.getMonthlyLeadCount(req.userId)
         ]);
         
-        if (usage && currentCount >= usage.usage.profilesLimit) {
+        const planLimits = {
+            free: 1000,
+            growth: 10000,
+            pro: 10000,
+            elite: 1000000,
+            scale: 1000000
+        };
+
+        const profilesLimit = planLimits[subscription.plan_slug] || 1000;
+        
+        if (currentCount >= profilesLimit) {
             return res.status(403).json({
-                error: `Limit Reached: You have consumed all your profile storage for this month (${usage.usage.profilesLimit} profiles). Please upgrade your plan for more capacity.`,
+                error: `Limit Reached: You have consumed all your profile storage for this month (${profilesLimit} profiles). Please upgrade your plan for more capacity.`,
                 code: "LIMIT_REACHED"
             });
         }
@@ -129,15 +138,25 @@ app.post("/api/scrape-google-maps", async (req, res) => {
             return res.status(400).json({ error: "locationQuery is required" });
         }
 
-        // 0. Check Usage Limit
-        const [usage, currentCount] = await Promise.all([
-            convexApi.getUsage(req.userId),
+        // 0. Check Usage Limit (Migrated to Supabase)
+        const [subscription, currentCount] = await Promise.all([
+            supabaseApi.getUserSubscription(req.userId),
             supabaseApi.getMonthlyLeadCount(req.userId)
         ]);
         
-        if (usage && currentCount >= usage.usage.profilesLimit) {
+        const planLimits = {
+            free: 1000,
+            growth: 10000,
+            pro: 10000,
+            elite: 1000000,
+            scale: 1000000
+        };
+
+        const profilesLimit = planLimits[subscription.plan_slug] || 1000;
+        
+        if (currentCount >= profilesLimit) {
             return res.status(403).json({
-                error: `Limit Reached: You have consumed all your lead storage for this month (${usage.usage.profilesLimit} leads). Please upgrade your plan for more capacity.`,
+                error: `Limit Reached: You have consumed all your lead storage for this month (${profilesLimit} leads). Please upgrade your plan for more capacity.`,
                 code: "LIMIT_REACHED"
             });
         }
@@ -178,15 +197,25 @@ app.post("/api/scrape-engagers", async (req, res) => {
             return res.status(400).json({ error: "Select at least one engagement type (commenters or reactors)" });
         }
 
-        // Check Usage Limit
-        const [usage, currentCount] = await Promise.all([
-            convexApi.getUsage(req.userId),
+        // 0. Check Usage Limit (Migrated to Supabase)
+        const [subscription, currentCount] = await Promise.all([
+            supabaseApi.getUserSubscription(req.userId),
             supabaseApi.getMonthlyLeadCount(req.userId)
         ]);
+        
+        const planLimits = {
+            free: 1000,
+            growth: 10000,
+            pro: 10000,
+            elite: 1000000,
+            scale: 1000000
+        };
 
-        if (usage && currentCount >= usage.usage.profilesLimit) {
+        const profilesLimit = planLimits[subscription.plan_slug] || 1000;
+        
+        if (currentCount >= profilesLimit) {
             return res.status(403).json({
-                error: `Limit Reached: You have consumed all your profile storage for this month (${usage.usage.profilesLimit} profiles). Please upgrade your plan for more capacity.`,
+                error: `Limit Reached: You have consumed all your profile storage for this month (${profilesLimit} profiles). Please upgrade your plan for more capacity.`,
                 code: "LIMIT_REACHED"
             });
         }

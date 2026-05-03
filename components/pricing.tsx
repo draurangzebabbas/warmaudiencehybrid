@@ -29,7 +29,13 @@ export default function Pricing() {
         if (!hasFetched) {
             authClient.customer.state().then(({ data, error }) => {
                 if (error) {
-                    console.error("❌ Polar Error:", error);
+                    // Suppress empty error logs or 404s for users without customers yet
+                    if (Object.keys(error).length > 0) {
+                        console.error("❌ Polar Error Details:", error);
+                    } else {
+                        console.log("ℹ️ Polar: No active customer record found for this session (standard for non-paying users).");
+                    }
+                    setHasFetched(true);
                     return;
                 }
 

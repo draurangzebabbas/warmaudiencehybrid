@@ -4,12 +4,28 @@ let pollerStarted = false;
 
 /**
  * The Heartbeat runs every 10 minutes (triggered by Convex).
+ * Now migrated to Supabase Cron (running every 1 minute).
  * 1. It keeps Render alive.
- * 2. It triggers the internal 1-minute poller if not already running.
+ * 2. It triggers an immediate tracker check.
+ * 3. It ensures the internal 1-minute poller is running as a fallback.
  */
 async function runHeartbeat() {
-    console.log("💓 Heartbeat: Ping received. Server is awake.");
+    console.log("💓 Heartbeat: Ping received. Checking trackers...");
     
+    // 1. Immediate check for due trackers
+    try {
+        const dueTrackers = await supabaseApi.getDueTrackers();
+        if (dueTrackers && dueTrackers.length > 0) {
+            console.log(`🤖 Heartbeat: Found ${dueTrackers.length} due trackers!`);
+            for (const tracker of dueTrackers) {
+                await executeTracker(tracker);
+            }
+        }
+    } catch (err) {
+        console.error("❌ Heartbeat Check Error:", err.message);
+    }
+
+    // 2. Ensure background poller is running as fallback
     if (!pollerStarted) {
         startTrackerPoller();
     }
@@ -33,7 +49,7 @@ function startTrackerPoller() {
                 console.log(`🤖 Poller: Found ${dueTrackers.length} trackers due!`);
                 
                 for (const tracker of dueTrackers) {
-                    executeTracker(tracker);
+                    await executeTracker(tracker);
                 }
             }
         } catch (err) {

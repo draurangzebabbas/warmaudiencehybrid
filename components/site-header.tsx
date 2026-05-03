@@ -17,7 +17,7 @@ export function SiteHeader() {
     if (path.includes("/webhooks")) return "API Integration"
     if (path.includes("/dashboard")) return "Dashboard"
     if (path.includes("/affiliate")) return "Affiliate Dashboard"
-    if (path.includes("/my-profiles")) return "My Profiles"
+    if (path.includes("/my-leads")) return "My Leads"
     if (path.includes("/scrapers")) return "Researcher"
     if (path.includes("/trackers")) return "Trackers"
     if (path.includes("/settings")) return "Settings"

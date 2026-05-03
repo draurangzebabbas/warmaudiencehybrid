@@ -63,7 +63,7 @@ import { Label } from "@/components/ui/label";
 
 export default function ApiKeysPage() {
     const user = useQuery(api.auth.getCurrentUser);
-    
+
     // --- Supabase State ---
     const [apiKeys, setApiKeys] = useState<any[] | undefined>(undefined);
     const [loading, setLoading] = useState(true);
@@ -77,7 +77,7 @@ export default function ApiKeysPage() {
                 .select("*")
                 .eq("user_id", user._id)
                 .order("created_at", { ascending: false });
-            
+
             if (error) throw error;
             setApiKeys(data || []);
         } catch (error) {
@@ -113,14 +113,14 @@ export default function ApiKeysPage() {
         try {
             const { error } = await supabase
                 .from("user_api_keys")
-                .insert([{ 
+                .insert([{
                     user_id: user._id,
-                    name, 
-                    provider, 
-                    key, 
-                    status: "active" 
+                    name,
+                    provider,
+                    key,
+                    status: "active"
                 }]);
-            
+
             if (error) throw error;
 
             toast.success("API Key added successfully");
@@ -140,7 +140,7 @@ export default function ApiKeysPage() {
                     .from("user_api_keys")
                     .delete()
                     .eq("id", id);
-                
+
                 if (error) throw error;
                 toast.success("API Key deleted");
                 fetchKeys();
@@ -157,7 +157,7 @@ export default function ApiKeysPage() {
                 .from("user_api_keys")
                 .update({ status: newStatus })
                 .eq("id", row.id);
-            
+
             if (error) throw error;
             toast.success("Status updated");
             fetchKeys();

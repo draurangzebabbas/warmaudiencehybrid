@@ -490,6 +490,27 @@ async function getOrCreateWebhookKey(userId) {
     return { key: inserted.key };
 }
 
+/**
+ * Get user subscription details from Supabase
+ */
+async function getUserSubscription(userId) {
+    const { data, error } = await supabase
+        .from("subscriptions")
+        .select("*")
+        .eq("user_id", userId)
+        .maybeSingle();
+    
+    if (error) {
+        console.error("❌ Error fetching subscription:", error);
+        return { plan_slug: "free" };
+    }
+
+    // Default to free if no record found
+    if (!data) return { plan_slug: "free" };
+
+    return data;
+}
+
 module.exports = {
     getCachedProfile,
     upsertPersonalProfile,
@@ -512,5 +533,6 @@ module.exports = {
     getActiveTrackerCount,
     validateWebhookKey,
     getOrCreateWebhookKey,
+    getUserSubscription,
     supabase
 };

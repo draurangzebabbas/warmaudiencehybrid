@@ -60,21 +60,3 @@ export const getOrCreateWebhookKey = action({
     },
 });
 
-export const pingRender = action({
-    args: {},
-    handler: async () => {
-        const backendUrl = process.env.NEXT_PUBLIC_RENDER_BACKEND_URL;
-        if (!backendUrl) return;
-
-        try {
-            const res = await fetch(`${backendUrl}/health`);
-            if (res.ok) {
-                console.log("💓 Render backend pinged successfully.");
-            } else {
-                console.warn("⚠️ Render backend ping returned non-OK status.");
-            }
-        } catch (e) {
-            console.error("❌ Failed to ping Render backend:", e);
-        }
-    },
-});
