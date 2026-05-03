@@ -4,7 +4,6 @@ import { ChartBarIncreasingIcon, Database, Fingerprint, IdCard } from 'lucide-re
 import Image from 'next/image'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
-import { BorderBeam } from '@/components/ui/border-beam'
 
 export default function Features() {
     type ImageKey = 'item-1' | 'item-2' | 'item-3' | 'item-4'
@@ -118,11 +117,6 @@ export default function Features() {
                                 </motion.div>
                             </AnimatePresence>
                         </div>
-                        <BorderBeam
-                            duration={6}
-                            size={200}
-                            className="from-transparent via-yellow-700 to-transparent dark:via-white/50"
-                        />
                     </div>
                 </div>
             </div>
