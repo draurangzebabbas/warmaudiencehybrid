@@ -13,6 +13,10 @@ import { toast } from "sonner";
 import { Loader2, Tag } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { formatError } from "@/lib/utils";
+import { useQuery } from "convex/react";
+import { LimitReachedDialog } from "@/components/limit-reached-dialog";
+import { supabase } from "@/src/lib/supabase";
+import { useEffect } from "react";
 
 export default function ResearchersPage() {
     const [profileUrls, setProfileUrls] = useState("");
@@ -21,8 +25,27 @@ export default function ResearchersPage() {
     const [extractCommenters, setExtractCommenters] = useState(true);
     const [loading, setLoading] = useState(false);
     const [tags, setTags] = useState("");
+    const [isLimitDialogOpen, setIsLimitDialogOpen] = useState(false);
+    const [profilesCount, setProfilesCount] = useState(0);
 
+    const usage = useQuery(api.usage.getUsage);
+    const user = useQuery(api.auth.getCurrentUser);
     const getOrCreateKey = useAction(api.actions.supabase.getOrCreateWebhookKey);
+
+    useEffect(() => {
+        if (!user?._id) return;
+        const fetchCount = async () => {
+            const { count } = await supabase
+                .from("user_leads")
+                .select("*", { count: "exact", head: true })
+                .eq("user_id", user._id);
+            setProfilesCount(count || 0);
+        };
+        fetchCount();
+    }, [user?._id]);
+
+    const profilesLimit = usage?.usage?.profilesLimit || 1000;
+    const isLimitReached = profilesCount >= profilesLimit;
 
 
     const handleScrapeProfiles = async () => {
@@ -63,13 +86,8 @@ export default function ResearchersPage() {
             setProfileUrls("");
         } catch (e: any) {
             const formatted = formatError(e);
-            if (formatted.includes("Limit Reached")) {
-                toast.error(formatted, {
-                    action: {
-                        label: "Upgrade Plan",
-                        onClick: () => window.location.href = "/#pricing"
-                    }
-                });
+            if (formatted.includes("Limit Reached") || e.status === 403) {
+                setIsLimitDialogOpen(true);
             } else {
                 toast.error(formatted);
             }
@@ -123,13 +141,8 @@ export default function ResearchersPage() {
             setPostUrls("");
         } catch (e: any) {
             const formatted = formatError(e);
-            if (formatted.includes("Limit Reached")) {
-                toast.error(formatted, {
-                    action: {
-                        label: "Upgrade Plan",
-                        onClick: () => window.location.href = "/#pricing"
-                    }
-                });
+            if (formatted.includes("Limit Reached") || e.status === 403) {
+                setIsLimitDialogOpen(true);
             } else {
                 toast.error(formatted);
             }
@@ -194,7 +207,7 @@ export default function ResearchersPage() {
                                     className="w-full"
                                 >
                                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                    {loading ? "Processing..." : "Research Profiles"}
+                                    {isLimitReached ? "Lead Limit Reached - Upgrade Plan" : (loading ? "Processing..." : "Research Profiles")}
                                 </Button>
                             </TabsContent>
 
@@ -265,13 +278,20 @@ export default function ResearchersPage() {
                                     className="w-full"
                                 >
                                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                    {loading ? "Processing..." : "Extract Engagers"}
+                                    {isLimitReached ? "Lead Limit Reached - Upgrade Plan" : (loading ? "Processing..." : "Extract Engagers")}
                                 </Button>
                             </TabsContent>
                         </Tabs>
                     </CardContent>
                 </Card>
             </div>
+
+            <LimitReachedDialog 
+                isOpen={isLimitDialogOpen} 
+                onOpenChange={setIsLimitDialogOpen}
+                limitType="leads"
+                currentLimit={profilesLimit}
+            />
         </div>
     );
 }

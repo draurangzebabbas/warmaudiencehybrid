@@ -12,7 +12,12 @@ let pollerStarted = false;
 async function runHeartbeat() {
     console.log("💓 Heartbeat: Ping received. Checking trackers...");
     
-    // 1. Immediate check for due trackers
+    // 1. Ensure background poller is running as fallback
+    if (!pollerStarted) {
+        startTrackerPoller();
+    }
+
+    // 2. Immediate check for due trackers
     try {
         const dueTrackers = await supabaseApi.getDueTrackers();
         if (dueTrackers && dueTrackers.length > 0) {
@@ -23,11 +28,6 @@ async function runHeartbeat() {
         }
     } catch (err) {
         console.error("❌ Heartbeat Check Error:", err.message);
-    }
-
-    // 2. Ensure background poller is running as fallback
-    if (!pollerStarted) {
-        startTrackerPoller();
     }
 }
 
@@ -61,12 +61,22 @@ function startTrackerPoller() {
 async function executeTracker(tracker) {
     console.log(`📡 Executing Tracker: ${tracker.target_value} (${tracker.schedule})`);
     
+    // CRITICAL: Mark as executed IMMEDIATELY to prevent double runs from poller vs heartbeat
+    // This updates next_run_at so the next query won't pick it up.
+    try {
+        await supabaseApi.markTrackerExecuted(tracker.id, tracker.schedule);
+    } catch (err) {
+        console.error(`❌ Failed to mark tracker ${tracker.id} as running:`, err.message);
+        return; // Don't proceed if we can't lock it
+    }
+
     const jobData = {
         userId: tracker.user_id,
         type: tracker.target_type === "profile" ? "engagement_scrape" : "google_maps",
         input: {
             postUrls: tracker.target_type === "profile" ? [tracker.target_value] : undefined,
             searchStringsArray: tracker.target_type === "keyword" ? [tracker.target_value] : undefined,
+            locationQuery: tracker.location || "", // Use location field if available
             engagementTypes: tracker.targets,
             tags: ["Automated"]
         }
@@ -74,7 +84,6 @@ async function executeTracker(tracker) {
 
     try {
         await processJob(jobData);
-        await supabaseApi.markTrackerExecuted(tracker.id, tracker.schedule);
     } catch (err) {
         console.error(`❌ Tracker failed [${tracker.id}]:`, err.message);
     }

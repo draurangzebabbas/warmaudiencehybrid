@@ -245,6 +245,27 @@ app.post("/api/competitor-tracking/schedule", async (req, res) => {
     try {
         const { type, targetValue, schedule, targets } = req.body;
 
+        // 1. Check Tracker Limits
+        const [subscription, activeTrackersCount] = await Promise.all([
+            supabaseApi.getUserSubscription(req.userId),
+            supabaseApi.getActiveTrackerCount(req.userId)
+        ]);
+
+        const trackerLimits = {
+            free: 1,
+            growth: 50,
+            scale: 500
+        };
+
+        const limit = trackerLimits[subscription.plan_slug] || 1;
+
+        if (activeTrackersCount >= limit) {
+            return res.status(403).json({
+                error: `Limit Reached: Your ${subscription.plan_slug} plan only allows ${limit} automated tracker(s). Please upgrade to add more.`,
+                code: "LIMIT_REACHED"
+            });
+        }
+
         const { data, error } = await supabaseApi.supabase
             .from("trackers")
             .insert([{

@@ -11,8 +11,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, Plus } from "lucide-react";
+import { Loader2, Plus, Info } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { LimitReachedDialog } from "@/components/limit-reached-dialog";
 import {
     ColumnDef,
     flexRender,
@@ -54,8 +56,14 @@ export default function TrackersPage() {
     const getToken = useAction(api.actions.supabaseAuth.getSupabaseToken);
 
     const [trackers, setTrackers] = useState<any[] | undefined>(undefined);
+    const usage = useQuery(api.usage.getUsage);
     const [loading, setLoading] = useState(false);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [isLimitDialogOpen, setIsLimitDialogOpen] = useState(false);
+    
+    const trackersCount = trackers?.length || 0;
+    const trackersLimit = usage?.usage?.trackersLimit || 1;
+    const isLimitReached = trackersCount >= trackersLimit;
     
     // --- Supabase Logic ---
     const fetchTrackers = async () => {
@@ -86,6 +94,8 @@ export default function TrackersPage() {
     const [targetType, setTargetType] = useState<"keyword" | "profile">("keyword");
     const [targetValue, setTargetValue] = useState("");
     const [schedule, setSchedule] = useState<"daily" | "weekly">("daily");
+    const [extractCommenters, setExtractCommenters] = useState(true);
+    const [extractReactors, setExtractReactors] = useState(false);
     const [actionLoading, setActionLoading] = useState(false);
 
     const handleCreateTracker = async () => {
@@ -94,8 +104,12 @@ export default function TrackersPage() {
             const apiKeyData = await getOrCreateKey();
             if (!apiKeyData?.key) throw new Error("Could not retrieve API Key");
 
-            if (!targetValue.trim()) {
-                toast.error(`Please enter a ${targetType === "keyword" ? "keyword" : "profile URL"}`);
+            const targets = [];
+            if (extractCommenters) targets.push("commenters");
+            if (extractReactors) targets.push("reactors");
+
+            if (targets.length === 0) {
+                toast.error("Please select at least one engagement type");
                 return;
             }
 
@@ -109,7 +123,7 @@ export default function TrackersPage() {
                     type: targetType,
                     targetValue: targetValue.trim(),
                     schedule,
-                    targets: ["commenters", "reactors"] // Default targets
+                    targets
                 })
             });
 
@@ -259,7 +273,13 @@ export default function TrackersPage() {
                         Automatically monitor keywords and profiles for new activity.
                     </p>
                 </div>
-                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <Dialog open={isDialogOpen} onOpenChange={(open) => {
+                    if (open && isLimitReached) {
+                        setIsLimitDialogOpen(true);
+                    } else {
+                        setIsDialogOpen(open);
+                    }
+                }}>
                     <DialogTrigger asChild>
                         <Button>
                             <Plus className="mr-2 h-4 w-4" />
@@ -270,7 +290,13 @@ export default function TrackersPage() {
                         <DialogHeader>
                             <DialogTitle>Create Tracker</DialogTitle>
                             <DialogDescription>
-                                Set up automated LinkedIn monitoring.
+                                {isLimitReached ? (
+                                    <span className="text-destructive font-medium">
+                                        You have reached your limit of {trackersLimit} tracker(s). Please upgrade to add more.
+                                    </span>
+                                ) : (
+                                    "Set up automated LinkedIn monitoring."
+                                )}
                             </DialogDescription>
                         </DialogHeader>
                         <div className="space-y-4 py-4">
@@ -301,10 +327,46 @@ export default function TrackersPage() {
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="daily">Daily</SelectItem>
-                                        <SelectItem value="weekly">Weekly</SelectItem>
+                                        <SelectItem value="daily">Daily Check</SelectItem>
+                                        <SelectItem value="weekly">Weekly Check</SelectItem>
                                     </SelectContent>
                                 </Select>
+                            </div>
+
+                            <div className="space-y-3 pt-2">
+                                <Label className="text-sm font-semibold">Targets to Extract</Label>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="flex items-center space-x-2 border rounded-lg p-3 hover:bg-muted/50 transition-colors">
+                                        <Checkbox
+                                            id="t-commenters"
+                                            checked={extractCommenters}
+                                            onCheckedChange={(checked) => setExtractCommenters(checked as boolean)}
+                                        />
+                                        <Label
+                                            htmlFor="t-commenters"
+                                            className="text-sm font-medium cursor-pointer"
+                                        >
+                                            Commenters
+                                        </Label>
+                                    </div>
+                                    <div className="flex items-center space-x-2 border rounded-lg p-3 hover:bg-muted/50 transition-colors">
+                                        <Checkbox
+                                            id="t-reactors"
+                                            checked={extractReactors}
+                                            onCheckedChange={(checked) => setExtractReactors(checked as boolean)}
+                                        />
+                                        <Label
+                                            htmlFor="t-reactors"
+                                            className="text-sm font-medium cursor-pointer"
+                                        >
+                                            Reactors
+                                        </Label>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-2 text-[10px] text-muted-foreground bg-muted/30 p-2 rounded">
+                                    <Info className="size-3 mt-0.5" />
+                                    <span>Each automated run scans for new engagement and adds unique profiles to your collection.</span>
+                                </div>
                             </div>
                         </div>
                         <DialogFooter>
@@ -333,6 +395,13 @@ export default function TrackersPage() {
                     </CardContent>
                 </Card>
             </div>
+
+            <LimitReachedDialog 
+                isOpen={isLimitDialogOpen} 
+                onOpenChange={setIsLimitDialogOpen}
+                limitType="trackers"
+                currentLimit={trackersLimit}
+            />
         </div>
     );
 }

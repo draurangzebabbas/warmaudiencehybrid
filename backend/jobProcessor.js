@@ -145,14 +145,20 @@ async function executeWithRetry(keyManager, taskDescription, taskFn, maxRetries 
         } catch (error) {
             lastError = error;
             const status = error.status || error.response?.status;
-            console.error(`   ❌ ${taskDescription} failed: ${error.message || error}`);
+            console.error(`   ❌ ${taskDescription} failed: ${error.message || (typeof error === 'string' ? error : JSON.stringify(error))}`);
+
+            // 400 = Invalid Input / Bad Request. Don't retry, it's a code/user error.
+            if (status === 400) {
+                console.log(`      → Terminal error (400). Skipping retries.`);
+                throw error; 
+            }
 
             if ([401, 402, 403, 429].includes(status)) {
                 console.log(`      → Rotating key due to status ${status}`);
                 keyManager.markFailure(keyObj.key, status);
                 await keyManager.refreshIfLow();
             } else {
-                console.log(`      → Persistent error (status ${status}). Will retry same task with rotated key.`);
+                console.log(`      → Transient error (status ${status}). Will retry with rotated key.`);
             }
 
             attempts++;
@@ -395,7 +401,7 @@ async function scrapeBatch(userId, urls, type, keyManager, tags) {
                         console.log(`   ✅ Linked ${saved.length} company profiles in Supabase`);
                     }
                 }
-                console.log(`   ✅ Bulk saved ${formatted.length} profiles to Supabase and linked in Convex`);
+                console.log(`   ✅ Bulk saved ${formatted.length} profiles to Supabase`);
             } catch (saveErr) {
                 console.error(`   Bulk save failed:`, saveErr.message);
             }
