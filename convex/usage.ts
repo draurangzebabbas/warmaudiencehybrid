@@ -51,18 +51,10 @@ async function calculateUsage(ctx: QueryCtx, userId: any) {
     const planKey = getPlanFromSlug(planSlug);
     const plan = PLANS[planKey];
 
-    // 2. Count profiles saved this month - MIGRATED TO SUPABASE
-    const profilesCount = 0; // TODO: Fetch from Supabase via backend if needed
-
-    // 3. Count active trackers - MIGRATED TO SUPABASE
-    const activeTrackers = 0; // TODO: Fetch from Supabase via backend if needed
-
     return {
         plan: plan,
         usage: {
-            profiles: profilesCount,
             profilesLimit: plan.profilesLimit,
-            trackers: activeTrackers,
             trackersLimit: plan.trackersLimit,
         }
     };

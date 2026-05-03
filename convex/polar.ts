@@ -101,8 +101,8 @@ export const handlePolarWebhook = action({
                 const isActive = data.status === "active" || data.status === "trialing";
 
                 if (isActive) {
-                    if (productId === growthId) planSlug = "pro";
-                    else if (productId === scaleId) planSlug = "elite";
+                    if (productId === growthId) planSlug = "growth";
+                    else if (productId === scaleId) planSlug = "scale";
                 }
 
                 await ctx.runMutation(api.subscriptions.updateSubscription, {
@@ -169,8 +169,8 @@ export const syncFromPolar = action({
                 const scaleId = (process.env.NEXT_PUBLIC_POLAR_PRODUCT_ID_SCALE || "").trim();
 
                 let planSlug = "free";
-                if (productId === growthId) planSlug = "pro";
-                else if (productId === scaleId) planSlug = "elite";
+                if (productId === growthId) planSlug = "growth";
+                else if (productId === scaleId) planSlug = "scale";
 
                 await ctx.runMutation(api.subscriptions.updateSubscription, {
                     email: args.email,

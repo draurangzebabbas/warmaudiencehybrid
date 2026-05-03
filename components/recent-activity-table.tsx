@@ -58,14 +58,23 @@ export function RecentActivityTable() {
                     let type = item.profile_type;
 
                     if (type === "personal" && item.personal) {
-                        name = item.personal.full_name || item.personal.linkedin_url;
-                        url = item.personal.linkedin_url;
+                        const p = Array.isArray(item.personal) ? item.personal[0] : item.personal;
+                        if (p) {
+                            name = p.full_name || p.linkedin_url;
+                            url = p.linkedin_url;
+                        }
                     } else if (type === "company" && item.company) {
-                        name = item.company.company_name || item.company.linkedin_url;
-                        url = item.company.linkedin_url;
+                        const c = Array.isArray(item.company) ? item.company[0] : item.company;
+                        if (c) {
+                            name = c.company_name || c.linkedin_url;
+                            url = c.linkedin_url;
+                        }
                     } else if (type === "google_maps" && item.google_maps) {
-                        name = item.google_maps.title || item.google_maps.url;
-                        url = item.google_maps.url;
+                        const g = Array.isArray(item.google_maps) ? item.google_maps[0] : item.google_maps;
+                        if (g) {
+                            name = g.title || g.url;
+                            url = g.url;
+                        }
                     }
 
                     return {

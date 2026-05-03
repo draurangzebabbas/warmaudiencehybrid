@@ -1,13 +1,14 @@
 import { v } from "convex/values";
-import { query, QueryCtx } from "./_generated/server";
-import { authComponent } from "./auth";
+import { query } from "./_generated/server";
 
 /**
- * Get dashboard statistics for the current user (LinkedLead) - MIGRATED TO SUPABASE
+ * DEPRECATED: Dashboard statistics have been migrated to Supabase.
+ * This file is kept only for legacy compatibility but returns empty data.
  */
+
 export const getStats = query({
     args: {},
-    handler: async (ctx: QueryCtx) => {
+    handler: async () => {
         return {
             totalPersonalProfiles: 0,
             totalCompanyProfiles: 0,
@@ -17,14 +18,11 @@ export const getStats = query({
     },
 });
 
-/**
- * Get recent activity for the dashboard - MIGRATED TO SUPABASE
- */
 export const getRecentActivity = query({
     args: {
         limit: v.optional(v.number()),
     },
-    handler: async (ctx: QueryCtx, args) => {
+    handler: async () => {
         return [];
     },
 });

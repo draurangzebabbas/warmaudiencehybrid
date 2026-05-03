@@ -105,7 +105,7 @@ export function PlanUsage() {
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2 text-sm font-semibold">
                                 <IconUsers className="size-4 text-primary" />
-                                <span>Profile Slots</span>
+                                <span>Lead Storage Slots</span>
                             </div>
                             <div className="text-right">
                                 <span className="font-bold">{currentUsage.profiles.toLocaleString()}</span>
@@ -114,7 +114,7 @@ export function PlanUsage() {
                         </div>
                         <Progress value={profilePercent} className="h-1.5" />
                         <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                            <span>Saved this month</span>
+                            <span>Total stored leads</span>
                             <span className={profilePercent > 90 ? "text-red-500" : "text-primary"}>
                                 {currentUsage.profilesLimit - currentUsage.profiles} Slots Remaining
                             </span>
