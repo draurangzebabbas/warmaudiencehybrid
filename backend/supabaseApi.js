@@ -251,6 +251,20 @@ async function upsertWebsiteContactsBulk(contacts) {
 }
 
 /**
+ * Get website contacts by domains
+ */
+async function getWebsiteContactsByDomains(domains) {
+    const { data, error } = await supabase
+        .from("website_contacts")
+        .select("*")
+        .in("domain", domains);
+
+    if (error) throw error;
+    return data || [];
+}
+
+
+/**
  * Link a user to multiple leads in Supabase (Junction Table)
  * Appends tags if lead already linked to user
  */

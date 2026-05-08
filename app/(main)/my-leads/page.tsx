@@ -154,6 +154,7 @@ type WebsiteContact = {
     updatedAt: number;
     tags?: string[];
     _id: string;
+    extraData?: any;
 };
 
 // --- Page Component ---
@@ -166,15 +167,13 @@ export default function ProfilesPage() {
     function useLeadsFromSupabase(userId: string | undefined, profileType: string) {
         const [leads, setLeads] = useState<any[]>([]);
         const [loading, setLoading] = useState(false);
+        const [refreshKey, setRefreshKey] = useState(0);
+
+        const refresh = () => setRefreshKey(prev => prev + 1);
 
         useEffect(() => {
             if (!userId) return;
             setLoading(true);
-
-            const table = profileType === "google_maps" ? "google_maps_leads" : 
-                         profileType === "company" ? "company_profiles" : 
-                         profileType === "website_contact" ? "website_contacts" :
-                         "linkedin_profiles";
 
             getToken().then((token) => {
                 if (!token) {
@@ -190,7 +189,10 @@ export default function ProfilesPage() {
                         id,
                         tags,
                         created_at,
-                        details: ${table} (*)
+                        personal: linkedin_profiles (*),
+                        company: company_profiles (*),
+                        google_maps: google_maps_leads (*),
+                        website_contact: website_contacts (*)
                     `)
                     .eq("user_id", userId)
                     .eq("profile_type", profileType)
@@ -203,9 +205,8 @@ export default function ProfilesPage() {
                     }
                     if (data) {
                         const formatted = data
-                            .filter(d => d.details)
                             .map(d => {
-                                const details = Array.isArray(d.details) ? d.details[0] : d.details;
+                                const details = d.personal || d.company || d.google_maps || d.website_contact;
                                 if (!details) return null;
                                 if (profileType === "personal") {
                                     return {
@@ -252,6 +253,7 @@ export default function ProfilesPage() {
                                         ...details,
                                         socials,
                                         sourceUrls: details.source_urls || [],
+                                        extraData: details.extra_data || {},
                                         updatedAt: new Date(details.updated_at || d.created_at).getTime(),
                                         tags: d.tags,
                                         junctionId: d.id,
@@ -282,16 +284,16 @@ export default function ProfilesPage() {
                     setLoading(false);
                 });
             });
-        }, [userId, profileType]);
+        }, [userId, profileType, refreshKey]);
 
-        return { leads, loading };
+        return { leads, loading, refresh };
     }
 
     // --- State & Mutations ---
     const { leads: personal, loading: loadingPersonal } = useLeadsFromSupabase(user?._id, "personal");
     const { leads: company, loading: loadingCompany } = useLeadsFromSupabase(user?._id, "company");
     const { leads: googleMaps, loading: loadingGoogleMaps } = useLeadsFromSupabase(user?._id, "google_maps");
-    const { leads: websiteContacts, loading: loadingWebsiteContacts } = useLeadsFromSupabase(user?._id, "website_contact");
+    const { leads: websiteContacts, loading: loadingWebsiteContacts, refresh: refreshWebsiteContacts } = useLeadsFromSupabase(user?._id, "website_contact");
 
     const getOrCreateKey = useAction(api.actions.supabase.getOrCreateWebhookKey);
 
@@ -373,6 +375,30 @@ export default function ProfilesPage() {
             window.location.reload(); 
         } catch (e: any) {
             toast.error(e.message);
+        }
+    };
+
+    const handleUpdateWebsiteContact = async (domain: string) => {
+        try {
+            toast.loading(`Updating data for ${domain}...`, { id: 'update-contact' });
+            const token = await getToken();
+            const res = await fetch(`${process.env.NEXT_PUBLIC_RENDER_BACKEND_URL || "http://localhost:8000"}/api/update-website-contact`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ domain })
+            });
+            const data = await res.json();
+            if (data.success) {
+                toast.success(`Data updated for ${domain}`, { id: 'update-contact' });
+                refreshWebsiteContacts();
+            } else {
+                toast.error(data.error || 'Failed to update data', { id: 'update-contact' });
+            }
+        } catch (error) {
+            toast.error('Connection error', { id: 'update-contact' });
         }
     };
 
@@ -1006,10 +1032,18 @@ export default function ProfilesPage() {
             accessorKey: "domain",
             header: "Domain",
             cell: ({ row }) => (
-                <div className="flex flex-col">
-                    <span className="font-medium">{row.original.domain}</span>
-                    <a href={`https://${row.original.domain}`} target="_blank" className="text-[10px] text-blue-500 hover:underline truncate max-w-[150px]">
-                        Visit Website
+                <div className="flex items-center gap-2">
+                    <img 
+                        src={`https://www.google.com/s2/favicons?sz=64&domain=${row.original.domain}`} 
+                        alt="" 
+                        className="size-4 rounded-sm"
+                    />
+                    <a 
+                        href={`https://${row.original.domain}`} 
+                        target="_blank" 
+                        className="font-medium hover:text-blue-500 transition-colors"
+                    >
+                        {row.original.domain}
                     </a>
                 </div>
             ),
@@ -1019,10 +1053,20 @@ export default function ProfilesPage() {
             header: "Found At",
             cell: ({ row }) => {
                 const urls = row.original.sourceUrls || [];
-                if (urls.length === 0) return "-";
+                const s = row.original.socials || {};
+                const extra = row.original.extraData || {};
+                const hasDetails = (row.original.emails?.length > 0) || (row.original.phones?.length > 0) || 
+                                   (s.linkedin || s.facebook || s.instagram || s.twitter || s.tiktok || s.youtube || s.pinterest);
+                
+                if (!hasDetails) return "-";
+
+                // Use sourceUrls if available, otherwise fallback to the original start URL we checked
+                const displayUrls = urls.length > 0 ? urls : (extra.originalStartUrl ? [extra.originalStartUrl] : []);
+                
+                if (displayUrls.length === 0) return "-";
                 return (
                     <div className="flex flex-col gap-0.5">
-                        {urls.slice(0, 1).map((url, i) => (
+                        {displayUrls.slice(0, 1).map((url, i) => (
                             <a 
                                 key={i} 
                                 href={url} 
@@ -1033,7 +1077,7 @@ export default function ProfilesPage() {
                                 {url.replace(/^https?:\/\//, '').split('/')[1] ? `/${url.replace(/^https?:\/\//, '').split('/').slice(1).join('/')}` : '/'}
                             </a>
                         ))}
-                        {urls.length > 1 && <span className="text-[9px] text-muted-foreground">+{urls.length - 1} more pages</span>}
+                        {displayUrls.length > 1 && <span className="text-[9px] text-muted-foreground">+{displayUrls.length - 1} more</span>}
                     </div>
                 );
             }
@@ -1127,6 +1171,10 @@ export default function ProfilesPage() {
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuItem onClick={() => navigator.clipboard.writeText(row.original.domain)}>
                             Copy Domain
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleUpdateWebsiteContact(row.original.domain)}>
+                            <IconRefresh className="mr-2 size-4" />
+                            Update Data
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteProfile(row.original.junctionId)}>
@@ -1675,7 +1723,7 @@ function FilterSheet({ type, filters, setFilters }: { type: "personal" | "compan
                 <SheetHeader>
                     <SheetTitle>Advanced Filters</SheetTitle>
                     <SheetDescription>
-                        Narrow down your {type === "personal" ? "personal" : "company"} leads.
+                        Narrow down your {type === "personal" ? "personal" : type === "company" ? "company" : type === "google_maps" ? "Google Maps" : "website contact"} leads.
                     </SheetDescription>
                 </SheetHeader>
                 <div className="py-6 space-y-6 px-1 pb-10">
@@ -1789,7 +1837,7 @@ function FilterSheet({ type, filters, setFilters }: { type: "personal" | "compan
 
                     <Separator className="opacity-50" />
 
-                    {type !== "google_maps" && (
+                    {(type !== "google_maps" && type !== "website_contact") && (
                         <div className="space-y-4">
                             <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{type === "personal" ? "Connections" : "Company Size"}</Label>
                             <div className="flex items-center gap-2">
@@ -1843,7 +1891,7 @@ function FilterSheet({ type, filters, setFilters }: { type: "personal" | "compan
                         </>
                     )}
 
-                    {type !== "google_maps" && (
+                    {(type !== "google_maps" && type !== "website_contact") && (
                         <div className="space-y-4">
                             <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Followers</Label>
                             <div className="flex items-center gap-2">

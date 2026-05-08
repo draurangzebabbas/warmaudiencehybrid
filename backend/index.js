@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
-const { processJob } = require("./jobProcessor");
+const { processJob, handleWebsiteContactUpdate } = require("./jobProcessor");
 const { runHeartbeat } = require("./heartbeat");
 const supabaseApi = require("./supabaseApi");
 
@@ -224,6 +224,20 @@ app.post("/api/scrape-website-contacts", async (req, res) => {
     } catch (e) {
         console.error("scrape-website-contacts error:", e);
         res.status(500).json({ error: e.message });
+    }
+});
+
+// Update a single website contact (Fresh scrape)
+app.post("/api/update-website-contact", async (req, res) => {
+    try {
+        const { domain } = req.body;
+        if (!domain) return res.status(400).json({ error: "Missing domain" });
+
+        const result = await handleWebsiteContactUpdate(req.userId, domain, keyManager);
+        res.json({ success: true, data: result });
+    } catch (error) {
+        console.error("❌ Website Contact Update error:", error);
+        res.status(500).json({ error: error.message });
     }
 });
 

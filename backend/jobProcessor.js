@@ -161,118 +161,195 @@ async function handleGoogleMapsScrape(userId, input, keyManager, tags = ["Google
 }
 
 async function handleWebsiteContactsScrape(userId, input, keyManager, tags = ["WebsiteContact"], jobId) {
-    const { domains = [] } = input;
-    console.log(`🌐 Starting website contact extraction for: ${domains.join(", ")}`);
-    
     try {
-        if (jobId) await supabaseApi.updateJobProgress(jobId, 10);
-
-        // Prepare URLs to check for each domain
-        const urlsToCheck = [];
-        domains.forEach(domain => {
-            const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/+$/, '');
-            urlsToCheck.push(`https://${cleanDomain}`);
-            urlsToCheck.push(`https://${cleanDomain}/contact`);
-            urlsToCheck.push(`https://${cleanDomain}/contact-us`);
+        const domains = input.domains || [];
+        if (domains.length === 0) return [];
+        
+        console.log(`🌐 Starting website contact extraction for: ${domains.join(', ')}`);
+        
+        // 1. Check database for existing contacts to save costs
+        const existing = await supabaseApi.getWebsiteContactsByDomains(domains);
+        const existingMap = new Map(existing.map(c => [c.domain, c]));
+        
+        // Only scrape domains not in DB or older than 30 days
+        const staleThreshold = new Date();
+        staleThreshold.setDate(staleThreshold.getDate() - 30);
+        
+        const toScrape = domains.filter(domain => {
+            const found = existingMap.get(domain);
+            if (!found) return true;
+            return new Date(found.updated_at) < staleThreshold;
         });
-
-        const results = await executeWithRetry(
-            keyManager,
-            "Website Contacts Scrape",
-            (key) => scraper.scrapeWebsiteContacts(urlsToCheck, key)
-        );
-
-        if (jobId) await supabaseApi.updateJobProgress(jobId, 80);
-
-        if (results && results.length > 0) {
-            console.log(`✨ Found ${results.length} website contact results. Persistence started...`);
-
-            // The actor returns results per URL, but we want to merge them per domain
-            const domainMap = new Map();
-
-            results.forEach(res => {
-                const domain = res.domain;
-                if (!domain) return;
-
-                if (!domainMap.has(domain)) {
-                    domainMap.set(domain, {
-                        domain,
-                        emails: new Set(),
-                        phones: new Set(),
-                        sourceUrls: new Set(),
-                        linkedin: null,
-                        twitter: null,
-                        instagram: null,
-                        facebook: null,
-                        youtube: null,
-                        tiktok: null,
-                        pinterest: null,
-                        socials: {},
-                        extraData: res
-                    });
-                }
-
-                const entry = domainMap.get(domain);
-                
-                // If this result has any useful info, add its URL to sourceUrls
-                const hasInfo = (res.emails?.length > 0) || (res.phones?.length > 0) || 
-                                (res.linkedIns?.length > 0) || (res.twitters?.length > 0) || 
-                                (res.instagrams?.length > 0) || (res.facebooks?.length > 0);
-                
-                if (hasInfo && res.url) {
-                    entry.sourceUrls.add(res.url);
-                }
-                
-                // Merge emails and phones
-                if (res.emails) res.emails.forEach(e => entry.emails.add(e));
-                if (res.phones) res.phones.forEach(p => entry.phones.add(p));
-
-                // Merge socials (prefer non-null)
-                const getFirst = (arr) => (arr && arr.length > 0) ? arr[0] : null;
-
-                entry.linkedin = entry.linkedin || getFirst(res.linkedIns);
-                entry.twitter = entry.twitter || getFirst(res.twitters);
-                entry.instagram = entry.instagram || getFirst(res.instagrams);
-                entry.facebook = entry.facebook || getFirst(res.facebooks);
-                entry.youtube = entry.youtube || getFirst(res.youtubes);
-                entry.tiktok = entry.tiktok || getFirst(res.tiktoks);
-                entry.pinterest = entry.pinterest || getFirst(res.pinterests);
-
-                // Update socials object
-                entry.socials = {
-                    linkedin: entry.linkedin,
-                    twitter: entry.twitter,
-                    instagram: entry.instagram,
-                    facebook: entry.facebook,
-                    youtube: entry.youtube,
-                    tiktok: entry.tiktok,
-                    pinterest: entry.pinterest
-                };
+        
+        let allResults = [...existing];
+        
+        if (toScrape.length > 0) {
+            if (jobId) await supabaseApi.updateJobProgress(jobId, 10);
+            console.log(`📡 Scraping ${toScrape.length} new/stale domains: ${toScrape.join(', ')}`);
+            
+            // Prepare URLs to check for each domain (limit to 3 URLs per domain)
+            const urlsToCheck = [];
+            toScrape.forEach(domain => {
+                const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/+$/, '');
+                urlsToCheck.push(`https://${cleanDomain}`);
+                urlsToCheck.push(`https://${cleanDomain}/contact`);
+                urlsToCheck.push(`https://${cleanDomain}/contact-us`);
             });
+
+            const results = await executeWithRetry(
+                keyManager,
+                "Website Contacts Scrape",
+                (key) => scraper.scrapeWebsiteContacts(urlsToCheck, key)
+            );
+            
+            // Format results (Merging per domain)
+            const domainMap = new Map();
+            
+            // Initialize domainMap with empty info for all requested domains 
+            // so we save even those where nothing was found (Future avoidance)
+            toScrape.forEach(domain => {
+                domainMap.set(domain, {
+                    domain,
+                    emails: new Set(),
+                    phones: new Set(),
+                    sourceUrls: new Set(),
+                    socials: {},
+                    extraData: {}
+                });
+            });
+
+            if (results && results.length > 0) {
+                results.forEach(res => {
+                    const domain = res.domain;
+                    if (!domain || !domainMap.has(domain)) return;
+
+                    const entry = domainMap.get(domain);
+                    const hasInfo = (res.emails?.length > 0) || (res.phones?.length > 0) || 
+                                    (res.linkedIns?.length > 0) || (res.twitters?.length > 0) || 
+                                    (res.instagrams?.length > 0) || (res.facebooks?.length > 0);
+                    
+                    if (hasInfo && res.url) entry.sourceUrls.add(res.url);
+                    
+                    if (res.emails) res.emails.forEach(e => entry.emails.add(e));
+                    if (res.phones) res.phones.forEach(p => entry.phones.add(p));
+                    
+                    // Collect first social link of each type
+                    if (res.linkedIns?.[0] && !entry.socials.linkedin) entry.socials.linkedin = res.linkedIns[0];
+                    if (res.twitters?.[0] && !entry.socials.twitter) entry.socials.twitter = res.twitters[0];
+                    if (res.instagrams?.[0] && !entry.socials.instagram) entry.socials.instagram = res.instagrams[0];
+                    if (res.facebooks?.[0] && !entry.socials.facebook) entry.socials.facebook = res.facebooks[0];
+                    if (res.youtubes?.[0] && !entry.socials.youtube) entry.socials.youtube = res.youtubes[0];
+                    if (res.tiktoks?.[0] && !entry.socials.tiktok) entry.socials.tiktok = res.tiktoks[0];
+                    if (res.pinterests?.[0] && !entry.socials.pinterest) entry.socials.pinterest = res.pinterests[0];
+                });
+            }
 
             const formatted = Array.from(domainMap.values()).map(d => ({
                 ...d,
                 emails: Array.from(d.emails),
                 phones: Array.from(d.phones),
-                sourceUrls: Array.from(d.sourceUrls)
+                sourceUrls: Array.from(d.sourceUrls),
+                // Map top-level social fields for the DB table
+                linkedin: d.socials.linkedin,
+                twitter: d.socials.twitter,
+                instagram: d.socials.instagram,
+                facebook: d.socials.facebook,
+                youtube: d.socials.youtube,
+                tiktok: d.socials.tiktok,
+                pinterest: d.socials.pinterest
             }));
 
             const saved = await supabaseApi.upsertWebsiteContactsBulk(formatted);
             
-            if (saved && saved.length > 0) {
-                const sids = saved.map(s => s.id);
-                await supabaseApi.linkUserToLeadsBulk(userId, sids, "website_contact", tags);
-            }
-
-            if (jobId) await supabaseApi.updateJobProgress(jobId, 100, saved.length);
-            console.log(`✅ Successfully saved and linked ${saved.length} website contacts in Supabase`);
+            // Add new results to allResults, replacing old stale ones if any
+            const savedMap = new Map(saved.map(s => [s.domain, s]));
+            allResults = domains.map(d => savedMap.get(d) || existingMap.get(d)).filter(Boolean);
+            
+            if (jobId) await supabaseApi.updateJobProgress(jobId, 80);
         } else {
-            console.warn("⚠️ No results returned from Website Contacts scraper.");
-            if (jobId) await supabaseApi.updateJobProgress(jobId, 100, 0);
+            console.log(`✨ All ${domains.length} domains already found in database. Skipping Apify calls.`);
         }
-    } catch (err) {
-        throw err;
+
+        // Link all results to the user
+        const sids = allResults.map(r => r.id);
+        if (sids.length > 0) {
+            await supabaseApi.linkUserToLeadsBulk(userId, sids, "website_contact", tags);
+            console.log(`✅ Successfully saved and linked ${sids.length} website contacts in Supabase`);
+        }
+
+        if (jobId) await supabaseApi.updateJobProgress(jobId, 100, allResults.length);
+        return allResults;
+    } catch (error) {
+        console.error(`❌ Website Contacts job failed:`, error.message);
+        if (jobId) await supabaseApi.updateJobProgress(jobId, 0, 0, error.message);
+        throw error;
     }
+}
+
+async function handleWebsiteContactUpdate(userId, domain, keyManager) {
+    console.log(`🔄 Force updating website contact for: ${domain}`);
+    
+    // Force scrape by ignoring DB check
+    const urlsToCheck = [
+        `https://${domain.replace(/^https?:\/\//, '').replace(/\/+$/, '')}`,
+        `https://${domain.replace(/^https?:\/\//, '').replace(/\/+$/, '')}/contact`,
+        `https://${domain.replace(/^https?:\/\//, '').replace(/\/+$/, '')}/contact-us`
+    ];
+
+    const results = await executeWithRetry(
+        keyManager,
+        "Website Contact Force Update",
+        (key) => scraper.scrapeWebsiteContacts(urlsToCheck, key)
+    );
+
+    const domainMap = new Map();
+    domainMap.set(domain, {
+        domain,
+        emails: new Set(),
+        phones: new Set(),
+        sourceUrls: new Set(),
+        socials: {},
+        extraData: {}
+    });
+
+    if (results && results.length > 0) {
+        results.forEach(res => {
+            if (res.domain !== domain) return;
+            const entry = domainMap.get(domain);
+            const hasInfo = (res.emails?.length > 0) || (res.phones?.length > 0) || 
+                            (res.linkedIns?.length > 0) || (res.twitters?.length > 0) || 
+                            (res.instagrams?.length > 0) || (res.facebooks?.length > 0);
+            
+            if (hasInfo && res.url) entry.sourceUrls.add(res.url);
+            if (res.emails) res.emails.forEach(e => entry.emails.add(e));
+            if (res.phones) res.phones.forEach(p => entry.phones.add(p));
+            
+            if (res.linkedIns?.[0] && !entry.socials.linkedin) entry.socials.linkedin = res.linkedIns[0];
+            if (res.twitters?.[0] && !entry.socials.twitter) entry.socials.twitter = res.twitters[0];
+            if (res.instagrams?.[0] && !entry.socials.instagram) entry.socials.instagram = res.instagrams[0];
+            if (res.facebooks?.[0] && !entry.socials.facebook) entry.socials.facebook = res.facebooks[0];
+            if (res.youtubes?.[0] && !entry.socials.youtube) entry.socials.youtube = res.youtubes[0];
+            if (res.tiktoks?.[0] && !entry.socials.tiktok) entry.socials.tiktok = res.tiktoks[0];
+            if (res.pinterests?.[0] && !entry.socials.pinterest) entry.socials.pinterest = res.pinterests[0];
+        });
+    }
+
+    const formatted = Array.from(domainMap.values()).map(d => ({
+        ...d,
+        emails: Array.from(d.emails),
+        phones: Array.from(d.phones),
+        sourceUrls: Array.from(d.sourceUrls),
+        linkedin: d.socials.linkedin,
+        twitter: d.socials.twitter,
+        instagram: d.socials.instagram,
+        facebook: d.socials.facebook,
+        youtube: d.socials.youtube,
+        tiktok: d.socials.tiktok,
+        pinterest: d.socials.pinterest
+    }));
+
+    const saved = await supabaseApi.upsertWebsiteContactsBulk(formatted);
+    return saved[0];
 }
 
 async function executeWithRetry(keyManager, taskDescription, taskFn, maxRetries = 3) {
@@ -564,4 +641,4 @@ async function scrapeBatch(userId, urls, type, keyManager, tags) {
     }
 }
 
-module.exports = { processJob };
+module.exports = { processJob, handleWebsiteContactUpdate };
