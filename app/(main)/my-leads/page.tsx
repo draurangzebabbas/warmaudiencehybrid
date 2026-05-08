@@ -173,6 +173,7 @@ export default function ProfilesPage() {
                     `)
                     .eq("user_id", userId)
                     .eq("profile_type", profileType)
+                    .order("created_at", { ascending: false })
                     .then(({ data, error }) => {
                     if (error) {
                         console.error("Supabase fetch error:", error);
@@ -744,6 +745,26 @@ export default function ProfilesPage() {
             enableHiding: false,
         },
         {
+            accessorKey: "imageUrl",
+            header: "Image",
+            cell: ({ row }) => (
+                <div className="size-10 rounded-md overflow-hidden bg-muted flex items-center justify-center border border-border/50">
+                    {row.original.imageUrl ? (
+                        <img 
+                            src={row.original.imageUrl} 
+                            alt={row.original.title} 
+                            className="size-full object-cover"
+                            onError={(e) => {
+                                (e.target as HTMLImageElement).src = "https://placehold.co/100x100?text=No+Image";
+                            }}
+                        />
+                    ) : (
+                        <IconBrandGoogleMaps className="size-5 text-muted-foreground/40" />
+                    )}
+                </div>
+            ),
+        },
+        {
             accessorKey: "title",
             header: "Business Name",
             cell: ({ row }) => (
@@ -794,6 +815,20 @@ export default function ProfilesPage() {
                     </div>
                 );
             }
+        },
+        {
+            accessorKey: "tags",
+            header: "Tags",
+            cell: ({ row }) => (
+                <div className="flex flex-wrap gap-1 max-w-[150px]">
+                    {row.original.tags?.map((tag, idx) => (
+                        <Badge key={idx} variant="outline" className="text-[9px] px-1 h-3.5 bg-muted/30">
+                            {tag}
+                        </Badge>
+                    ))}
+                    {(!row.original.tags || row.original.tags.length === 0) && <span className="text-muted-foreground text-[10px]">-</span>}
+                </div>
+            )
         },
         {
             id: "socials",

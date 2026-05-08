@@ -71,6 +71,12 @@ export default function WebhookPage() {
         commenters: true
     };
 
+    const sampleGoogleMapsPayload = {
+        searchStringsArray: ["car wash"],
+        locationQuery: "Paris",
+        maxCrawledPlacesPerSearch: 5
+    };
+
     const curlProfileCommand = `curl -X POST ${backendUrl}/api/scrape-profiles \\
   -H "Authorization: Bearer ${apiKey || "YOUR_API_KEY"}" \\
   -H "Content-Type: application/json" \\
@@ -80,6 +86,11 @@ export default function WebhookPage() {
   -H "Authorization: Bearer ${apiKey || "YOUR_API_KEY"}" \\
   -H "Content-Type: application/json" \\
   -d '${JSON.stringify(sampleEngagerPayload)}'`;
+
+    const curlGoogleMapsCommand = `curl -X POST ${backendUrl}/api/scrape-google-maps \\
+  -H "Authorization: Bearer ${apiKey || "YOUR_API_KEY"}" \\
+  -H "Content-Type: application/json" \\
+  -d '${JSON.stringify(sampleGoogleMapsPayload)}'`;
 
     if (!mounted) {
         return (
@@ -184,6 +195,16 @@ export default function WebhookPage() {
                                 <div className="space-y-2 border-l-2 border-primary/20 pl-4 py-1">
                                     <div className="flex items-center gap-2">
                                         <span className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded tracking-wider">POST</span>
+                                        <code className="text-sm font-mono font-semibold">/api/scrape-google-maps</code>
+                                    </div>
+                                    <p className="text-sm text-muted-foreground">
+                                        Extract local business leads and emails from Google Maps searches.
+                                    </p>
+                                </div>
+
+                                <div className="space-y-2 border-l-2 border-primary/20 pl-4 py-1">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded tracking-wider">POST</span>
                                         <code className="text-sm font-mono font-semibold">/api/competitor-tracking/schedule</code>
                                     </div>
                                     <p className="text-sm text-muted-foreground">
@@ -200,9 +221,10 @@ export default function WebhookPage() {
                             </CardHeader>
                             <CardContent>
                                 <Tabs defaultValue="profiles" className="w-full">
-                                    <TabsList className="w-full grid grid-cols-2 mb-6">
+                                    <TabsList className="w-full grid grid-cols-3 mb-6">
                                         <TabsTrigger value="profiles">Profile Scraping</TabsTrigger>
                                         <TabsTrigger value="engagers">Engagement Extraction</TabsTrigger>
+                                        <TabsTrigger value="gmaps">Google Maps</TabsTrigger>
                                     </TabsList>
 
                                     <TabsContent value="profiles" className="space-y-6 animate-in fade-in duration-300">
@@ -253,6 +275,32 @@ export default function WebhookPage() {
                                             </h4>
                                             <pre className="text-xs font-mono bg-muted/50 p-4 rounded-lg overflow-auto border shadow-inner">
                                                 {JSON.stringify(sampleEngagerPayload, null, 2)}
+                                            </pre>
+                                        </div>
+                                    </TabsContent>
+
+                                    <TabsContent value="gmaps" className="space-y-6 animate-in fade-in duration-300">
+                                        <div className="relative rounded-xl bg-muted p-5 font-mono text-sm overflow-x-auto border">
+                                            <div className="absolute right-4 top-4">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8 hover:bg-background/20"
+                                                    onClick={() => copyToClipboard(curlGoogleMapsCommand, true)}
+                                                >
+                                                    <Copy className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                            <pre className="whitespace-pre-wrap break-all pr-12 text-xs leading-relaxed opacity-80">
+                                                {curlGoogleMapsCommand}
+                                            </pre>
+                                        </div>
+                                        <div className="rounded-xl border p-5 bg-card shadow-sm">
+                                            <h4 className="font-semibold mb-3 text-sm flex items-center gap-2">
+                                                <Shield className="size-4 text-primary" /> Request Body
+                                            </h4>
+                                            <pre className="text-xs font-mono bg-muted/50 p-4 rounded-lg overflow-auto border shadow-inner">
+                                                {JSON.stringify(sampleGoogleMapsPayload, null, 2)}
                                             </pre>
                                         </div>
                                     </TabsContent>

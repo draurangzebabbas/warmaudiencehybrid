@@ -141,9 +141,20 @@ async function scrapeGoogleMaps(options, token) {
         searchStringsArray,
         locationQuery,
         maxCrawledPlacesPerSearch,
-        // Recommended defaults for stability
+        // Detailed extraction flags
+        scrapeContacts: true,
+        scrapeSocialMediaProfiles: {
+            facebooks: true,
+            instagrams: true,
+            tiktoks: true,
+            twitters: true,
+            youtubes: true
+        },
+        scrapePlaceDetailPage: true,
+        includeWebResults: false,
         language: "en",
         allPlacesNoSearchAction: "enlargeArea",
+        skipClosedPlaces: false,
     }, token, 600000); // 10 min timeout for larger scrapes
 }
 
