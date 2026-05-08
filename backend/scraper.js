@@ -163,7 +163,8 @@ async function scrapeGoogleMaps(options, token) {
         skipClosedPlaces: false,
         verifyLeadsEnrichmentEmails: false,
         scrapeReviewsPersonalData: true,
-        scrapeImageAuthors: false
+        scrapeImageAuthors: false,
+        maxTotalChargeUsd: 5
     };
 
     console.log("🚀 [PROD] Sending Official Google Maps Payload:", JSON.stringify(payload, null, 2));
