@@ -223,12 +223,17 @@ export default function ProfilesPage() {
                                         _id: d.id 
                                     };
                                 } else { // google_maps
+                                    let socials = details.socials;
+                                    if (typeof socials === 'string') {
+                                        try { socials = JSON.parse(socials); } catch (e) { socials = {}; }
+                                    }
                                     return {
                                         ...details,
-                                        totalScore: details.total_score,
-                                        reviewsCount: details.reviews_count,
-                                        imageUrl: details.image_url,
-                                        placeId: details.place_id,
+                                        socials,
+                                        totalScore: details.total_score || details.totalScore,
+                                        reviewsCount: details.reviews_count || details.reviewsCount,
+                                        imageUrl: details.image_url || details.imageUrl,
+                                        placeId: details.place_id || details.placeId,
                                         updatedAt: new Date(details.updated_at || d.created_at).getTime(),
                                         tags: d.tags,
                                         junctionId: d.id,
@@ -762,20 +767,17 @@ export default function ProfilesPage() {
             accessorKey: "imageUrl",
             header: "Image",
             cell: ({ row }) => (
-                <div className="size-10 rounded-md overflow-hidden bg-muted flex items-center justify-center border border-border/50">
-                    {row.original.imageUrl ? (
-                        <img 
-                            src={row.original.imageUrl} 
-                            alt={row.original.title} 
-                            className="size-full object-cover"
-                            onError={(e) => {
-                                (e.target as HTMLImageElement).src = "https://placehold.co/100x100?text=No+Image";
-                            }}
-                        />
-                    ) : (
-                        <IconBrandGoogleMaps className="size-5 text-muted-foreground/40" />
-                    )}
-                </div>
+                <Avatar className="h-9 w-9 rounded-md border border-border/50">
+                    <AvatarImage 
+                        src={row.original.imageUrl || undefined} 
+                        alt={row.original.title}
+                        className="object-cover"
+                        referrerPolicy="no-referrer"
+                    />
+                    <AvatarFallback className="rounded-md">
+                        <IconBrandGoogleMaps className="size-4 text-muted-foreground/40" />
+                    </AvatarFallback>
+                </Avatar>
             ),
         },
         {

@@ -73,11 +73,24 @@ async function handleGoogleMapsScrape(userId, input, keyManager, tags = ["Google
                 // Map results...
                 const formatted = results.map(l => {
                     // (Field mapping logic remains same)
-                    const potentialImage = l.imageUrl || l.image_url || l.img_url || l.imgUrl || 
+                    const extractUrl = (val) => {
+                        if (!val) return null;
+                        if (typeof val === 'string') return val;
+                        if (typeof val === 'object' && val.url) return val.url;
+                        if (typeof val === 'object' && val.image) return val.image;
+                        return null;
+                    };
+
+                    let potentialImage = extractUrl(l.imageUrl || l.image_url || l.img_url || l.imgUrl || 
                                          l.photo || l.photoUrl || l.thumbnail || l.thumbnailUrl || 
-                                         l.mainImage || l.featuredImage ||
-                                         (l.photos && l.photos.length > 0 ? l.photos[0] : null) ||
-                                         (l.images && l.images.length > 0 ? l.images[0] : null);
+                                         l.mainImage || l.featuredImage);
+                    
+                    if (!potentialImage && l.photos && l.photos.length > 0) {
+                        potentialImage = extractUrl(l.photos[0]);
+                    }
+                    if (!potentialImage && l.images && l.images.length > 0) {
+                        potentialImage = extractUrl(l.images[0]);
+                    }
 
                     const safeNumber = (val) => {
                         if (Array.isArray(val)) return 0;
