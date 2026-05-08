@@ -206,7 +206,9 @@ export default function ProfilesPage() {
                     if (data) {
                         const formatted = data
                             .map(d => {
-                                const details = d.personal || d.company || d.google_maps || d.website_contact;
+                                const detailsRaw = d.personal || d.company || d.google_maps || d.website_contact;
+                                if (!detailsRaw) return null;
+                                const details = Array.isArray(detailsRaw) ? detailsRaw[0] : detailsRaw;
                                 if (!details) return null;
                                 if (profileType === "personal") {
                                     return {
@@ -1055,7 +1057,7 @@ export default function ProfilesPage() {
                 const urls = row.original.sourceUrls || [];
                 const s = row.original.socials || {};
                 const extra = row.original.extraData || {};
-                const hasDetails = (row.original.emails?.length > 0) || (row.original.phones?.length > 0) || 
+                const hasDetails = ((row.original.emails?.length || 0) > 0) || ((row.original.phones?.length || 0) > 0) || 
                                    (s.linkedin || s.facebook || s.instagram || s.twitter || s.tiktok || s.youtube || s.pinterest);
                 
                 if (!hasDetails) return "-";
