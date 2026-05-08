@@ -249,7 +249,7 @@ async function linkUserToLeadsBulk(userId, leadIds, type, tags = []) {
             user_id: userId,
             profile_type: type,
             tags: mergedTags,
-            updated_at: new Date().toISOString()
+            created_at: new Date().toISOString()
         };
         item[idField] = id;
         return item;
