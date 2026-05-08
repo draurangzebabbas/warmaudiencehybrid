@@ -24,7 +24,12 @@ const ACTORS = {
 async function callApifyActor(actorId, input, token, timeout = 300000) {
     // We use the 'acts/' alias because it handles both Actors and Tasks correctly.
     // 'actors/' often returns 404 if the ID is for a Task.
-    const startUrl = `https://api.apify.com/v2/acts/${actorId}/runs`;
+    const maxTotalChargeUsd = input.maxTotalChargeUsd;
+    let startUrl = `https://api.apify.com/v2/acts/${actorId}/runs`;
+
+    if (maxTotalChargeUsd) {
+        startUrl += `?maxTotalChargeUsd=${maxTotalChargeUsd}`;
+    }
 
     try {
         console.log(`🎬 Starting Apify actor [${actorId}]...`);
@@ -164,7 +169,18 @@ async function scrapeGoogleMaps(options, token) {
         verifyLeadsEnrichmentEmails: false,
         scrapeReviewsPersonalData: true,
         scrapeImageAuthors: false,
-        maxTotalChargeUsd: 5
+        maxTotalChargeUsd: 5,
+        // Added missing fields from your example
+        maxReviews: 0,
+        reviewsSort: "newest",
+        reviewsFilterString: "",
+        reviewsOrigin: "all",
+        maxImages: 0,
+        allPlacesNoSearchAction: "",
+        searchMatching: "all",
+        placeMinimumStars: "",
+        website: "allPlaces",
+        maxQuestions: 0
     };
 
     console.log("🚀 [PROD] Sending Official Google Maps Payload:", JSON.stringify(payload, null, 2));
