@@ -177,13 +177,7 @@ async function executeWithRetry(keyManager, taskDescription, taskFn, maxRetries 
             const status = error.status || error.response?.status;
             console.error(`   ❌ ${taskDescription} failed: ${error.message || (typeof error === 'string' ? error : JSON.stringify(error))}`);
 
-            // 400 = Invalid Input / Bad Request. Don't retry, it's a code/user error.
-            if (status === 400) {
-                console.log(`      → Terminal error (400). Skipping retries.`);
-                throw error; 
-            }
-
-            if ([401, 402, 403, 429].includes(status)) {
+            if ([400, 401, 402, 403, 429].includes(status)) {
                 console.log(`      → Rotating key due to status ${status}`);
                 keyManager.markFailure(keyObj.key, status);
                 await keyManager.refreshIfLow();
