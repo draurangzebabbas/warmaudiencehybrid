@@ -22,8 +22,6 @@ const ACTORS = {
 // Core Apify Caller
 // ─────────────────────────────────────────
 async function callApifyActor(actorId, input, token, timeout = 300000) {
-    // We use the 'acts/' alias because it handles both Actors and Tasks correctly.
-    // 'actors/' often returns 404 if the ID is for a Task.
     const maxTotalChargeUsd = input.maxTotalChargeUsd;
     let startUrl = `https://api.apify.com/v2/acts/${actorId}/runs`;
 
@@ -31,9 +29,12 @@ async function callApifyActor(actorId, input, token, timeout = 300000) {
         startUrl += `?maxTotalChargeUsd=${maxTotalChargeUsd}`;
     }
 
+    // Remove from body — it's a query param only, not a body field
+    const { maxTotalChargeUsd: _removed, ...cleanInput } = input;
+
     try {
         console.log(`🎬 Starting Apify actor [${actorId}]...`);
-        const runResponse = await axios.post(startUrl, input, {
+        const runResponse = await axios.post(startUrl, cleanInput, {
             timeout: 30000,
             headers: {
                 "Content-Type": "application/json",
@@ -119,6 +120,7 @@ async function scrapePersonalProfiles(urls, token) {
     return callApifyActor(ACTORS.PERSONAL_PROFILE, {
         usernames: urls,   // The actor param is 'usernames' but accepts full URLs
         includeEmail: true,
+        maxTotalChargeUsd: 5,
     }, token);
 }
 
@@ -130,6 +132,7 @@ async function scrapePersonalProfiles(urls, token) {
 async function scrapeCompanyProfiles(urls, token) {
     return callApifyActor(ACTORS.COMPANY_PROFILE, {
         identifier: urls,
+        maxTotalChargeUsd: 5,
     }, token);
 }
 
@@ -205,6 +208,7 @@ async function scrapePersonalPosts(urls, token, postedLimit = "24h") {
         includeReposts: false,
         scrapeComments: false,
         scrapeReactions: false,
+        maxTotalChargeUsd: 5,
     }, token);
 }
 
@@ -219,6 +223,7 @@ async function searchKeywords(keywords, token, maxPosts = 50, dateFilter = "past
         max_posts: maxPosts,
         date_filter: dateFilter,
         sort_by: "date_posted",
+        maxTotalChargeUsd: 5,
     }, token);
 }
 
@@ -233,6 +238,7 @@ async function searchKeywords(keywords, token, maxPosts = 50, dateFilter = "past
 async function scrapePostEngagement(postUrls, token) {
     return callApifyActor(ACTORS.POST_COMMENTS, {
         posts: postUrls,
+        maxTotalChargeUsd: 5,
     }, token);
 }
 
@@ -243,6 +249,7 @@ async function scrapePostEngagement(postUrls, token) {
 async function scrapePostReactors(postUrls, token) {
     return callApifyActor(ACTORS.POST_REACTIONS, {
         posts: postUrls,
+        maxTotalChargeUsd: 5,
     }, token);
 }
 
@@ -264,7 +271,8 @@ async function scrapeCompanyEmployees(companyUrls, token, options = {}) {
         maxItems,
         maxItemsPerCompany,
         profileScraperMode: "full",
-        companyBatchMode: "parallel"
+        companyBatchMode: "parallel",
+        maxTotalChargeUsd: 5,
     }, token);
 }
 
@@ -275,7 +283,8 @@ async function scrapeProfileComments(profileUrls, token, maxItems = 20) {
     return callApifyActor(ACTORS.PROFILE_COMMENTS, {
         profiles: profileUrls,
         maxItems,
-        postedLimit: "month"
+        postedLimit: "month",
+        maxTotalChargeUsd: 5,
     }, token);
 }
 
