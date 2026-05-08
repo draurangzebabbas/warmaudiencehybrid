@@ -137,11 +137,19 @@ async function scrapeGoogleMaps(options, token) {
         maxCrawledPlacesPerSearch = 10
     } = options;
 
-    return callApifyActor(ACTORS.GOOGLE_MAPS, {
-        searchStringsArray,
-        locationQuery,
-        maxCrawledPlacesPerSearch,
-        // Detailed extraction flags
+    // Combine keywords and location for maximum reliability
+    const queries = searchStringsArray.map(q => 
+        locationQuery ? `${q} in ${locationQuery}` : q
+    );
+
+    const payload = {
+        // Redundant mapping for different actor versions
+        queries: queries,
+        searchStringsArray: queries,
+        locationQuery: locationQuery,
+        maxCrawledPlacesPerSearch: Number(maxCrawledPlacesPerSearch),
+        
+        // Exact matches for user's working manual run
         scrapeContacts: true,
         scrapeSocialMediaProfiles: {
             facebooks: true,
@@ -150,12 +158,19 @@ async function scrapeGoogleMaps(options, token) {
             twitters: true,
             youtubes: true
         },
-        scrapePlaceDetailPage: true,
+        scrapePlaceDetailPage: false,
         includeWebResults: false,
         language: "en",
-        allPlacesNoSearchAction: "enlargeArea",
         skipClosedPlaces: false,
-    }, token, 600000); // 10 min timeout for larger scrapes
+        maximumLeadsEnrichmentRecords: 0,
+        
+        // Disable useless fallbacks
+        allPlacesNoSearchAction: "none", 
+    };
+
+    console.log("🚀 [PROD] Sending Robust Google Maps Payload:", JSON.stringify(payload, null, 2));
+
+    return callApifyActor(ACTORS.GOOGLE_MAPS, payload, token, 600000); 
 }
 
 // ─────────────────────────────────────────
