@@ -31,6 +31,9 @@ async function callApifyActor(actorId, input, token, timeout = 300000) {
 
     // Remove from body — it's a query param only, not a body field
     const { maxTotalChargeUsd: _removed, ...cleanInput } = input;
+ 
+    console.log(`🔗 Final URL: ${startUrl}`);
+    console.log(`📦 Body has maxTotalChargeUsd: ${'maxTotalChargeUsd' in cleanInput}`);
 
     try {
         console.log(`🎬 Starting Apify actor [${actorId}]...`);
