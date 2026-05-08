@@ -179,12 +179,6 @@
 ]
 ```
 
-**Application Flow**:
-1. Cron job triggers competitor tracking
-2. Actor scrapes competitor's last 24h posts
-3. Returns post URLs
-4. Post URLs sent to Post Comments/Reactions actors
-5. Engaged users extracted and enriched
 
 ---
 
@@ -237,15 +231,6 @@
 ]
 ```
 
-**Application Flow**:
-1. User sets up keyword tracking: "enterprise SaaS"
-2. Weekly cron job runs
-3. Actor finds 50 posts about "enterprise SaaS"
-4. Post URLs extracted
-5. Comments/Reactions actors extract engagers
-6. Profiles enriched and saved with tag: "Keyword: enterprise SaaS"
-
----
 
 ### 3. ENGAGEMENT SCRAPERS (2 Actors)
 

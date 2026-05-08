@@ -79,11 +79,18 @@ async function handleGoogleMapsScrape(userId, input, keyManager, tags = ["Google
                                          (l.photos && l.photos.length > 0 ? l.photos[0] : null) ||
                                          (l.images && l.images.length > 0 ? l.images[0] : null);
 
+                    const safeNumber = (val) => {
+                        if (Array.isArray(val)) return 0;
+                        if (typeof val === 'number') return val;
+                        const parsed = parseFloat(val);
+                        return isNaN(parsed) ? 0 : parsed;
+                    };
+
                     return {
                         url: l.url,
                         title: l.title || l.companyName || l.name || "Unknown",
-                        totalScore: l.totalScore || l.reviewsScore || l.stars || l.rating || 0,
-                        reviewsCount: l.reviewsCount || l.reviews || l.reviewCount || 0,
+                        totalScore: safeNumber(l.totalScore || l.reviewsScore || l.stars || l.rating || 0),
+                        reviewsCount: safeNumber(l.reviewsCount || l.reviews || l.reviewCount || 0),
                         address: l.address || l.fullAddress || l.location?.address || "",
                         phone: l.phone || l.phoneNumber || "",
                         emails: l.emails || [],
@@ -191,7 +198,8 @@ async function handleScheduledTracking(userId, input, keyManager, jobId) {
     if (trackingUrl) {
         console.log(`🎯 Tracking profile: ${trackingUrl} (${schedule})`);
         // Auto-tag with profile handle/url
-        if (!tags.includes(trackingUrl)) tags.push(trackingUrl);
+        const tag = `Profile: ${trackingUrl.split('/in/')[1]?.replace(/\/+$/, '') || trackingUrl}`;
+        if (!tags.includes(tag)) tags.push(tag);
         try {
             const postUrls = await executeWithRetry(
                 keyManager,
@@ -210,7 +218,8 @@ async function handleScheduledTracking(userId, input, keyManager, jobId) {
         console.log(`🔍 Tracking keyword(s): ${keywords.join(", ")} (${schedule})`);
         // Auto-tag with keywords
         keywords.forEach(k => {
-            if (!tags.includes(k)) tags.push(k);
+            const tag = `Keyword: ${k}`;
+            if (!tags.includes(tag)) tags.push(tag);
         });
         try {
             const postUrls = await executeWithRetry(

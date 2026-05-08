@@ -72,12 +72,12 @@ async function executeTracker(tracker) {
 
     const jobData = {
         userId: tracker.user_id,
-        type: tracker.target_type === "profile" ? "engagement_scrape" : "google_maps",
+        type: "scheduled_tracking", // Correctly route to LinkedIn tracking logic
         input: {
-            postUrls: tracker.target_type === "profile" ? [tracker.target_value] : undefined,
-            searchStringsArray: tracker.target_type === "keyword" ? [tracker.target_value] : undefined,
-            locationQuery: tracker.location || "", // Use location field if available
-            engagementTypes: tracker.targets,
+            trackingUrl: tracker.target_type === "profile" ? tracker.target_value : undefined,
+            keywords: tracker.target_type === "keyword" ? [tracker.target_value] : undefined,
+            engagementTypes: tracker.targets || ["commenters", "reactors"],
+            schedule: tracker.schedule || "daily",
             tags: ["Automated"]
         }
     };
