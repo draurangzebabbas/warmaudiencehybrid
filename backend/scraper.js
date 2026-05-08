@@ -87,6 +87,7 @@ async function callApifyActor(actorId, input, token, timeout = 300000) {
     } catch (error) {
         console.error(`❌ Apify call failed [${actorId}]:`, error.message || error);
         if (error.response) {
+            console.error(`   → Full Error Data:`, JSON.stringify(error.response.data, null, 2));
             // Re-throw with status for key manager
             throw {
                 status: error.response.status,
@@ -143,7 +144,7 @@ async function scrapeGoogleMaps(options, token) {
         language: "en",
         locationQuery: locationQuery,
         maxCrawledPlacesPerSearch: limit,
-        maximumLeadsEnrichmentRecords: 0,
+        maximumLeadsEnrichmentRecords: limit,
         scrapeContacts: true,
         scrapeDirectories: false,
         scrapePlaceDetailPage: false,
@@ -154,10 +155,15 @@ async function scrapeGoogleMaps(options, token) {
             twitters: false,
             youtubes: false
         },
+        proxyConfiguration: {
+            useApifyProxy: true
+        },
         scrapeTableReservationProvider: false,
         searchStringsArray: searchStringsArray,
         skipClosedPlaces: false,
-        verifyLeadsEnrichmentEmails: false
+        verifyLeadsEnrichmentEmails: false,
+        scrapeReviewsPersonalData: true,
+        scrapeImageAuthors: false
     };
 
     console.log("🚀 [PROD] Sending Official Google Maps Payload:", JSON.stringify(payload, null, 2));
