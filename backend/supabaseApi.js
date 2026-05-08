@@ -219,27 +219,46 @@ async function upsertGoogleMapsLeadsBulk(leads) {
 
 /**
  * Link a user to multiple leads in Supabase (Junction Table)
+ * Appends tags if lead already linked to user
  */
 async function linkUserToLeadsBulk(userId, leadIds, type, tags = []) {
+    const idField = type === "google_maps" ? "lead_id" : 
+                    type === "company" ? "company_id" : 
+                    "linkedin_id";
+
+    // 1. Fetch existing tags for these leads for this user to allow merging
+    const { data: existingLeads } = await supabase
+        .from("user_leads")
+        .select(`id, ${idField}, tags`)
+        .eq("user_id", userId)
+        .in(idField, leadIds);
+
+    const existingMap = new Map();
+    if (existingLeads) {
+        existingLeads.forEach(l => {
+            existingMap.set(l[idField], l.tags || []);
+        });
+    }
+
     const items = leadIds.map(id => {
+        const existingTags = existingMap.get(id) || [];
+        // Merge tags and remove duplicates
+        const mergedTags = Array.from(new Set([...existingTags, ...tags])).filter(Boolean);
+
         const item = {
             user_id: userId,
             profile_type: type,
-            tags: tags,
-            created_at: new Date().toISOString()
+            tags: mergedTags,
+            updated_at: new Date().toISOString()
         };
-        if (type === "google_maps") item.lead_id = id;
-        else if (type === "company") item.company_id = id;
-        else if (type === "personal") item.linkedin_id = id;
+        item[idField] = id;
         return item;
     });
 
     const { data, error } = await supabase
         .from("user_leads")
         .upsert(items, { 
-            onConflict: type === "google_maps" ? "user_id, lead_id" : 
-                       type === "company" ? "user_id, company_id" : 
-                       "user_id, linkedin_id" 
+            onConflict: `user_id, ${idField}`
         });
 
     if (error) {

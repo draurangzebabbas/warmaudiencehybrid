@@ -562,6 +562,20 @@ export default function ProfilesPage() {
             }
         },
         {
+            accessorKey: "tags",
+            header: "Tags",
+            cell: ({ row }) => (
+                <div className="flex flex-wrap gap-1 max-w-[150px]">
+                    {row.original.tags?.map((tag, idx) => (
+                        <Badge key={idx} variant="outline" className="text-[9px] px-1 h-3.5 bg-muted/30">
+                            {tag}
+                        </Badge>
+                    ))}
+                    {(!row.original.tags || row.original.tags.length === 0) && <span className="text-muted-foreground text-[10px]">-</span>}
+                </div>
+            )
+        },
+        {
             id: "actions",
             cell: ({ row }) => (
                 <DropdownMenu>

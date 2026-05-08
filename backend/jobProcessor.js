@@ -183,13 +183,15 @@ async function handleManualScrape(userId, input, keyManager, tags = ["Manual"], 
 }
 
 async function handleScheduledTracking(userId, input, keyManager, jobId) {
-    const { trackingUrl, keywords, engagementTypes = ["commenters", "reactors"], schedule = "daily", tags = [] } = input;
+    let { trackingUrl, keywords, engagementTypes = ["commenters", "reactors"], schedule = "daily", tags = [] } = input;
     const timeFilterMap = { daily: "24h", weekly: "week", monthly: "month" };
     const timeFilter = timeFilterMap[schedule] || "24h";
     const dateFilter = schedule === "daily" ? "past-24h" : schedule === "weekly" ? "past-week" : "past-month";
 
     if (trackingUrl) {
         console.log(`🎯 Tracking profile: ${trackingUrl} (${schedule})`);
+        // Auto-tag with profile handle/url
+        if (!tags.includes(trackingUrl)) tags.push(trackingUrl);
         try {
             const postUrls = await executeWithRetry(
                 keyManager,
@@ -206,6 +208,10 @@ async function handleScheduledTracking(userId, input, keyManager, jobId) {
         }
     } else if (keywords && keywords.length > 0) {
         console.log(`🔍 Tracking keyword(s): ${keywords.join(", ")} (${schedule})`);
+        // Auto-tag with keywords
+        keywords.forEach(k => {
+            if (!tags.includes(k)) tags.push(k);
+        });
         try {
             const postUrls = await executeWithRetry(
                 keyManager,
