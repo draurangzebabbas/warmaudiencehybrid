@@ -20,7 +20,7 @@ async function processJob(jobData) {
 
     let jobId;
     try {
-        const totalToFind = input.maxCount || input.profileUrls?.length || 10;
+        const totalToFind = input.maxCount || input.maxCrawledPlacesPerSearch || input.profileUrls?.length || 10;
         jobId = await supabaseApi.createScrapeJob(userId, type, input, totalToFind);
 
         switch (type) {

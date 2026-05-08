@@ -491,3 +491,68 @@ Saved to user's collection with tag: "Competitor: @username"
 ]
 ```
 
+
+#### 5 Contact Details Scraper
+
+
+**Actor ID**: `9Sk4JJhEma9vBKqrg`
+
+
+**Input**:
+```json
+{
+    "considerChildFrames": true,
+    "maxDepth": 0,
+    "maxRequests": 1,
+    "maxRequestsPerStartUrl": 1,
+    "mergeContacts": true,
+    "sameDomain": true,
+    "startUrls": [
+        {
+            "url": "https://shopify.com"
+        }
+    ],
+    "useBrowser": false,
+    "verifyLeadsEnrichmentEmails": true
+}
+```
+
+**Output Structure**:
+```json
+[
+  {
+    "domain": "shopify.com",
+    "emails": [],
+    "phones": [],
+    "linkedIns": [
+      "https://www.linkedin.com/company/shopify"
+    ],
+    "twitters": [
+      "https://twitter.com/shopify",
+      "https://x.com/Shopify"
+    ],
+    "instagrams": [
+      "https://www.instagram.com/shopify"
+    ],
+    "facebooks": [
+      "https://www.facebook.com/shopify"
+    ],
+    "youtubes": [
+      "https://www.youtube.com/shopify",
+      "https://www.youtube.com/user/shopify"
+    ],
+    "tiktoks": [
+      "https://www.tiktok.com/@shopify"
+    ],
+    "pinterests": [
+      "https://www.pinterest.com/shopify"
+    ],
+    "discords": [],
+    "snapchats": [],
+    "threads": [],
+    "telegrams": [],
+    "reddits": [],
+    "whatsapps": []
+  }
+]
+```

@@ -137,38 +137,33 @@ async function scrapeGoogleMaps(options, token) {
         maxCrawledPlacesPerSearch = 10
     } = options;
 
-    // Combine keywords and location for maximum reliability
-    const queries = searchStringsArray.map(q => 
-        locationQuery ? `${q} in ${locationQuery}` : q
-    );
-
     const payload = {
-        // Redundant mapping for different actor versions
-        queries: queries,
-        searchStringsArray: queries,
-        locationQuery: locationQuery,
-        maxCrawledPlacesPerSearch: Number(maxCrawledPlacesPerSearch),
-        
-        // Exact matches for user's working manual run
-        scrapeContacts: true,
-        scrapeSocialMediaProfiles: {
-            facebooks: true,
-            instagrams: true,
-            tiktoks: true,
-            twitters: true,
-            youtubes: true
-        },
-        scrapePlaceDetailPage: false,
         includeWebResults: false,
         language: "en",
-        skipClosedPlaces: false,
+        locationQuery: locationQuery,
+        maxCrawledPlacesPerSearch: Number(maxCrawledPlacesPerSearch),
         maximumLeadsEnrichmentRecords: 0,
-        
-        // Disable useless fallbacks
-        allPlacesNoSearchAction: "none", 
+        scrapeContacts: true,
+        scrapeDirectories: false,
+        scrapePlaceDetailPage: false,
+        scrapeSocialMediaProfiles: {
+            facebooks: false,
+            instagrams: false,
+            tiktoks: false,
+            twitters: false,
+            youtubes: false
+        },
+        scrapeTableReservationProvider: false,
+        searchStringsArray: searchStringsArray,
+        skipClosedPlaces: false,
+        verifyLeadsEnrichmentEmails: false,
+        searchMatching: "all",
+        placeMinimumStars: "",
+        website: "allPlaces",
+        maxQuestions: 0
     };
 
-    console.log("🚀 [PROD] Sending Robust Google Maps Payload:", JSON.stringify(payload, null, 2));
+    console.log("🚀 [PROD] Sending Official Google Maps Payload:", JSON.stringify(payload, null, 2));
 
     return callApifyActor(ACTORS.GOOGLE_MAPS, payload, token, 600000); 
 }
