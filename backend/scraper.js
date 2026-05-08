@@ -137,11 +137,12 @@ async function scrapeGoogleMaps(options, token) {
         maxCrawledPlacesPerSearch = 10
     } = options;
 
+    const limit = Math.max(1, Number(maxCrawledPlacesPerSearch) || 10);
     const payload = {
         includeWebResults: false,
         language: "en",
         locationQuery: locationQuery,
-        maxCrawledPlacesPerSearch: Number(maxCrawledPlacesPerSearch),
+        maxCrawledPlacesPerSearch: limit,
         maximumLeadsEnrichmentRecords: 0,
         scrapeContacts: true,
         scrapeDirectories: false,
@@ -156,11 +157,7 @@ async function scrapeGoogleMaps(options, token) {
         scrapeTableReservationProvider: false,
         searchStringsArray: searchStringsArray,
         skipClosedPlaces: false,
-        verifyLeadsEnrichmentEmails: false,
-        searchMatching: "all",
-        placeMinimumStars: "",
-        website: "allPlaces",
-        maxQuestions: 0
+        verifyLeadsEnrichmentEmails: false
     };
 
     console.log("🚀 [PROD] Sending Official Google Maps Payload:", JSON.stringify(payload, null, 2));
