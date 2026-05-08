@@ -60,6 +60,11 @@ const data = {
       icon: IconBrandGoogleMaps,
     },
     {
+      title: "Website Contact Details",
+      url: "/website-contact-researcher",
+      icon: IconSearch,
+    },
+    {
       title: "My Leads",
       url: "/my-leads",
       icon: IconUsers,

@@ -178,6 +178,56 @@ app.post("/api/scrape-google-maps", async (req, res) => {
 });
 
 // ─────────────────────────────────────────
+// POST /api/scrape-website-contacts
+// ─────────────────────────────────────────
+app.post("/api/scrape-website-contacts", async (req, res) => {
+    try {
+        const { domains, tags = [] } = req.body;
+
+        if (!domains || !Array.isArray(domains) || domains.length === 0) {
+            return res.status(400).json({ error: "domains array is required" });
+        }
+
+        // 0. Check Usage Limit
+        const [subscription, currentCount] = await Promise.all([
+            supabaseApi.getUserSubscription(req.userId),
+            supabaseApi.getMonthlyLeadCount(req.userId)
+        ]);
+        
+        const planLimits = {
+            free: 1000,
+            growth: 10000,
+            pro: 10000,
+            elite: 1000000,
+            scale: 1000000
+        };
+
+        const profilesLimit = planLimits[subscription.plan_slug] || 1000;
+        
+        if (currentCount >= profilesLimit) {
+            return res.status(403).json({
+                error: `Limit Reached: You have consumed all your lead storage for this month (${profilesLimit} leads). Please upgrade your plan for more capacity.`,
+                code: "LIMIT_REACHED"
+             });
+        }
+
+        processJob({
+            userId: req.userId,
+            type: "website_contact",
+            input: { domains, tags },
+        }).catch((err) => console.error("❌ Website contact scrape failed:", err));
+
+        res.json({
+            status: "processing",
+            message: `Website contact research started for ${domains.length} domains`,
+        });
+    } catch (e) {
+        console.error("scrape-website-contacts error:", e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// ─────────────────────────────────────────
 // POST /api/scrape-engagers
 // Extract profiles from post commenters/reactors
 // ─────────────────────────────────────────

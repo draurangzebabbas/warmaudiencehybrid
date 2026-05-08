@@ -16,6 +16,7 @@ const ACTORS = {
     POST_REACTIONS: "S6mgSO5lezSZKi0zN",
     PROFILE_COMMENTS: "FiHYLewnJwS6GnRpo",
     GOOGLE_MAPS: "WnMxbsRLNbPeYL6ge",
+    WEBSITE_CONTACTS: "9Sk4JJhEma9vBKqrg",
 };
 
 // ─────────────────────────────────────────
@@ -306,12 +307,32 @@ function normalizeUrl(rawUrl) {
     }
 }
 
+/**
+ * Scrape website contacts (emails, phones, socials)
+ */
+async function scrapeWebsiteContacts(urls, token) {
+    const payload = {
+        considerChildFrames: true,
+        maxDepth: 0,
+        maxRequests: urls.length,
+        maxRequestsPerStartUrl: 1,
+        mergeContacts: true,
+        sameDomain: true,
+        startUrls: urls.map(url => ({ url })),
+        useBrowser: false,
+        verifyLeadsEnrichmentEmails: true
+    };
+
+    return callApifyActor(ACTORS.WEBSITE_CONTACTS, payload, token, 600000);
+}
+
 module.exports = {
     ACTORS,
     callApifyActor,
     scrapePersonalProfiles,
     scrapeCompanyProfiles,
     scrapeGoogleMaps,
+    scrapeWebsiteContacts,
     scrapePersonalPosts,
     searchKeywords,
     scrapePostEngagement,

@@ -218,12 +218,46 @@ async function upsertGoogleMapsLeadsBulk(leads) {
 }
 
 /**
+ * Upsert multiple Website Contacts
+ */
+async function upsertWebsiteContactsBulk(contacts) {
+    const items = contacts.map(c => ({
+        domain: c.domain,
+        emails: c.emails || [],
+        phones: c.phones || [],
+        linkedin: c.linkedin,
+        twitter: c.twitter,
+        instagram: c.instagram,
+        facebook: c.facebook,
+        youtube: c.youtube,
+        tiktok: c.tiktok,
+        pinterest: c.pinterest,
+        source_urls: c.sourceUrls || [],
+        socials: c.socials || {},
+        extra_data: c.extraData || {},
+        updated_at: new Date().toISOString()
+    }));
+
+    const { data, error } = await supabase
+        .from("website_contacts")
+        .upsert(items, { onConflict: 'domain' })
+        .select("id, domain");
+
+    if (error) {
+        console.error("❌ Supabase Website Contacts bulk upsert error:", error.message);
+        throw error;
+    }
+    return data;
+}
+
+/**
  * Link a user to multiple leads in Supabase (Junction Table)
  * Appends tags if lead already linked to user
  */
 async function linkUserToLeadsBulk(userId, leadIds, type, tags = []) {
     const idField = type === "google_maps" ? "lead_id" : 
                     type === "company" ? "company_id" : 
+                    type === "website_contact" ? "website_contact_id" :
                     "linkedin_id";
 
     // 1. Fetch existing tags for these leads for this user to allow merging
@@ -537,6 +571,7 @@ module.exports = {
     upsertCompanyProfile,
     upsertCompanyProfilesBulk,
     upsertGoogleMapsLeadsBulk,
+    upsertWebsiteContactsBulk,
     linkUserToLeadsBulk,
     removeUserLead,
     getUserApiKeys,

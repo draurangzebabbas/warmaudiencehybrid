@@ -29,6 +29,8 @@ async function processJob(jobData) {
             totalToFind = input.profileUrls.length;
         } else if (input.postUrls?.length) {
             totalToFind = input.postUrls.length;
+        } else if (input.domains?.length) {
+            totalToFind = input.domains.length;
         }
         
         jobId = await supabaseApi.createScrapeJob(userId, type, input, totalToFind);
@@ -48,6 +50,10 @@ async function processJob(jobData) {
 
             case "google_maps":
                 await handleGoogleMapsScrape(userId, input, keyManager, input.tags || ["GoogleMaps"], jobId);
+                break;
+            
+            case "website_contact":
+                await handleWebsiteContactsScrape(userId, input, keyManager, input.tags || ["WebsiteContact"], jobId);
                 break;
 
             default:
@@ -152,6 +158,121 @@ async function handleGoogleMapsScrape(userId, input, keyManager, tags = ["Google
         } catch (err) {
             throw err;
         }
+}
+
+async function handleWebsiteContactsScrape(userId, input, keyManager, tags = ["WebsiteContact"], jobId) {
+    const { domains = [] } = input;
+    console.log(`🌐 Starting website contact extraction for: ${domains.join(", ")}`);
+    
+    try {
+        if (jobId) await supabaseApi.updateJobProgress(jobId, 10);
+
+        // Prepare URLs to check for each domain
+        const urlsToCheck = [];
+        domains.forEach(domain => {
+            const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/+$/, '');
+            urlsToCheck.push(`https://${cleanDomain}`);
+            urlsToCheck.push(`https://${cleanDomain}/contact`);
+            urlsToCheck.push(`https://${cleanDomain}/contact-us`);
+        });
+
+        const results = await executeWithRetry(
+            keyManager,
+            "Website Contacts Scrape",
+            (key) => scraper.scrapeWebsiteContacts(urlsToCheck, key)
+        );
+
+        if (jobId) await supabaseApi.updateJobProgress(jobId, 80);
+
+        if (results && results.length > 0) {
+            console.log(`✨ Found ${results.length} website contact results. Persistence started...`);
+
+            // The actor returns results per URL, but we want to merge them per domain
+            const domainMap = new Map();
+
+            results.forEach(res => {
+                const domain = res.domain;
+                if (!domain) return;
+
+                if (!domainMap.has(domain)) {
+                    domainMap.set(domain, {
+                        domain,
+                        emails: new Set(),
+                        phones: new Set(),
+                        sourceUrls: new Set(),
+                        linkedin: null,
+                        twitter: null,
+                        instagram: null,
+                        facebook: null,
+                        youtube: null,
+                        tiktok: null,
+                        pinterest: null,
+                        socials: {},
+                        extraData: res
+                    });
+                }
+
+                const entry = domainMap.get(domain);
+                
+                // If this result has any useful info, add its URL to sourceUrls
+                const hasInfo = (res.emails?.length > 0) || (res.phones?.length > 0) || 
+                                (res.linkedIns?.length > 0) || (res.twitters?.length > 0) || 
+                                (res.instagrams?.length > 0) || (res.facebooks?.length > 0);
+                
+                if (hasInfo && res.url) {
+                    entry.sourceUrls.add(res.url);
+                }
+                
+                // Merge emails and phones
+                if (res.emails) res.emails.forEach(e => entry.emails.add(e));
+                if (res.phones) res.phones.forEach(p => entry.phones.add(p));
+
+                // Merge socials (prefer non-null)
+                const getFirst = (arr) => (arr && arr.length > 0) ? arr[0] : null;
+
+                entry.linkedin = entry.linkedin || getFirst(res.linkedIns);
+                entry.twitter = entry.twitter || getFirst(res.twitters);
+                entry.instagram = entry.instagram || getFirst(res.instagrams);
+                entry.facebook = entry.facebook || getFirst(res.facebooks);
+                entry.youtube = entry.youtube || getFirst(res.youtubes);
+                entry.tiktok = entry.tiktok || getFirst(res.tiktoks);
+                entry.pinterest = entry.pinterest || getFirst(res.pinterests);
+
+                // Update socials object
+                entry.socials = {
+                    linkedin: entry.linkedin,
+                    twitter: entry.twitter,
+                    instagram: entry.instagram,
+                    facebook: entry.facebook,
+                    youtube: entry.youtube,
+                    tiktok: entry.tiktok,
+                    pinterest: entry.pinterest
+                };
+            });
+
+            const formatted = Array.from(domainMap.values()).map(d => ({
+                ...d,
+                emails: Array.from(d.emails),
+                phones: Array.from(d.phones),
+                sourceUrls: Array.from(d.sourceUrls)
+            }));
+
+            const saved = await supabaseApi.upsertWebsiteContactsBulk(formatted);
+            
+            if (saved && saved.length > 0) {
+                const sids = saved.map(s => s.id);
+                await supabaseApi.linkUserToLeadsBulk(userId, sids, "website_contact", tags);
+            }
+
+            if (jobId) await supabaseApi.updateJobProgress(jobId, 100, saved.length);
+            console.log(`✅ Successfully saved and linked ${saved.length} website contacts in Supabase`);
+        } else {
+            console.warn("⚠️ No results returned from Website Contacts scraper.");
+            if (jobId) await supabaseApi.updateJobProgress(jobId, 100, 0);
+        }
+    } catch (err) {
+        throw err;
+    }
 }
 
 async function executeWithRetry(keyManager, taskDescription, taskFn, maxRetries = 3) {

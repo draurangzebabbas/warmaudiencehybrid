@@ -137,6 +137,25 @@ type GoogleMapsLead = {
     updatedAt: number;
 };
 
+type WebsiteContact = {
+    junctionId: any;
+    domain: string;
+    emails?: string[];
+    phones?: string[];
+    linkedin?: string;
+    twitter?: string;
+    instagram?: string;
+    facebook?: string;
+    youtube?: string;
+    tiktok?: string;
+    pinterest?: string;
+    sourceUrls?: string[];
+    socials?: any;
+    updatedAt: number;
+    tags?: string[];
+    _id: string;
+};
+
 // --- Page Component ---
 
 export default function ProfilesPage() {
@@ -153,7 +172,9 @@ export default function ProfilesPage() {
             setLoading(true);
 
             const table = profileType === "google_maps" ? "google_maps_leads" : 
-                         profileType === "company" ? "company_profiles" : "linkedin_profiles";
+                         profileType === "company" ? "company_profiles" : 
+                         profileType === "website_contact" ? "website_contacts" :
+                         "linkedin_profiles";
 
             getToken().then((token) => {
                 if (!token) {
@@ -222,6 +243,20 @@ export default function ProfilesPage() {
                                         junctionId: d.id,
                                         _id: d.id 
                                     };
+                                } else if (profileType === "website_contact") {
+                                    let socials = details.socials;
+                                    if (typeof socials === 'string') {
+                                        try { socials = JSON.parse(socials); } catch (e) { socials = {}; }
+                                    }
+                                    return {
+                                        ...details,
+                                        socials,
+                                        sourceUrls: details.source_urls || [],
+                                        updatedAt: new Date(details.updated_at || d.created_at).getTime(),
+                                        tags: d.tags,
+                                        junctionId: d.id,
+                                        _id: d.id
+                                    };
                                 } else { // google_maps
                                     let socials = details.socials;
                                     if (typeof socials === 'string') {
@@ -256,6 +291,7 @@ export default function ProfilesPage() {
     const { leads: personal, loading: loadingPersonal } = useLeadsFromSupabase(user?._id, "personal");
     const { leads: company, loading: loadingCompany } = useLeadsFromSupabase(user?._id, "company");
     const { leads: googleMaps, loading: loadingGoogleMaps } = useLeadsFromSupabase(user?._id, "google_maps");
+    const { leads: websiteContacts, loading: loadingWebsiteContacts } = useLeadsFromSupabase(user?._id, "website_contact");
 
     const getOrCreateKey = useAction(api.actions.supabase.getOrCreateWebhookKey);
 
@@ -304,6 +340,17 @@ export default function ProfilesPage() {
         minScore: 0,
         minReviews: 0,
         location: "",
+        tags: "",
+    });
+
+    const [websiteContactsFilters, setWebsiteContactsFilters] = useState({
+        hasEmail: "all" as "all" | "yes" | "no",
+        hasPhone: "all" as "all" | "yes" | "no",
+        hasInstagram: "all" as "all" | "yes" | "no",
+        hasTikTok: "all" as "all" | "yes" | "no",
+        hasFacebook: "all" as "all" | "yes" | "no",
+        hasTwitter: "all" as "all" | "yes" | "no",
+        hasLinkedIn: "all" as "all" | "yes" | "no",
         tags: "",
     });
 
@@ -469,6 +516,34 @@ export default function ProfilesPage() {
             return true;
         });
     }, [googleMaps, googleMapsFilters]);
+
+    const filteredWebsiteContacts = useMemo(() => {
+        return websiteContacts.filter((w) => {
+            if (websiteContactsFilters.hasEmail === "yes" && (!w.emails || w.emails.length === 0)) return false;
+            if (websiteContactsFilters.hasEmail === "no" && w.emails && w.emails.length > 0) return false;
+            if (websiteContactsFilters.hasPhone === "yes" && (!w.phones || w.phones.length === 0)) return false;
+            if (websiteContactsFilters.hasPhone === "no" && w.phones && w.phones.length > 0) return false;
+            
+            if (websiteContactsFilters.hasInstagram === "yes" && !w.socials?.instagram) return false;
+            if (websiteContactsFilters.hasInstagram === "no" && w.socials?.instagram) return false;
+            if (websiteContactsFilters.hasTikTok === "yes" && !w.socials?.tiktok) return false;
+            if (websiteContactsFilters.hasTikTok === "no" && w.socials?.tiktok) return false;
+            if (websiteContactsFilters.hasFacebook === "yes" && !w.socials?.facebook) return false;
+            if (websiteContactsFilters.hasFacebook === "no" && w.socials?.facebook) return false;
+            if (websiteContactsFilters.hasTwitter === "yes" && !w.socials?.twitter) return false;
+            if (websiteContactsFilters.hasTwitter === "no" && w.socials?.twitter) return false;
+            if (websiteContactsFilters.hasLinkedIn === "yes" && !w.socials?.linkedin) return false;
+            if (websiteContactsFilters.hasLinkedIn === "no" && w.socials?.linkedin) return false;
+
+            if (websiteContactsFilters.tags) {
+                const q = websiteContactsFilters.tags.toLowerCase();
+                const hasMatch = (w.tags || []).some((t: string) => t.toLowerCase().includes(q));
+                if (!hasMatch) return false;
+            }
+
+            return true;
+        });
+    }, [websiteContacts, websiteContactsFilters]);
 
     // --- Column Definitions ---
     const personalColumns = useMemo<ColumnDef<PersonalProfile>[]>(() => [
@@ -907,6 +982,162 @@ export default function ProfilesPage() {
         }
     ], []);
 
+    const websiteContactColumns = useMemo<ColumnDef<WebsiteContact>[]>(() => [
+        {
+            id: "select",
+            header: ({ table }) => (
+                <Checkbox
+                    checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")}
+                    onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+                    aria-label="Select all"
+                />
+            ),
+            cell: ({ row }) => (
+                <Checkbox
+                    checked={row.getIsSelected()}
+                    onCheckedChange={(value) => row.toggleSelected(!!value)}
+                    aria-label="Select row"
+                />
+            ),
+            enableSorting: false,
+            enableHiding: false,
+        },
+        {
+            accessorKey: "domain",
+            header: "Domain",
+            cell: ({ row }) => (
+                <div className="flex flex-col">
+                    <span className="font-medium">{row.original.domain}</span>
+                    <a href={`https://${row.original.domain}`} target="_blank" className="text-[10px] text-blue-500 hover:underline truncate max-w-[150px]">
+                        Visit Website
+                    </a>
+                </div>
+            ),
+        },
+        {
+            accessorKey: "sourceUrls",
+            header: "Found At",
+            cell: ({ row }) => {
+                const urls = row.original.sourceUrls || [];
+                if (urls.length === 0) return "-";
+                return (
+                    <div className="flex flex-col gap-0.5">
+                        {urls.slice(0, 1).map((url, i) => (
+                            <a 
+                                key={i} 
+                                href={url} 
+                                target="_blank" 
+                                className="text-[10px] text-blue-500 hover:underline truncate max-w-[120px]"
+                                title={url}
+                            >
+                                {url.replace(/^https?:\/\//, '').split('/')[1] ? `/${url.replace(/^https?:\/\//, '').split('/').slice(1).join('/')}` : '/'}
+                            </a>
+                        ))}
+                        {urls.length > 1 && <span className="text-[9px] text-muted-foreground">+{urls.length - 1} more pages</span>}
+                    </div>
+                );
+            }
+        },
+        {
+            accessorKey: "emails",
+            header: "Emails",
+            cell: ({ row }) => {
+                const emails = row.original.emails || [];
+                if (emails.length === 0) return "-";
+                return (
+                    <div className="flex flex-col gap-0.5">
+                        {emails.slice(0, 2).map((email, i) => (
+                            <span key={i} className="text-xs truncate max-w-[150px]" title={email}>{email}</span>
+                        ))}
+                        {emails.length > 2 && <span className="text-[10px] text-muted-foreground">+{emails.length - 2} more</span>}
+                    </div>
+                );
+            }
+        },
+        {
+            accessorKey: "phones",
+            header: "Phones",
+            cell: ({ row }) => {
+                const phones = row.original.phones || [];
+                if (phones.length === 0) return "-";
+                return (
+                    <div className="flex flex-col gap-0.5">
+                        {phones.slice(0, 2).map((phone, i) => (
+                            <span key={i} className="text-xs truncate max-w-[150px]" title={phone}>{phone}</span>
+                        ))}
+                        {phones.length > 2 && <span className="text-[10px] text-muted-foreground">+{phones.length - 2} more</span>}
+                    </div>
+                );
+            }
+        },
+        {
+            id: "socials",
+            header: "Socials",
+            cell: ({ row }) => {
+                const s = row.original.socials;
+                if (!s) return "-";
+                return (
+                    <div className="flex gap-1.5 text-muted-foreground">
+                        {s.linkedin && <a href={s.linkedin} target="_blank" className="hover:text-blue-600"><IconBrandLinkedin size={16} /></a>}
+                        {s.facebook && <a href={s.facebook} target="_blank" className="hover:text-blue-600"><IconBrandFacebook size={16} /></a>}
+                        {s.instagram && <a href={s.instagram} target="_blank" className="hover:text-pink-600"><IconBrandInstagram size={16} /></a>}
+                        {s.twitter && <a href={s.twitter} target="_blank" className="hover:text-sky-500"><IconBrandX size={16} /></a>}
+                        {s.tiktok && <a href={s.tiktok} target="_blank" className="hover:text-black dark:hover:text-white"><IconBrandTiktok size={16} /></a>}
+                    </div>
+                );
+            }
+        },
+        {
+            accessorKey: "tags",
+            header: "Tags",
+            cell: ({ row }) => (
+                <div className="flex flex-wrap gap-1 max-w-[150px]">
+                    {row.original.tags?.map((tag, idx) => (
+                        <Badge key={idx} variant="outline" className="text-[9px] px-1 h-3.5 bg-muted/30">
+                            {tag}
+                        </Badge>
+                    ))}
+                    {(!row.original.tags || row.original.tags.length === 0) && <span className="text-muted-foreground text-[10px]">-</span>}
+                </div>
+            )
+        },
+        {
+            accessorKey: "updatedAt",
+            header: "Last Updated",
+            cell: ({ row }) => {
+                if (!row.original.updatedAt) return "-";
+                return (
+                    <div className="flex items-center text-xs text-muted-foreground" title={new Date(row.original.updatedAt).toLocaleString()}>
+                        <IconClock className="mr-1 size-3" />
+                        {formatDistanceToNow(row.original.updatedAt, { addSuffix: true })}
+                    </div>
+                )
+            }
+        },
+        {
+            id: "actions",
+            cell: ({ row }) => (
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                            <IconDotsVertical className="h-4 w-4" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => navigator.clipboard.writeText(row.original.domain)}>
+                            Copy Domain
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteProfile(row.original.junctionId)}>
+                            Delete Lead
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            ),
+        }
+    ], []);
+
     // --- Main UI ---
     return (
         <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
@@ -927,6 +1158,7 @@ export default function ProfilesPage() {
                                 <TabsTrigger value="personal">Linkedin Personal Profiles</TabsTrigger>
                                 <TabsTrigger value="company">Linkedin Company Profiles</TabsTrigger>
                                 <TabsTrigger value="google_maps">Google Map Lead</TabsTrigger>
+                                <TabsTrigger value="website_contact">Website Contacts</TabsTrigger>
                             </TabsList>
 
                             <TabsContent value="personal">
@@ -1036,6 +1268,27 @@ export default function ProfilesPage() {
                                     }}
                                 />
                             </TabsContent>
+                            <TabsContent value="website_contact">
+                                <GenericProfileTable
+                                    data={filteredWebsiteContacts}
+                                    columns={websiteContactColumns}
+                                    isLoading={loadingWebsiteContacts}
+                                    filterColumn="domain"
+                                    type="website_contact"
+                                    filters={websiteContactsFilters}
+                                    setFilters={setWebsiteContactsFilters}
+                                    onBulkDelete={async (ids) => {
+                                        if (confirm(`Are you sure you want to remove ${ids.length} Website Contacts?`)) {
+                                            const { error } = await supabase.from("user_leads").delete().in("id", ids);
+                                            if (error) toast.error(error.message);
+                                            else {
+                                                toast.success("Contacts removed");
+                                                window.location.reload();
+                                            }
+                                        }
+                                    }}
+                                />
+                            </TabsContent>
                         </Tabs>
                     </CardContent>
                 </Card>
@@ -1053,7 +1306,7 @@ interface DataTableProps<TData, TValue> {
     data: TData[]
     isLoading?: boolean
     filterColumn: string
-    type: "personal" | "company" | "google_maps"
+    type: "personal" | "company" | "google_maps" | "website_contact"
     filters: any
     setFilters: (filters: any) => void
     onBulkDelete?: (ids: any[]) => Promise<void>
@@ -1202,7 +1455,7 @@ function GenericProfileTable<TData, TValue>({
                                         "Verified": item.isVerified ? "Yes" : "No",
                                         "Tags": (item.tags || []).join(", "),
                                     };
-                                } else {
+                                } else if (type === "google_maps") {
                                     return {
                                         "Business Name": item.title || "",
                                         "Address": item.address || "",
@@ -1220,7 +1473,22 @@ function GenericProfileTable<TData, TValue>({
                                         "Tags": (item.tags || []).join(", "),
                                         "Updated At": item.updatedAt ? new Date(item.updatedAt).toISOString() : ""
                                     };
-
+                                } else if (type === "website_contact") {
+                                    return {
+                                        "Domain": item.domain || "",
+                                        "Emails": (item.emails || []).join(", "),
+                                        "Phones": (item.phones || []).join(", "),
+                                        "LinkedIn": item.socials?.linkedin || "",
+                                        "Facebook": item.socials?.facebook || "",
+                                        "Instagram": item.socials?.instagram || "",
+                                        "Twitter": item.socials?.twitter || "",
+                                        "TikTok": item.socials?.tiktok || "",
+                                        "Youtube": item.socials?.youtube || "",
+                                        "Pinterest": item.socials?.pinterest || "",
+                                        "Source URLs": (item.sourceUrls || []).join(", "),
+                                        "Tags": (item.tags || []).join(", "),
+                                        "Updated At": item.updatedAt ? new Date(item.updatedAt).toISOString() : ""
+                                    };
                                 }
                             });
                             const filename = `${type}-profiles-${new Date().toISOString().split('T')[0]}.csv`;
@@ -1391,7 +1659,7 @@ function GenericProfileTable<TData, TValue>({
     )
 }
 
-function FilterSheet({ type, filters, setFilters }: { type: "personal" | "company" | "google_maps", filters: any, setFilters: (f: any) => void }) {
+function FilterSheet({ type, filters, setFilters }: { type: "personal" | "company" | "google_maps" | "website_contact", filters: any, setFilters: (f: any) => void }) {
     return (
         <Sheet>
             <SheetTrigger asChild>
@@ -1426,11 +1694,15 @@ function FilterSheet({ type, filters, setFilters }: { type: "personal" | "compan
                                     minEmployees: 0, maxEmployees: 1000000, minFollowers: 0, maxFollowers: 10000000,
                                     location: "", tags: "", isVerified: "all"
                                 });
+                            } else if (type === "google_maps") {
+                                setFilters({
+                                    minScore: 0, minReviews: 0, location: "", tags: ""
+                                });
                             } else {
                                 setFilters({
-                                    hasEmail: "all", hasPhone: "all", hasWebsite: "all",
+                                    hasEmail: "all", hasPhone: "all",
                                     hasInstagram: "all", hasTikTok: "all", hasFacebook: "all", hasTwitter: "all", hasLinkedIn: "all",
-                                    minScore: 0, minReviews: 0, location: "", tags: ""
+                                    tags: ""
                                 });
                             }
                         }}>Clear All</Button>
