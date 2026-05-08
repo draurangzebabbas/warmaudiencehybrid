@@ -20,7 +20,17 @@ async function processJob(jobData) {
 
     let jobId;
     try {
-        const totalToFind = input.maxCount || input.maxCrawledPlacesPerSearch || input.profileUrls?.length || 10;
+        let totalToFind = input.maxCount || 10;
+        if (type === "google_maps") {
+            const searchCount = input.searchStringsArray?.length || 1;
+            const perSearch = input.maxCrawledPlacesPerSearch || 10;
+            totalToFind = searchCount * perSearch;
+        } else if (input.profileUrls?.length) {
+            totalToFind = input.profileUrls.length;
+        } else if (input.postUrls?.length) {
+            totalToFind = input.postUrls.length;
+        }
+        
         jobId = await supabaseApi.createScrapeJob(userId, type, input, totalToFind);
 
         switch (type) {

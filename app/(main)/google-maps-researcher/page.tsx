@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useMutation, useAction } from "convex/react";
+import { useState, useEffect } from "react";
+import { useMutation, useAction, useQuery } from "convex/react";
 
 import { api } from "@/convex/_generated/api";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,8 @@ import { toast } from "sonner";
 import { Loader2, Tag, MapPin, List } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { formatError } from "@/src/lib/utils";
+import { LimitReachedDialog } from "@/components/limit-reached-dialog";
+import { supabase } from "@/src/lib/supabase";
 
 export default function GoogleMapsResearcherPage() {
     const [keywords, setKeywords] = useState("");
@@ -19,13 +21,34 @@ export default function GoogleMapsResearcherPage() {
     const [tags, setTags] = useState("");
     const [loading, setLoading] = useState(false);
 
+    const [isLimitDialogOpen, setIsLimitDialogOpen] = useState(false);
+    const [profilesCount, setProfilesCount] = useState(0);
+
+    const usage = useQuery(api.usage.getUsage);
+    const user = useQuery(api.auth.getCurrentUser);
     const getOrCreateKey = useAction(api.actions.supabase.getOrCreateWebhookKey);
+
+    useEffect(() => {
+        if (!user?._id) return;
+        const fetchCount = async () => {
+            const { count } = await supabase
+                .from("user_leads")
+                .select("*", { count: "exact", head: true })
+                .eq("user_id", user._id);
+            setProfilesCount(count || 0);
+        };
+        fetchCount();
+    }, [user?._id]);
+
+    const profilesLimit = usage?.usage?.profilesLimit || 1000;
+    const isLimitReached = profilesCount >= profilesLimit;
 
 
     const handleScrapeGoogleMaps = async () => {
         setLoading(true);
         try {
-            if (!keywords.trim()) {
+            const keywordList = keywords.split(",").map(k => k.trim()).filter(Boolean);
+            if (keywordList.length === 0) {
                 toast.error("Please enter search keywords (e.g., 'car wash')");
                 setLoading(false);
                 return;
@@ -49,7 +72,7 @@ export default function GoogleMapsResearcherPage() {
                     "Authorization": `Bearer ${key}`
                 },
                 body: JSON.stringify({
-                    searchStringsArray: [keywords],
+                    searchStringsArray: keywordList,
                     locationQuery: location,
                     maxCrawledPlacesPerSearch: Math.min(maxListings, 100),
                     tags: tagList
@@ -67,7 +90,11 @@ export default function GoogleMapsResearcherPage() {
             setTags("");
         } catch (e: any) {
             const formatted = formatError(e);
-            toast.error(formatted);
+            if (formatted.includes("Limit Reached") || e.status === 403) {
+                setIsLimitDialogOpen(true);
+            } else {
+                toast.error(formatted);
+            }
         } finally {
             setLoading(false);
         }
@@ -83,7 +110,7 @@ export default function GoogleMapsResearcherPage() {
             </div>
 
             <div className="px-6 md:px-8 pb-8">
-                <Card className="w-full border-primary/5 shadow-sm max-w-2xl">
+                <Card className="w-full border-primary/5 shadow-sm">
                     <CardHeader>
                         <CardTitle>Extraction Parameters</CardTitle>
                         <CardDescription>Enter details to find business leads in a specific area.</CardDescription>
@@ -151,11 +178,18 @@ export default function GoogleMapsResearcherPage() {
                             className="w-full"
                         >
                             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            {loading ? "Processing..." : "Extract Google Map Leads"}
+                            {isLimitReached ? "Lead Limit Reached - Upgrade Plan" : (loading ? "Processing..." : "Extract Google Map Leads")}
                         </Button>
                     </CardContent>
                 </Card>
             </div>
+
+            <LimitReachedDialog 
+                isOpen={isLimitDialogOpen} 
+                onOpenChange={setIsLimitDialogOpen}
+                limitType="leads"
+                currentLimit={profilesLimit}
+            />
         </div>
     );
 }
