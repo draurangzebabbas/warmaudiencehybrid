@@ -960,7 +960,7 @@ export default function ProfilesPage() {
                         {s.linkedin && <a href={s.linkedin} target="_blank" className="hover:text-blue-600"><IconBrandLinkedin size={16} /></a>}
                         {s.facebook && <a href={s.facebook} target="_blank" className="hover:text-blue-600"><IconBrandFacebook size={16} /></a>}
                         {s.instagram && <a href={s.instagram} target="_blank" className="hover:text-pink-600"><IconBrandInstagram size={16} /></a>}
-                        {s.twitter && <a href={s.twitter} target="_blank" className="hover:text-sky-500"><IconBrandX size={16} /></a>}
+                        {s.twitter && <a href={s.twitter} target="_blank" className="hover:text-black dark:hover:text-white"><IconBrandX size={16} /></a>}
                         {s.tiktok && <a href={s.tiktok} target="_blank" className="hover:text-black dark:hover:text-white"><IconBrandTiktok size={16} /></a>}
                     </div>
                 );
@@ -1127,7 +1127,7 @@ export default function ProfilesPage() {
                         {s.linkedin && <a href={s.linkedin} target="_blank" className="hover:text-blue-600"><IconBrandLinkedin size={16} /></a>}
                         {s.facebook && <a href={s.facebook} target="_blank" className="hover:text-blue-600"><IconBrandFacebook size={16} /></a>}
                         {s.instagram && <a href={s.instagram} target="_blank" className="hover:text-pink-600"><IconBrandInstagram size={16} /></a>}
-                        {s.twitter && <a href={s.twitter} target="_blank" className="hover:text-sky-500"><IconBrandX size={16} /></a>}
+                        {s.twitter && <a href={s.twitter} target="_blank" className="hover:text-black dark:hover:text-white"><IconBrandX size={16} /></a>}
                         {s.tiktok && <a href={s.tiktok} target="_blank" className="hover:text-black dark:hover:text-white"><IconBrandTiktok size={16} /></a>}
                     </div>
                 );
