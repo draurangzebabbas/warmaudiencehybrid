@@ -515,7 +515,7 @@ async function handleEngagementScrape(userId, postUrls, engagementTypes, keyMana
 async function processProfiles(userId, urls, type, keyManager, tags = [], jobId, baseProgress = 0) {
     const BATCH_SIZE = 20;
     const THRESHOLD = 5;
-    const normalizedUrls = urls.map(u => scraper.normalizeUrl(u)).filter(Boolean);
+    const normalizedUrls = Array.from(new Set(urls.map(u => scraper.normalizeUrl(u)).filter(Boolean)));
     const toScrape = [];
 
     // 1. Initial Cache Check
@@ -583,8 +583,9 @@ async function scrapeBatch(userId, urls, type, keyManager, tags) {
                 // Map fields for Supabase
                 const formatted = results.map(r => {
                     const b = r.basic_info || r;
-                    const linkedinUrl = b.profile_url || b.linkedinUrl || b.linkedin_url || r.linkedinUrl || r.linkedin_url || (type === "personal" ? null : (b.url || r.url));
-                    if (!linkedinUrl) return null;
+                    const rawLinkedinUrl = b.profile_url || b.linkedinUrl || b.linkedin_url || r.linkedinUrl || r.linkedin_url || (type === "personal" ? null : (b.url || r.url));
+                    if (!rawLinkedinUrl) return null;
+                    const linkedinUrl = scraper.normalizeUrl(rawLinkedinUrl);
 
                     if (type === "personal") {
                         return {
