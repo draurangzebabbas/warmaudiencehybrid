@@ -578,9 +578,31 @@ async function getUserSubscription(userId) {
     return data;
 }
 
+/**
+ * Mark jobs that haven't been updated in 10 minutes as failed
+ * (10 min is chosen to match the max timeout of our longest scrapers)
+ */
+async function cleanupStuckJobs() {
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    const { error } = await supabase
+        .from("scrape_jobs")
+        .update({ 
+            status: "failed", 
+            error_message: "Job timed out (No update for 10 mins)",
+            updated_at: new Date().toISOString()
+        })
+        .in("status", ["pending", "processing"])
+        .lt("updated_at", tenMinutesAgo);
+    
+    if (error) {
+        console.error("❌ Error cleaning up stuck jobs:", error.message);
+    }
+}
+
 module.exports = {
     getCachedProfile,
     getWebsiteContactsByDomains,
+    cleanupStuckJobs,
     upsertPersonalProfile,
     upsertPersonalProfilesBulk,
     upsertCompanyProfile,

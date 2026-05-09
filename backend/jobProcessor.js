@@ -3,6 +3,20 @@ const supabaseApi = require("./supabaseApi");
 const KeyManager = require("./keyManager");
 
 /**
+ * Clean and normalize a domain string
+ */
+function cleanDomain(domain) {
+    if (!domain || typeof domain !== 'string') return domain;
+    return domain
+        .toLowerCase()
+        .trim()
+        .replace(/^https?:\/\//, '')
+        .replace(/^www\./, '')
+        .split('/')[0] // Get only the host part
+        .replace(/\/+$/, ''); // Extra safety
+}
+
+/**
  * Process a research job
  */
 async function processJob(jobData) {
@@ -162,7 +176,9 @@ async function handleGoogleMapsScrape(userId, input, keyManager, tags = ["Google
 
 async function handleWebsiteContactsScrape(userId, input, keyManager, tags = ["WebsiteContact"], jobId) {
     try {
-        const domains = input.domains || [];
+        const rawDomains = input.domains || [];
+        const domains = Array.from(new Set(rawDomains.map(cleanDomain))).filter(Boolean);
+        
         if (domains.length === 0) return [];
         
         console.log(`🌐 Starting website contact extraction for: ${domains.join(', ')}`);
@@ -190,10 +206,9 @@ async function handleWebsiteContactsScrape(userId, input, keyManager, tags = ["W
             // Prepare URLs to check for each domain (limit to 3 URLs per domain)
             const urlsToCheck = [];
             toScrape.forEach(domain => {
-                const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/+$/, '');
-                urlsToCheck.push(`https://${cleanDomain}`);
-                urlsToCheck.push(`https://${cleanDomain}/contact`);
-                urlsToCheck.push(`https://${cleanDomain}/contact-us`);
+                urlsToCheck.push(`https://${domain}`);
+                urlsToCheck.push(`https://${domain}/contact`);
+                urlsToCheck.push(`https://${domain}/contact-us`);
             });
 
             const results = await executeWithRetry(
@@ -285,14 +300,15 @@ async function handleWebsiteContactsScrape(userId, input, keyManager, tags = ["W
     }
 }
 
-async function handleWebsiteContactUpdate(userId, domain, keyManager) {
+async function handleWebsiteContactUpdate(userId, rawDomain, keyManager) {
+    const domain = cleanDomain(rawDomain);
     console.log(`🔄 Force updating website contact for: ${domain}`);
     
     // Force scrape by ignoring DB check
     const urlsToCheck = [
-        `https://${domain.replace(/^https?:\/\//, '').replace(/\/+$/, '')}`,
-        `https://${domain.replace(/^https?:\/\//, '').replace(/\/+$/, '')}/contact`,
-        `https://${domain.replace(/^https?:\/\//, '').replace(/\/+$/, '')}/contact-us`
+        `https://${domain}`,
+        `https://${domain}/contact`,
+        `https://${domain}/contact-us`
     ];
 
     const results = await executeWithRetry(

@@ -17,7 +17,10 @@ async function runHeartbeat() {
         startTrackerPoller();
     }
 
-    // 2. Immediate check for due trackers
+    // 2. Cleanup any orphaned/stuck jobs
+    await supabaseApi.cleanupStuckJobs();
+
+    // 3. Immediate check for due trackers
     try {
         const dueTrackers = await supabaseApi.getDueTrackers();
         if (dueTrackers && dueTrackers.length > 0) {
