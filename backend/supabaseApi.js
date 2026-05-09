@@ -20,19 +20,24 @@ async function getCachedProfile(url, type) {
     const table = type === "personal" ? "linkedin_profiles" : "company_profiles";
     const urlField = type === "personal" ? "linkedin_url" : "url";
 
+    const urlWithoutWww = url.replace('www.linkedin.com', 'linkedin.com');
+    const urlWithWww = urlWithoutWww.replace('linkedin.com', 'www.linkedin.com');
+
     const { data, error } = await supabase
         .from(table)
         .select("*")
-        .eq(urlField, url)
-        .single();
+        .or(`${urlField}.eq.${urlWithWww},${urlField}.eq.${urlWithoutWww}`)
+        .order('updated_at', { ascending: false })
+        .limit(1);
 
-    if (error || !data) return null;
+    if (error || !data || data.length === 0) return null;
+    const profile = data[0];
 
-    const ageInDays = (Date.now() - new Date(data.updated_at).getTime()) / (1000 * 60 * 60 * 24);
+    const ageInDays = (Date.now() - new Date(profile.updated_at).getTime()) / (1000 * 60 * 60 * 24);
     return { 
         isFresh: ageInDays < 30, 
-        profile: type === "personal" ? data : null,
-        company: type === "company" ? data : null
+        profile: type === "personal" ? profile : null,
+        company: type === "company" ? profile : null
     };
 }
 

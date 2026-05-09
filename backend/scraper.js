@@ -299,7 +299,8 @@ function normalizeUrl(rawUrl) {
             if (path.includes('/company/')) {
                 path = path.split('/life')[0].split('/about')[0].split('/jobs')[0].split('/people')[0];
             }
-            return `${url.protocol}//${url.hostname}${path}`;
+            const hostname = url.hostname === 'linkedin.com' ? 'www.linkedin.com' : url.hostname;
+            return `${url.protocol}//${hostname}${path}`;
         }
         return rawUrl;
     } catch {
