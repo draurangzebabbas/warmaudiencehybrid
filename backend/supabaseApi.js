@@ -580,6 +580,7 @@ async function getUserSubscription(userId) {
 
 module.exports = {
     getCachedProfile,
+    getWebsiteContactsByDomains,
     upsertPersonalProfile,
     upsertPersonalProfilesBulk,
     upsertCompanyProfile,

@@ -281,7 +281,6 @@ async function handleWebsiteContactsScrape(userId, input, keyManager, tags = ["W
         return allResults;
     } catch (error) {
         console.error(`❌ Website Contacts job failed:`, error.message);
-        if (jobId) await supabaseApi.updateJobProgress(jobId, 0, 0, error.message);
         throw error;
     }
 }
