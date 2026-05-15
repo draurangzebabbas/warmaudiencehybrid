@@ -458,12 +458,22 @@ export default function ProfilesPage() {
         hasPhone: "all" as "all" | "yes" | "no",
         minFollowers: 0,
         maxFollowers: 10000000,
+        minFollowing: 0,
+        maxFollowing: 10000000,
         isVerified: "all" as "all" | "yes" | "no",
         isBusinessAccount: "all" as "all" | "yes" | "no",
         isProfessionalAccount: "all" as "all" | "yes" | "no",
         isPrivate: "all" as "all" | "yes" | "no",
         mutualFollow: "all" as "all" | "yes" | "no",
+        hasChannel: "all" as "all" | "yes" | "no",
         quality: "all" as "all" | "Good" | "Average" | "Bad",
+        hasWebsite: "all" as "all" | "yes" | "no",
+        hasExternalUrl: "all" as "all" | "yes" | "no",
+        minPosts: 0,
+        minReels: 0,
+        minER: 0,
+        minViews: 0,
+        maxLastPostDays: 0,
         location: "",
         tags: "",
     });
@@ -696,6 +706,10 @@ export default function ProfilesPage() {
             if (followers < instagramFilters.minFollowers) return false;
             if (instagramFilters.maxFollowers > 0 && followers > instagramFilters.maxFollowers) return false;
 
+            const following = ig.followingCount || 0;
+            if (following < instagramFilters.minFollowing) return false;
+            if (instagramFilters.maxFollowing > 0 && following > instagramFilters.maxFollowing) return false;
+
             if (instagramFilters.isVerified === "yes" && !ig.isVerified) return false;
             if (instagramFilters.isVerified === "no" && ig.isVerified) return false;
             if (instagramFilters.isBusinessAccount === "yes" && !ig.isBusinessAccount) return false;
@@ -706,6 +720,27 @@ export default function ProfilesPage() {
             if (instagramFilters.isProfessionalAccount === "no" && ig.isProfessionalAccount) return false;
             if (instagramFilters.mutualFollow === "yes" && !ig.mutualFollow) return false;
             if (instagramFilters.mutualFollow === "no" && ig.mutualFollow) return false;
+            if (instagramFilters.hasChannel === "yes" && !ig.hasChannel) return false;
+            if (instagramFilters.hasChannel === "no" && ig.hasChannel) return false;
+            
+            if (instagramFilters.hasWebsite === "yes" && !ig.externalUrl && (!ig.bioLinks || ig.bioLinks.length === 0)) return false;
+            if (instagramFilters.hasWebsite === "no" && (ig.externalUrl || (ig.bioLinks && ig.bioLinks.length > 0))) return false;
+            
+            if (instagramFilters.hasExternalUrl === "yes" && (!ig.bioLinks || ig.bioLinks.length === 0)) return false;
+            if (instagramFilters.hasExternalUrl === "no" && ig.bioLinks && ig.bioLinks.length > 0) return false;
+
+            if ((ig.postsCount || 0) < instagramFilters.minPosts) return false;
+            if ((ig.reelsCount || 0) < instagramFilters.minReels) return false;
+            if (instagramFilters.minViews > 0 && (ig.medianViews || 0) < instagramFilters.minViews) return false;
+            
+            if (instagramFilters.minER > 0) {
+                const erValue = typeof ig.medianEr === 'string' ? parseFloat(ig.medianEr.replace('%', '')) : (ig.medianEr || 0);
+                if (erValue < instagramFilters.minER) return false;
+            }
+
+            if (instagramFilters.maxLastPostDays > 0) {
+                if (ig.lastPostDays === null || ig.lastPostDays === undefined || ig.lastPostDays > instagramFilters.maxLastPostDays) return false;
+            }
 
             if (instagramFilters.quality !== "all") {
                 if (ig.quality !== instagramFilters.quality) return false;
@@ -1232,8 +1267,16 @@ export default function ProfilesPage() {
             header: "Username",
             cell: ({ row }) => (
                 <div className="flex flex-col">
-                    <span className="font-medium">@{row.original.username}</span>
-                    <span className="text-xs text-muted-foreground">{row.original.fullName}</span>
+                    <a 
+                        href={`https://www.instagram.com/${row.original.username}/`} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="font-medium hover:text-blue-600 transition-colors flex items-center gap-1 group"
+                    >
+                        @{row.original.username}
+                        <IconExternalLink className="size-3 opacity-0 group-hover:opacity-100 transition-opacity text-blue-600" />
+                    </a>
+                    <span className="text-xs text-muted-foreground truncate max-w-[150px]">{row.original.fullName}</span>
                 </div>
             ),
         },
@@ -2764,8 +2807,11 @@ function FilterSheet({ type, filters, setFilters }: { type: "personal" | "compan
                                 setFilters({
                                     hasEmail: "all", hasPhone: "all",
                                     minFollowers: 0, maxFollowers: 10000000,
+                                    minFollowing: 0, maxFollowing: 10000000,
                                     isVerified: "all", isBusinessAccount: "all", isProfessionalAccount: "all",
-                                    isPrivate: "all", mutualFollow: "all", quality: "all",
+                                    isPrivate: "all", mutualFollow: "all", hasChannel: "all", quality: "all",
+                                    hasWebsite: "all", hasExternalUrl: "all",
+                                    minPosts: 0, minReels: 0, minER: 0, minViews: 0, maxLastPostDays: 0,
                                     location: "", tags: ""
                                 });
                             } else {
@@ -2828,6 +2874,7 @@ function FilterSheet({ type, filters, setFilters }: { type: "personal" | "compan
                                     <ThreeStateFilter label="Professional" value={filters.isProfessionalAccount} onChange={(v) => setFilters({ ...filters, isProfessionalAccount: v })} />
                                     <ThreeStateFilter label="Private" value={filters.isPrivate} onChange={(v) => setFilters({ ...filters, isPrivate: v })} />
                                     <ThreeStateFilter label="Mutual Follow" value={filters.mutualFollow} onChange={(v) => setFilters({ ...filters, mutualFollow: v })} />
+                                    <ThreeStateFilter label="Has Channel" value={filters.hasChannel} onChange={(v) => setFilters({ ...filters, hasChannel: v })} />
                                 </>
                             ) : null}
                         </div>
@@ -2855,19 +2902,33 @@ function FilterSheet({ type, filters, setFilters }: { type: "personal" | "compan
                                 <>
                                     <ThreeStateFilter label="Has Email" value={filters.hasEmail} onChange={(v) => setFilters({ ...filters, hasEmail: v })} />
                                     <ThreeStateFilter label="Has Phone" value={filters.hasPhone} onChange={(v) => setFilters({ ...filters, hasPhone: v })} />
-                                    <div className="space-y-1">
-                                        <Label className="text-[10px]">Lead Quality</Label>
-                                        <Select value={filters.quality} onValueChange={(v) => setFilters({ ...filters, quality: v })}>
-                                            <SelectTrigger className="h-8 text-xs bg-muted/20">
-                                                <SelectValue placeholder="Any Quality" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="all">Any Quality</SelectItem>
-                                                <SelectItem value="Good">Good</SelectItem>
-                                                <SelectItem value="Average">Average</SelectItem>
-                                                <SelectItem value="Bad">Bad</SelectItem>
-                                            </SelectContent>
-                                        </Select>
+                                    <ThreeStateFilter label="Has Website" value={filters.hasWebsite} onChange={(v) => setFilters({ ...filters, hasWebsite: v })} />
+                                    <ThreeStateFilter label="Has Bio Links" value={filters.hasExternalUrl} onChange={(v) => setFilters({ ...filters, hasExternalUrl: v })} />
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="space-y-1">
+                                            <Label className="text-[10px]">Lead Quality</Label>
+                                            <Select value={filters.quality} onValueChange={(v) => setFilters({ ...filters, quality: v })}>
+                                                <SelectTrigger className="h-8 text-xs bg-muted/20">
+                                                    <SelectValue placeholder="Any Quality" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="all">Any Quality</SelectItem>
+                                                    <SelectItem value="Good">Good</SelectItem>
+                                                    <SelectItem value="Average">Average</SelectItem>
+                                                    <SelectItem value="Bad">Bad</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Label className="text-[10px]">Max Last Post (Days)</Label>
+                                            <Input
+                                                type="number"
+                                                placeholder="Days..."
+                                                value={filters.maxLastPostDays || ""}
+                                                onChange={(e) => setFilters({ ...filters, maxLastPostDays: e.target.value === "" ? 0 : parseInt(e.target.value) })}
+                                                className="h-8 text-xs bg-muted/20"
+                                            />
+                                        </div>
                                     </div>
                                 </>
                             ) : (
@@ -2888,7 +2949,7 @@ function FilterSheet({ type, filters, setFilters }: { type: "personal" | "compan
 
                     <Separator className="opacity-50" />
 
-                    {(type !== "google_maps" && type !== "website_contact") && (
+                    {(type === "personal" || type === "company") && (
                         <div className="space-y-4">
                             <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{type === "personal" ? "Connections" : "Company Size"}</Label>
                             <div className="flex items-center gap-2">
@@ -2942,9 +3003,60 @@ function FilterSheet({ type, filters, setFilters }: { type: "personal" | "compan
                         </>
                     )}
 
-                    {(type !== "google_maps" && type !== "website_contact") && (
+                    {type === "instagram" && (
                         <div className="space-y-4">
-                            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Followers</Label>
+                            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Engagement & Content</Label>
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-4">
+                                <div className="space-y-1">
+                                    <Label className="text-[10px]">Min Posts</Label>
+                                    <Input
+                                        type="number"
+                                        placeholder="0"
+                                        value={filters.minPosts || ""}
+                                        onChange={(e) => setFilters({ ...filters, minPosts: e.target.value === "" ? 0 : parseInt(e.target.value) })}
+                                        className="h-8 text-xs bg-muted/20"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <Label className="text-[10px]">Min Reels</Label>
+                                    <Input
+                                        type="number"
+                                        placeholder="0"
+                                        value={filters.minReels || ""}
+                                        onChange={(e) => setFilters({ ...filters, minReels: e.target.value === "" ? 0 : parseInt(e.target.value) })}
+                                        className="h-8 text-xs bg-muted/20"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <Label className="text-[10px]">Min ER %</Label>
+                                    <Input
+                                        type="number"
+                                        step="0.1"
+                                        placeholder="0.0"
+                                        value={filters.minER || ""}
+                                        onChange={(e) => setFilters({ ...filters, minER: e.target.value === "" ? 0 : parseFloat(e.target.value) })}
+                                        className="h-8 text-xs bg-muted/20"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <Label className="text-[10px]">Min Views</Label>
+                                    <Input
+                                        type="number"
+                                        placeholder="0"
+                                        value={filters.minViews || ""}
+                                        onChange={(e) => setFilters({ ...filters, minViews: e.target.value === "" ? 0 : parseInt(e.target.value) })}
+                                        className="h-8 text-xs bg-muted/20"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {(type === "personal" || type === "company" || type === "instagram") && (
+                        <div className="space-y-4">
+                            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                {type === "personal" ? "Followers" : type === "company" ? "Followers" : "Followers"}
+                            </Label>
                             <div className="flex items-center gap-2">
                                 <Input
                                     type="number"
@@ -2959,6 +3071,29 @@ function FilterSheet({ type, filters, setFilters }: { type: "personal" | "compan
                                     placeholder="Max"
                                     value={(filters.maxFollowers === 10000000 ? "" : filters.maxFollowers) || ""}
                                     onChange={(e) => setFilters({ ...filters, maxFollowers: e.target.value === "" ? 0 : parseInt(e.target.value) })}
+                                    className="h-8 text-xs"
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {type === "instagram" && (
+                        <div className="space-y-4">
+                            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Following</Label>
+                            <div className="flex items-center gap-2">
+                                <Input
+                                    type="number"
+                                    placeholder="Min"
+                                    value={filters.minFollowing || ""}
+                                    onChange={(e) => setFilters({ ...filters, minFollowing: e.target.value === "" ? 0 : parseInt(e.target.value) })}
+                                    className="h-8 text-xs"
+                                />
+                                <span className="text-muted-foreground">to</span>
+                                <Input
+                                    type="number"
+                                    placeholder="Max"
+                                    value={(filters.maxFollowing === 10000000 ? "" : filters.maxFollowing) || ""}
+                                    onChange={(e) => setFilters({ ...filters, maxFollowing: e.target.value === "" ? 0 : parseInt(e.target.value) })}
                                     className="h-8 text-xs"
                                 />
                             </div>
