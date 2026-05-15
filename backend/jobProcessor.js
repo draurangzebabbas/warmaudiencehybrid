@@ -17,6 +17,20 @@ function cleanDomain(domain) {
 }
 
 /**
+ * Safely parse an integer, handling "N/A" and other non-numeric strings
+ */
+function safeInt(val) {
+    if (val === "N/A" || val === null || val === undefined || val === "") return 0;
+    // If it's already a number, return it (rounded)
+    if (typeof val === 'number') return Math.floor(val);
+    
+    // Remove commas or other formatting if it's a string
+    const cleaned = String(val).replace(/,/g, '');
+    const parsed = parseInt(cleaned, 10);
+    return isNaN(parsed) ? 0 : parsed;
+}
+
+/**
  * Process a research job
  */
 async function processJob(jobData) {
@@ -747,9 +761,9 @@ async function handleInstagramProfilesScrape(userId, input, keyManager, tags = [
                                 external_url: r.homepage || r.external_url,
                                 email: r.businessEmail || (r.allEmails && r.allEmails[0]),
                                 phone: r.businessPhone || (r.allPhoneNumbers && r.allPhoneNumbers[0]),
-                                followers_count: r.followers || r.followers_count,
-                                following_count: r.follows || r.following_count,
-                                posts_count: r.videoCount + r.imageCount || r.posts_count,
+                                followers_count: safeInt(r.followers || r.followers_count),
+                                following_count: safeInt(r.follows || r.following_count),
+                                posts_count: safeInt((r.videoCount || 0) + (r.imageCount || 0) || r.posts_count),
                                 is_business_account: r.isBusinessAccount,
                                 is_verified: r.isVerified,
                                 is_private: r.isPrivate,
@@ -773,15 +787,15 @@ async function handleInstagramProfilesScrape(userId, input, keyManager, tags = [
                                 business_category: r.businessCategory,
                                 overall_category: r.overallCategory,
                                 pronouns: r.pronouns || [],
-                                reels_count: metadataMap[r.username]?.["Reels Count"] || r.highlightReelCount || 0,
-                                median_views: metadataMap[r.username]?.["Median Views"] || 0,
+                                reels_count: safeInt(metadataMap[r.username]?.["Reels Count"] || r.highlightReelCount || 0),
+                                median_views: safeInt(metadataMap[r.username]?.["Median Views"] || 0),
                                 views_followers_ratio: metadataMap[r.username]?.["Views/Followers Ratio"] || null,
                                 median_er: metadataMap[r.username]?.["Median ER"] || null,
                                 quality: metadataMap[r.username]?.["Quality"] || null,
-                                last_post_days: metadataMap[r.username]?.["Last Post Within (Days)"] || null,
+                                last_post_days: safeInt(metadataMap[r.username]?.["Last Post Within (Days)"] || null),
                                 category: r.category || r.businessCategory || r.overallCategory || null,
                                 is_professional_account: r.isProfessionalAccount || false,
-                                highlight_reel_count: r.highlightReelCount || 0,
+                                highlight_reel_count: safeInt(r.highlightReelCount || 0),
                                 mutual_follow: metadataMap[r.username]?.["Mutual Follow"] === "Yes",
                                 detected_language: metadataMap[r.username]?.["Detected Language"] || null,
                                 extra_data: { ...r, ...(metadataMap[r.username] || {}) }
