@@ -13,7 +13,7 @@ if (!supabaseUrl || !supabaseKey) {
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 /**
- * Check if a profile exists and is fresh (< 30 days)
+ * Check if a profile exists in cache
  * Returns { isFresh, profile } or null
  */
 async function getCachedProfile(url, type) {
@@ -33,11 +33,30 @@ async function getCachedProfile(url, type) {
     if (error || !data || data.length === 0) return null;
     const profile = data[0];
 
-    const ageInDays = (Date.now() - new Date(profile.updated_at).getTime()) / (1000 * 60 * 60 * 24);
     return { 
-        isFresh: ageInDays < 30, 
+        isFresh: true, 
         profile: type === "personal" ? profile : null,
         company: type === "company" ? profile : null
+    };
+}
+
+/**
+ * Check if an Instagram profile exists in cache
+ */
+async function getCachedInstagramProfile(username) {
+    const { data, error } = await supabase
+        .from("instagram_leads")
+        .select("*")
+        .eq("username", username)
+        .order('updated_at', { ascending: false })
+        .limit(1);
+
+    if (error || !data || data.length === 0) return null;
+    const profile = data[0];
+
+    return { 
+        isFresh: true, 
+        profile
     };
 }
 
@@ -256,6 +275,57 @@ async function upsertWebsiteContactsBulk(contacts) {
 }
 
 /**
+ * Upsert multiple Instagram leads
+ */
+async function upsertInstagramLeadsBulk(leads) {
+    const items = leads.map(l => ({
+        username: l.username,
+        full_name: l.full_name,
+        profile_pic_url: l.profile_pic_url,
+        biography: l.biography,
+        external_url: l.external_url,
+        email: l.email,
+        phone: l.phone,
+        followers_count: l.followers_count,
+        following_count: l.following_count,
+        posts_count: l.posts_count,
+        is_business_account: l.is_business_account,
+        is_verified: l.is_verified,
+        is_private: l.is_private,
+        city_name: l.city_name,
+        address_street: l.address_street,
+        public_email: l.public_email,
+        public_phone_country_code: l.public_phone_country_code,
+        public_phone_number: l.public_phone_number,
+        socials: l.socials || {},
+        extra_data: l.extra_data || {},
+        reels_count: l.reels_count,
+        median_views: l.median_views,
+        views_followers_ratio: l.views_followers_ratio,
+        median_er: l.median_er,
+        quality: l.quality,
+        last_post_days: l.last_post_days,
+        category: l.category,
+        is_professional_account: l.is_professional_account,
+        highlight_reel_count: l.highlight_reel_count,
+        mutual_follow: l.mutual_follow,
+        detected_language: l.detected_language,
+        updated_at: new Date().toISOString()
+    }));
+
+    const { data, error } = await supabase
+        .from("instagram_leads")
+        .upsert(items, { onConflict: 'username' })
+        .select("id, username");
+
+    if (error) {
+        console.error("❌ Supabase Instagram bulk upsert error:", error.message);
+        throw error;
+    }
+    return data;
+}
+
+/**
  * Get website contacts by domains
  */
 async function getWebsiteContactsByDomains(domains) {
@@ -277,6 +347,7 @@ async function linkUserToLeadsBulk(userId, leadIds, type, tags = []) {
     const idField = type === "google_maps" ? "lead_id" : 
                     type === "company" ? "company_id" : 
                     type === "website_contact" ? "website_contact_id" :
+                    type === "instagram" ? "instagram_id" :
                     "linkedin_id";
 
     // 1. Fetch existing tags for these leads for this user to allow merging
@@ -606,6 +677,7 @@ async function cleanupStuckJobs() {
 
 module.exports = {
     getCachedProfile,
+    getCachedInstagramProfile,
     getWebsiteContactsByDomains,
     cleanupStuckJobs,
     upsertPersonalProfile,
@@ -614,6 +686,7 @@ module.exports = {
     upsertCompanyProfilesBulk,
     upsertGoogleMapsLeadsBulk,
     upsertWebsiteContactsBulk,
+    upsertInstagramLeadsBulk,
     linkUserToLeadsBulk,
     removeUserLead,
     getUserApiKeys,

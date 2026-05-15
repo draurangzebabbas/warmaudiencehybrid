@@ -1,7 +1,6 @@
 ## Apify Actors - Currently Implemented (6 Total)
 
-### 1. PROFILE SCRAPERS (2 Actors)
-
+### 1. Linkedin SCRAPERS --------------------------------------------------------------------
 #### 1.1 Personal Profile Details
 **Actor ID**: `GOvL4O4RwFqsdIqXF`
 
@@ -119,9 +118,9 @@
 
 ---
 
-### 2. POST SCRAPERS (2 Actors)
+#### 1.3. Linkedin POST SCRAPERS
 
-#### 2.1 Personal Profile Posts
+##### 1.3.1 Linkedin Personal Profile Posts
 **Actor ID**: `A3cAPGpwBEG8RJwse`
 
 **How It's Used in App**:
@@ -182,7 +181,7 @@
 
 ---
 
-#### 2.2 Keyword Search / Post Discovery
+#### 1.4 Keyword Search / Post Discovery
 **Actor ID**: `9o7Ft0fpQTY5FW38E`
 
 **How It's Used in App**:
@@ -232,9 +231,9 @@
 ```
 
 
-### 3. ENGAGEMENT SCRAPERS (2 Actors)
+#### 1.5. ENGAGEMENT SCRAPERS 
 
-#### 3.1 Post Comments Scraper
+##### 1.5.1 Post Comments Scraper
 **Actor ID**: `ZI6ykbLlGS3APaPE8`
 
 **How It's Used in App**:
@@ -307,7 +306,7 @@ Saved to user's collection with tag: "Competitor: @username"
 
 ---
 
-#### 3.2 Post Reactions Scraper
+##### 1.5.2 Post Reactions Scraper
 **Actor ID**: `S6mgSO5lezSZKi0zN`
 
 **How It's Used in App**:
@@ -345,7 +344,7 @@ Saved to user's collection with tag: "Competitor: @username"
 
 ---
 
-#### 4 Google Maps Email Extractor
+### 2. Google Maps Email Extractor
 
 **Actor ID**: `WnMxbsRLNbPeYL6ge`
 
@@ -492,7 +491,7 @@ Saved to user's collection with tag: "Competitor: @username"
 ```
 
 
-#### 5 Contact Details Scraper
+### 3. Website Contact Details Scraper
 
 
 **Actor ID**: `9Sk4JJhEma9vBKqrg`
@@ -556,3 +555,713 @@ Saved to user's collection with tag: "Competitor: @username"
   }
 ]
 ```
+
+### 4. Twitter Extractor
+
+#### Twitter (X) Follower Scraper
+
+
+**Actor ID**: `C2Wk3I6xAqC4Xi63f`
+
+**Input**:
+```json
+{
+    "getFollowers": true,
+    "getFollowing": false,
+    "maxFollowers": 200, // This field should be >= 200
+    "maxFollowings": 200, // This field should be >= 200
+    "user_ids": [
+        "User Id here"
+    ],
+    "user_names": [
+        "username here"
+    ]
+}
+```
+
+**Output Structure**:
+```json
+[
+  {
+    "type": "follower",
+    "target_username": "Draurangzebabas",
+    "id": 2022262353740415000,
+    "id_str": "2022262353740414976",
+    "name": "Shamim",
+    "screen_name": "ShamimeAzadii",
+    "description": "✍️ I explore Web3 ecosystems and share practical frameworks, trends, and lesson |  Trader & Crypto Content Creator | #Web3 #BTC #ETH |",
+    "email": null,
+    "url": null,
+    "profile_image_url_https": "https://pbs.twimg.com/profile_images/2023503626145292289/3RvyuDZi_normal.jpg",
+    "profile_banner_url": "https://pbs.twimg.com/profile_banners/2022262353740414976/1771275846",
+    "followers_count": 1424,
+    "fast_followers_count": 0,
+    "normal_followers_count": 1424,
+    "friends_count": 6016,
+    "listed_count": 0,
+    "favourites_count": 62,
+    "statuses_count": 64,
+    "media_count": 4,
+    "created_at": "Fri Feb 13 10:51:47 +0000 2026",
+    "verified": false,
+    "location": "",
+    "protected": false,
+    "geo_enabled": false,
+    "is_translator": false,
+    "has_extended_profile": true,
+    "default_profile": true,
+    "default_profile_image": false
+  },
+  {
+    "type": "follower",
+    "target_username": "Draurangzebabas",
+    "id": 1918976112471978000,
+    "id_str": "1918976112471977984",
+    "name": "Kunal",
+    "screen_name": "Its_kunal_919",
+    "description": "I’m Kunal, a 15-year-old solopreneur and SaaS founder! 🚀 I created AnimifyLogoAI , My  SaaS startup, which will be launched soon. 💻 .",
+    "email": null,
+    "url": null,
+    "profile_image_url_https": "https://pbs.twimg.com/profile_images/1919273681433341952/EWVOsbV3_normal.jpg",
+    "followers_count": 43,
+    "fast_followers_count": 0,
+    "normal_followers_count": 43,
+    "friends_count": 1001,
+    "listed_count": 0,
+    "favourites_count": 25,
+    "statuses_count": 164,
+    "media_count": 4,
+    "created_at": "Sun May 04 10:29:05 +0000 2025",
+    "verified": false,
+    "location": "Kota,Rajasthan",
+    "protected": false,
+    "geo_enabled": false,
+    "is_translator": false,
+    "has_extended_profile": true,
+    "default_profile": true,
+    "default_profile_image": false
+  },
+  {
+    "type": "following",
+    "target_username": "Draurangzebabas",
+    "id": 1573125753213960200,
+    "id_str": "1573125753213960194",
+    "name": "Samantha Simonhoff",
+    "screen_name": "RealProductGirl",
+    "description": "Building for Humanity | AI Native PM | ProductGirl \n\nCommunity: https://t.co/PHwhAe8COT \nMerch: https://t.co/bNaL14ZsSH\nKeyboard: https://t.co/5FPIeexESB",
+    "email": null,
+    "url": "https://t.co/K57wyh1x2x",
+    "profile_image_url_https": "https://pbs.twimg.com/profile_images/2033294533618720768/NcvCK-Kb_normal.jpg",
+    "profile_banner_url": "https://pbs.twimg.com/profile_banners/1573125753213960194/1774368940",
+    "followers_count": 4315,
+    "fast_followers_count": 0,
+    "normal_followers_count": 4315,
+    "friends_count": 778,
+    "listed_count": 17,
+    "favourites_count": 12363,
+    "statuses_count": 11212,
+    "media_count": 728,
+    "created_at": "Fri Sep 23 01:43:11 +0000 2022",
+    "verified": false,
+    "location": "World",
+    "protected": false,
+    "geo_enabled": false,
+    "is_translator": false,
+    "has_extended_profile": true,
+    "default_profile": true,
+    "default_profile_image": false
+  },
+  {
+    "type": "following",
+    "target_username": "Draurangzebabas",
+    "id": 1918976112471978000,
+    "id_str": "1918976112471977984",
+    "name": "Kunal",
+    "screen_name": "Its_kunal_919",
+    "description": "I’m Kunal, a 15-year-old solopreneur and SaaS founder! 🚀 I created AnimifyLogoAI , My  SaaS startup, which will be launched soon. 💻 .",
+    "email": null,
+    "url": null,
+    "profile_image_url_https": "https://pbs.twimg.com/profile_images/1919273681433341952/EWVOsbV3_normal.jpg",
+    "followers_count": 43,
+    "fast_followers_count": 0,
+    "normal_followers_count": 43,
+    "friends_count": 1001,
+    "listed_count": 0,
+    "favourites_count": 25,
+    "statuses_count": 164,
+    "media_count": 4,
+    "created_at": "Sun May 04 10:29:05 +0000 2025",
+    "verified": false,
+    "location": "Kota,Rajasthan",
+    "protected": false,
+    "geo_enabled": false,
+    "is_translator": false,
+    "has_extended_profile": true,
+    "default_profile": true,
+    "default_profile_image": false
+  }
+]
+```
+
+#### X / Twitter Comments Scraper
+
+
+**Actor ID**: `r0Lto6qhNw7DH2SXr`
+
+**Input**:
+```json
+{
+    "postUrls": [
+        "https://x.com/romanbuildsaas/status/2050282939897074158?s=20"
+    ]
+}
+```
+
+**Output Structure**:
+```json
+[
+  {
+    "post_url": "https://x.com/romanbuildsaas/status/2050282939897074158?s=20",
+    "comment_id": "2050283429401391563",
+    "text": "The ethics of this are... questionable at best.",
+    "reply_to": [
+      "romanbuildsaas"
+    ],
+    "likes": 0,
+    "replies": 1,
+    "views": 188,
+    "created_at": "Fri May 01 18:37:16 +0000 2026",
+    "author_username": "PramodReddy1606",
+    "author_name": "Pramod Reddy Pandiri",
+    "author_followers": 231,
+    "author_verified": true,
+    "author_id": "943746134920404992"
+  },
+  {
+    "post_url": "https://x.com/romanbuildsaas/status/2050282939897074158?s=20",
+    "comment_id": "2050284605740372006",
+    "text": "Scraping people who engage with your competitors is a common practice.If you feel it’s unethical, that’s completely fair, just don’t do it.",
+    "reply_to": [
+      "PramodReddy1606"
+    ],
+    "likes": 0,
+    "replies": 1,
+    "views": 157,
+    "created_at": "Fri May 01 18:41:57 +0000 2026",
+    "author_username": "romanbuildsaas",
+    "author_name": "Romàn",
+    "author_followers": 13161,
+    "author_verified": true,
+    "author_id": "1893653481858433024"
+  },
+  {
+    "post_url": "https://x.com/romanbuildsaas/status/2050282939897074158?s=20",
+    "comment_id": "2050575045341114546",
+    "text": "Cool strategy! Created step-by-step SOP from your video: https://t.co/WGrjc3sxxP",
+    "reply_to": [
+      "romanbuildsaas"
+    ],
+    "likes": 0,
+    "replies": 0,
+    "views": 64,
+    "created_at": "Sat May 02 13:56:03 +0000 2026",
+    "author_username": "JureSpeh",
+    "author_name": "Jure Špeh",
+    "author_followers": 28,
+    "author_verified": false,
+    "author_id": "1398711914272890881"
+  },
+  {
+    "post_url": "https://x.com/romanbuildsaas/status/2050282939897074158?s=20",
+    "comment_id": "2050510807637635332",
+    "text": "Kudos for leveraging this 👍👍👍\nLinkedIn privacy is a joke. Has been forever. Once something becomes public information, it's FAIR GAME (within some reasonable ethical limits).",
+    "reply_to": [
+      "romanbuildsaas",
+      "pierreeliottlal"
+    ],
+    "likes": 0,
+    "replies": 0,
+    "views": 74,
+    "created_at": "Sat May 02 09:40:47 +0000 2026",
+    "author_username": "PaulSandersSCP",
+    "author_name": "Paul Sanders",
+    "author_followers": 829,
+    "author_verified": false,
+    "author_id": "377010688"
+  },
+  {
+    "post_url": "https://x.com/romanbuildsaas/status/2050282939897074158?s=20",
+    "comment_id": "2052444957584327094",
+    "text": "You’re going to get banned by LinkedIn. It’s just a matter of time.",
+    "reply_to": [
+      "romanbuildsaas"
+    ],
+    "likes": 0,
+    "replies": 0,
+    "views": 26,
+    "created_at": "Thu May 07 17:46:25 +0000 2026",
+    "author_username": "abhibavishi",
+    "author_name": "Abhi Bavishi",
+    "author_followers": 378,
+    "author_verified": true,
+    "author_id": "144914248"
+  },
+  {
+    "post_url": "https://x.com/romanbuildsaas/status/2050282939897074158?s=20",
+    "comment_id": "2050293128599392659",
+    "text": "We’re the OG competitor siphoners money makers rump shakers",
+    "reply_to": [
+      "romanbuildsaas"
+    ],
+    "likes": 0,
+    "replies": 0,
+    "views": 112,
+    "created_at": "Fri May 01 19:15:49 +0000 2026",
+    "author_username": "kai_cabero",
+    "author_name": "Kai Cabero",
+    "author_followers": 2110,
+    "author_verified": true,
+    "author_id": "1755729314073526272"
+  }
+]
+```
+
+### 5. Instagram Extractor
+
+#### Instagram Followers Scraper
+
+
+**Actor ID**: `vaCTgYFLVBaaYUaBY`
+
+**Input**:
+```json
+{
+    "extractFollowers": true,
+    "extractFollowing": true,
+    "mustBeVerified": false,
+    "usernames": [
+        "https://instagram.com/ahtsham2061"
+    ]
+}
+```
+
+**Output Structure**:
+```json
+[
+  {
+    "Account": "https://instagram.com/zaeem.charm",
+    "Profile Picture": "https://scontent-lax7-1.cdninstagram.com/v/t51.2885-19/171670956_940919189987329_29678336409592604_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=scontent-lax7-1.cdninstagram.com&_nc_cat=101&_nc_oc=Q6cZ2gHZbYv07aLbvYR4Uxl459RnQ0S9n1hDb6zduNbWSHeBx5dbTLZt9mFr7CkN-x1bWeA&_nc_ohc=zGWShNhKUYoQ7kNvwGfaWdA&_nc_gid=-Nn75gPuMGe1-qljD9KYZQ&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GKx9OwoB4BTSwlcDABzjNytKcGkAbkULAAAB1501500j-ccb7-5&oh=00_Af7NG-6WCgUQwsvQqBApx7rla__Pg0nDSo-v_dNnKKEAZg&oe=6A08C87B&_nc_sid=164c1d",
+    "Full Name": "Z  ā  ē  Ē  m",
+    "Source": "Follower of ahtsham2061",
+    "Mutual Follow": "No",
+    "Followers Count": 7406,
+    "Following Count": 3360,
+    "Biography": "☔ \n6'3 100 KG 🇵🇰\n98 Years old 🐺\nKind To Those Who Deserve\nLifetime Natural \nPersonal trainer \nYouTube👇",
+    "Detected Language": "English",
+    "Reels Count": 12,
+    "Median Views": 2444,
+    "Views/Followers Ratio": "33.00%",
+    "Median ER": "2.04%",
+    "Quality": "Good",
+    "Last Post Within (Days)": 36,
+    "Last Reel (Days Ago)": 282
+  },
+  {
+    "Account": "https://instagram.com/faisal_wattoo773",
+    "Profile Picture": "https://scontent-ord5-2.cdninstagram.com/v/t51.82787-19/670415445_17986686362969266_4678197006449294553_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=scontent-ord5-2.cdninstagram.com&_nc_cat=110&_nc_oc=Q6cZ2gH4jIuJ031I9VnPerZ-x_gQO-IQuh5VQlUfNXey0y4Zv1ORZvLph1iax2hUfOxHmhA&_nc_ohc=oZJGAIwMa4sQ7kNvwGu3DRC&_nc_gid=DaUJqcgCAECIYt7dRmTSNw&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GFW69Sey5FnDy_Y-ANm8tCZkS_xAbmNDAQAB1501500j-ccb7-5&oh=00_Af5pJ1dHGaVq4nS3qsMlSqhugqLqxm-EmV-a0I2jaLBM4A&oe=6A08DFC0&_nc_sid=164c1d",
+    "Full Name": "ғᴀɪsᴀʟ",
+    "Source": "Follower of ahtsham2061",
+    "Mutual Follow": "Yes",
+    "Followers Count": 1091,
+    "Following Count": 245,
+    "Biography": "📍BWN[]\n14 September 🎂@wattoo_773",
+    "Detected Language": "N/A",
+    "Reels Count": 1,
+    "Median Views": 1131,
+    "Views/Followers Ratio": "103.67%",
+    "Median ER": "18.52%",
+    "Quality": "Good",
+    "Last Post Within (Days)": 2,
+    "Last Reel (Days Ago)": 231
+  },
+  {
+    "Account": "https://instagram.com/babarazam",
+    "Profile Picture": "https://scontent-lax7-1.cdninstagram.com/v/t51.2885-19/451106881_383811357648898_4886035207207806743_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=scontent-lax7-1.cdninstagram.com&_nc_cat=1&_nc_oc=Q6cZ2gHIQy4H5mTeG0nGgePAwz6KkD-kAlZaESNlxMTYwsxKbqRM8R1Ujkt1eR6fJcq2uZs&_nc_ohc=JT1rGV1ZKjMQ7kNvwHEa605&_nc_gid=CUDcQO83KZZ2yrXowW-Azg&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GEFY4xoCKKILE10BABdnrDUir85DbkULAAAB1501500j-ccb7-5&oh=00_Af4btuESwcp5tDs25v3_bzmUt24jiaC1kfGom35YiBzYnA&oe=6A08DF80&_nc_sid=164c1d",
+    "Full Name": "Babar Azam",
+    "Source": "Following of ahtsham2061",
+    "Mutual Follow": "No",
+    "Followers Count": 6509626,
+    "Following Count": 38,
+    "Biography": "Unity | Faith | Discipline\n#BA56 🏏\n📧 Mentor @TalhaAisham at @sayacorps",
+    "Detected Language": "ga",
+    "Reels Count": 12,
+    "Median Views": 3484124,
+    "Views/Followers Ratio": "53.52%",
+    "Median ER": "5.02%",
+    "Quality": "Good",
+    "Last Post Within (Days)": 7,
+    "Last Reel (Days Ago)": 17
+  },
+  {
+    "Account": "https://instagram.com/theofficialnusrat",
+    "Profile Picture": "https://scontent-iad6-1.cdninstagram.com/v/t51.2885-19/448599324_447135301356801_7424891099360262566_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=scontent-iad6-1.cdninstagram.com&_nc_cat=109&_nc_oc=Q6cZ2gEVP_njPQOpq3BajPnSRQixYkqDYfcL6LsKxHTW3OyByRjYwpedsVXr3_A4J5nn7yY&_nc_ohc=tyDLpGFdeKsQ7kNvwEKrsQa&_nc_gid=MVmYgzPRgWG8urlrFoIV4g&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GBwVvRoBzc3MqpYBAKb5U7kdgwpnbkULAAAB1501500j-ccb7-5&oh=00_Af7IFY_rrAtQvumfkbPDXkRiwtnCn76NQ6XmEu6w3Fafqg&oe=6A08DA69&_nc_sid=164c1d",
+    "Full Name": "Nusrat Fateh Ali Khan",
+    "Source": "Following of ahtsham2061",
+    "Mutual Follow": "No",
+    "Followers Count": 812447,
+    "Following Count": 53,
+    "Biography": "Official account, controlled by Nusrat's estate. Nusrat Fateh Ali Khan is recognised as one of the great voices in musical history.",
+    "Detected Language": "English",
+    "Reels Count": 12,
+    "Median Views": 556695,
+    "Views/Followers Ratio": "68.52%",
+    "Median ER": "2.90%",
+    "Quality": "Good",
+    "Last Post Within (Days)": 39,
+    "Last Reel (Days Ago)": 331
+  }
+]
+```
+
+#### Instagram Profile Scraper - email, phone, socials
+
+
+**Actor ID**: `JNb6iSRuMKLF3OA3v`
+
+**Input**:
+```json
+{
+    "usernames": [
+        "mraurangzebabbas",
+        "ehtsham"
+    ]
+}
+```
+
+**Output Structure**:
+```json
+[
+  {
+    "name": "",
+    "username": "mraurangzebabbas",
+    "id": "73258600633",
+    "category": null,
+    "businessCategory": null,
+    "overallCategory": null,
+    "categoryEnum": null,
+    "bio": "𝐊𝐈𝐍𝐃 , 𝐋𝐎𝐘𝐀𝐋 &  𝐇𝐔𝐌𝐁𝐋𝐄 \n𝐌𝐚𝐧 with  ♡ of 𝐖𝐨𝐥𝐟\n𓃦🦢",
+    "bioLinks": [
+      {
+        "title": "TikTok",
+        "url": "http://tiktok.com/@draurangzebabbas",
+        "linkType": "external"
+      }
+    ],
+    "homepage": "http://tiktok.com/@draurangzebabbas",
+    "followers": 13,
+    "follows": 2,
+    "facebookId": "17841473218997325",
+    "isPrivate": false,
+    "isVerified": false,
+    "isBusinessAccount": false,
+    "isProfessionalAccount": false,
+    "hasClips": false,
+    "hasGuides": false,
+    "hasChannel": false,
+    "highlightReelCount": 11,
+    "pinnedChannelsListCount": 0,
+    "pronouns": [],
+    "businessContactMethod": "UNKNOWN",
+    "profileImage": "https://instagram.faep9-2.fna.fbcdn.net/v/t51.82787-19/612503335_17882123190440634_1706533795805669240_n.jpg?stp=dst-jpg_s320x320_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=instagram.faep9-2.fna.fbcdn.net&_nc_cat=106&_nc_oc=Q6cZ2gFAAGv5TBX9H41n2xYH3QP7pElZxsq7Zqnr9p1vssmyMq_EGSrmwJaFTBLJ1nXANjc&_nc_ohc=PeBLFnLbTSIQ7kNvwEPU67x&_nc_gid=jVLHsQX7SBvEp7njWrFq9w&edm=AOQ1c0wBAAAA&ccb=7-5&oh=00_Af6H7pNgO-J3VCwez7YcmEV-_fymnsdLpGplcea7rfHnLw&oe=6A08C7E3&_nc_sid=8b3546",
+    "profileImageStandard": "https://instagram.faep9-2.fna.fbcdn.net/v/t51.82787-19/612503335_17882123190440634_1706533795805669240_n.jpg?stp=dst-jpg_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=instagram.faep9-2.fna.fbcdn.net&_nc_cat=106&_nc_oc=Q6cZ2gFAAGv5TBX9H41n2xYH3QP7pElZxsq7Zqnr9p1vssmyMq_EGSrmwJaFTBLJ1nXANjc&_nc_ohc=PeBLFnLbTSIQ7kNvwEPU67x&_nc_gid=jVLHsQX7SBvEp7njWrFq9w&edm=AOQ1c0wBAAAA&ccb=7-5&oh=00_Af432OHWXatxnABXHW3KKpLO4jJ-CGqerfm5dxo8zipaHw&oe=6A08C7E3&_nc_sid=8b3546",
+    "videoCount": 0,
+    "videos": [],
+    "imageCount": 0,
+    "images": [],
+    "savedCount": 0,
+    "collectionsCount": 0,
+    "relatedProfiles": [],
+    "biographyWithEntities": {
+      "raw_text": "𝐊𝐈𝐍𝐃 , 𝐋𝐎𝐘𝐀𝐋 &  𝐇𝐔𝐌𝐁𝐋𝐄 \n𝐌𝐚𝐧 with  ♡ of 𝐖𝐨𝐥𝐟\n𓃦🦢",
+      "entities": []
+    },
+    "businessEmail": null,
+    "businessPhone": null,
+    "allEmails": [],
+    "allPhoneNumbers": [],
+    "socialLinks": [],
+    "websiteLinks": [],
+    "hasContacts": false,
+    "success": true
+  },
+  {
+    "name": "Ehtsham Ahmad",
+    "username": "ehtsham",
+    "id": "14498987",
+    "category": null,
+    "businessCategory": null,
+    "overallCategory": null,
+    "categoryEnum": null,
+    "bio": "",
+    "bioLinks": [],
+    "homepage": null,
+    "followers": 599,
+    "follows": 733,
+    "facebookId": "17841401049610226",
+    "isPrivate": true,
+    "isVerified": false,
+    "isBusinessAccount": false,
+    "isProfessionalAccount": false,
+    "hasClips": false,
+    "hasGuides": false,
+    "hasChannel": false,
+    "highlightReelCount": 0,
+    "pinnedChannelsListCount": 0,
+    "pronouns": [],
+    "businessContactMethod": "UNKNOWN",
+    "profileImage": "https://instagram.fbsr1-2.fna.fbcdn.net/v/t51.2885-19/422300922_754881013235585_5021841770383815179_n.jpg?stp=dst-jpg_s320x320_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=instagram.fbsr1-2.fna.fbcdn.net&_nc_cat=105&_nc_oc=Q6cZ2gE3vpJNH5icp488oR7PeExtaXQXswknQcHbxqeGdqJ0RmL5VXiHJ44FmXnFoYdclU4&_nc_ohc=oVkjHpUdgzEQ7kNvwHATUiV&_nc_gid=efxJYEuYuQLbpdUAK4IZNw&edm=AOQ1c0wBAAAA&ccb=7-5&oh=00_Af5Gyd7ISO45wk8dOolvLuv0touOSG5qdkW3IDdXL2dDKQ&oe=6A08E778&_nc_sid=8b3546",
+    "profileImageStandard": "https://instagram.fbsr1-2.fna.fbcdn.net/v/t51.2885-19/422300922_754881013235585_5021841770383815179_n.jpg?stp=dst-jpg_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=instagram.fbsr1-2.fna.fbcdn.net&_nc_cat=105&_nc_oc=Q6cZ2gE3vpJNH5icp488oR7PeExtaXQXswknQcHbxqeGdqJ0RmL5VXiHJ44FmXnFoYdclU4&_nc_ohc=oVkjHpUdgzEQ7kNvwHATUiV&_nc_gid=efxJYEuYuQLbpdUAK4IZNw&edm=AOQ1c0wBAAAA&ccb=7-5&oh=00_Af6aWRmcybakQ804j0p0QnJhN1QX7EWos0ekrbizb7cpCQ&oe=6A08E778&_nc_sid=8b3546",
+    "videoCount": 0,
+    "videos": [],
+    "imageCount": 24,
+    "images": [],
+    "savedCount": 0,
+    "collectionsCount": 0,
+    "relatedProfiles": [],
+    "biographyWithEntities": {
+      "raw_text": "",
+      "entities": []
+    },
+    "businessEmail": null,
+    "businessPhone": null,
+    "allEmails": [],
+    "allPhoneNumbers": [],
+    "socialLinks": [],
+    "websiteLinks": [],
+    "hasContacts": false,
+    "success": true
+  }
+]
+```
+
+#### Instagram Likes Scraper (no login needed)
+
+
+**Actor ID**: `zLHxSG7mqmCcdnX6p`
+
+**Input**:
+```json
+{
+    "postCode": "DXBB07DjAtr"
+}
+```
+
+**Output Structure**:
+```json
+[
+  {
+    "full_name": "Paige🤟🏻🌻💛🐥☀️",
+    "id": "289265349",
+    "is_new": true,
+    "is_private": true,
+    "is_verified": false,
+    "latest_reel_media": 0,
+    "profile_pic_id": "2722458803306073676",
+    "profile_pic_url": "https://scontent-cph2-1.cdninstagram.com/v/t51.2885-19/264188709_954047975508389_2970326028280822352_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby45MDAuYzIifQ&_nc_ht=scontent-cph2-1.cdninstagram.com&_nc_cat=105&_nc_oc=Q6cZ2gFQtc1iRaE4qyDEhGPGS7_lvGlnTRhR0tT2INF50bKBZcrFlmAV65fvnEslOxbG_Dk&_nc_ohc=MKWODtnZ76oQ7kNvwHvnA2l&_nc_gid=C02kcnCYSb7FBoOemzKfgg&edm=AHUBisUBAAAA&ccb=7-5&ig_cache_key=GCUzvw_lya2as2MDAFB6xgbJtzgpbkULAAAB1501500j-ccb7-5&oh=00_Af4W6O9uOf9RL2_7ZLhdi9fodMr3bYM2O6DQ7LWMw7bAiw&oe=6A08F44C&_nc_sid=bc52df",
+    "username": "muchmangoes"
+  },
+  {
+    "full_name": "K E E L S 🤍",
+    "id": "45281759488",
+    "is_new": true,
+    "is_private": true,
+    "is_verified": false,
+    "latest_reel_media": 0,
+    "profile_pic_id": "3360164029598959609",
+    "profile_pic_url": "https://scontent-cph2-1.cdninstagram.com/v/t51.2885-19/441225140_1643168696500244_4904734914505436826_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=scontent-cph2-1.cdninstagram.com&_nc_cat=108&_nc_oc=Q6cZ2gFQtc1iRaE4qyDEhGPGS7_lvGlnTRhR0tT2INF50bKBZcrFlmAV65fvnEslOxbG_Dk&_nc_ohc=aZbqxtzIrcQQ7kNvwHEq_kB&_nc_gid=C02kcnCYSb7FBoOemzKfgg&edm=AHUBisUBAAAA&ccb=7-5&ig_cache_key=GLSPTBoUAHYGdNYFAJpujRhrHhFEbkULAAAB1501500j-ccb7-5&oh=00_Af4twKFIkyU2HiDivMM2y2L6nUFJ_vNgrB-rsKH5d5ZmPg&oe=6A08ECB4&_nc_sid=bc52df",
+    "username": "keels.au"
+  },
+  {
+    "full_name": "chuc",
+    "id": "67516037209",
+    "is_new": true,
+    "is_private": false,
+    "is_verified": false,
+    "latest_reel_media": 0,
+    "profile_pic_id": "3739300751491523666",
+    "profile_pic_url": "https://scontent-cph2-1.cdninstagram.com/v/t51.82787-19/561860417_17907021288253210_5452518151663489637_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDUwLmMyIn0&_nc_ht=scontent-cph2-1.cdninstagram.com&_nc_cat=110&_nc_oc=Q6cZ2gFQtc1iRaE4qyDEhGPGS7_lvGlnTRhR0tT2INF50bKBZcrFlmAV65fvnEslOxbG_Dk&_nc_ohc=5HhQ2GZMP_wQ7kNvwEEKQRJ&_nc_gid=C02kcnCYSb7FBoOemzKfgg&edm=AHUBisUBAAAA&ccb=7-5&ig_cache_key=GEFPfSEaJ99KV54-AGWSRclePKtLbmNDAQAB1501500j-ccb7-5&oh=00_Af6MS3_TrD3_mx89w7dzPSbBBtzh5qkXkskIAW0jPu5zrQ&oe=6A08CA49&_nc_sid=bc52df",
+    "username": "trappxxout.chuc"
+  }
+]
+
+```
+
+#### Instagram Post Comments Extractor · No Login ($2.50 / 1,000 results)
+
+**Actor ID**: `VCTzrlR4xt1YZP81x`
+
+**Input**:
+```json
+{
+  "maxPages": 100, //100 is maximum pages
+  "postCode": "DXBB07DjAtr",
+  "sortBy": "recent" // we have two options "recent" or "popular"
+}
+```
+
+**Output Structure**:
+```json
+[
+  {
+    "child_comment_count": 14,
+    "comment_index": 0,
+    "comment_like_count": 1440,
+    "content_type": "comment",
+    "created_at": 1775973829,
+    "created_at_for_fb_app": 1775973829,
+    "created_at_utc": 1775973829,
+    "did_report_as_spam": false,
+    "has_disliked_comment": false,
+    "has_liked": false,
+    "has_liked_comment": false,
+    "has_more_head_child_comments": true,
+    "has_more_tail_child_comments": false,
+    "hashtags": [],
+    "id": "18080487494419689",
+    "inline_composer_display_condition": "never",
+    "is_covered": false,
+    "is_edited": false,
+    "is_photo_comments_enabled_for_comment_author": false,
+    "is_pinned": false,
+    "is_ranked_comment": true,
+    "is_text_editable": false,
+    "keywords_data": [],
+    "like_count": 1440,
+    "liked_by_media_coauthors": [],
+    "mentions": [],
+    "meta_ai_comment_type": "NONE",
+    "other_preview_users": [],
+    "preview_child_comments": [],
+    "private_reply_status": 0,
+    "share_enabled": true,
+    "text": "Literally me rn at 2:03 am",
+    "type": 0,
+    "user": {
+      "fbid_v2": "17841401065544738",
+      "full_name": "Dan Rutland",
+      "id": "303267518",
+      "is_mentionable": true,
+      "is_private": false,
+      "is_verified": false,
+      "latest_reel_media": 0,
+      "profile_pic_url": "https://scontent-iad3-2.cdninstagram.com/v/t51.2885-19/928605_640716529358720_1851566052_a.jpg?stp=dst-jpg_e0_tt6&_nc_cat=105&ig_cache_key=GF0rDgCAVyJxukYCAOSnXG4AAAAAYUULAAAB1501500j-ccb7-5&ccb=7-5&_nc_sid=669407&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLnd3dy4xNTAuQzMifQ%3D%3D&_nc_ohc=6sTvOXW2_nkQ7kNvwFhmBZD&_nc_oc=AdpO1tOhjVZmYXpptRvDQwr_SlW-1vagh0T0Z-oJWZ7fxakwv2O5C53G1Xofo51UpbU&_nc_ad=z-m&_nc_cid=0&_nc_zt=24&_nc_ht=scontent-iad3-2.cdninstagram.com&_nc_ss=703ba&oh=00_Af4LBs6uq6smnYEcPsAiXBGfPRqzCV6392GsFqZ0gWKjTQ&oe=6A08D87F",
+      "username": "genuinevf"
+    },
+    "user_id": "303267518"
+  },
+  {
+    "child_comment_count": 0,
+    "comment_index": 1,
+    "comment_like_count": 2,
+    "content_type": "comment",
+    "created_at": 1778347801,
+    "created_at_for_fb_app": 1778347801,
+    "created_at_utc": 1778347801,
+    "did_report_as_spam": false,
+    "has_disliked_comment": false,
+    "has_liked": false,
+    "has_liked_comment": false,
+    "hashtags": [],
+    "id": "17919386121349665",
+    "inline_composer_display_condition": "never",
+    "is_covered": false,
+    "is_edited": false,
+    "is_photo_comments_enabled_for_comment_author": false,
+    "is_pinned": false,
+    "is_ranked_comment": true,
+    "is_text_editable": false,
+    "keywords_data": [],
+    "like_count": 2,
+    "liked_by_media_coauthors": [],
+    "mentions": [],
+    "meta_ai_comment_type": "NONE",
+    "other_preview_users": [],
+    "preview_child_comments": [],
+    "private_reply_status": 0,
+    "share_enabled": true,
+    "text": "😂😂",
+    "type": 0,
+    "user": {
+      "fbid_v2": "17841404266009435",
+      "full_name": "Aaky Ofcl",
+      "id": "4155486200",
+      "is_mentionable": true,
+      "is_private": false,
+      "is_verified": false,
+      "latest_reel_media": 0,
+      "profile_pic_id": "3579597091481953091",
+      "profile_pic_url": "https://scontent-iad3-1.cdninstagram.com/v/t51.2885-19/482807778_1340686580583536_7139297005296514361_n.jpg?stp=dst-jpg_e0_s150x150_tt6&_nc_cat=1&ig_cache_key=GOIPxxxwDGTrWMMEADl1tfrM4BNjbkULAAAB1501500j-ccb7-5&ccb=7-5&_nc_sid=669407&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLnd3dy4xMDgwLkMzIn0%3D&_nc_ohc=ZLmMpBKiQUIQ7kNvwEvz-Wu&_nc_oc=AdpRV27qpppNP5LgxCbEC0_C-BL28hX1O4TC6kUgyIxcX33AOOsd9noquaiuIVzvQiU&_nc_ad=z-m&_nc_cid=0&_nc_zt=24&_nc_ht=scontent-iad3-1.cdninstagram.com&_nc_ss=703ba&oh=00_Af4CxJx7ohyraM9AprVPYbq_gNfGI-YOFgswOKwZq1nUCg&oe=6A08D641",
+      "username": "aaky_ofcl"
+    },
+    "user_id": "4155486200"
+  }
+]
+```
+
+### 6. Facebook Extractor
+
+#### Name Here
+
+
+**Actor ID**: ``
+
+**Input**:
+```json
+{
+}
+```
+
+**Output Structure**:
+```json
+[
+
+]
+```
+
+#### Name Here
+
+
+**Actor ID**: ``
+
+**Input**:
+```json
+{
+}
+```
+
+**Output Structure**:
+```json
+[
+
+]
+```
+
+
+### Name Here
+
+
+**Actor ID**: ``
+
+**Input**:
+```json
+{
+}
+```
+
+**Output Structure**:
+```json
+[
+
+]
+```
+

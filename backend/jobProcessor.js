@@ -20,7 +20,7 @@ function cleanDomain(domain) {
  * Process a research job
  */
 async function processJob(jobData) {
-    const { userId, type, input } = jobData;
+    const { userId, type, input, force = false } = jobData;
     console.log(`🚀 Executing research module [${type}] for user: ${userId}`);
 
     const keyManager = new KeyManager(userId, "apify");
@@ -51,7 +51,7 @@ async function processJob(jobData) {
 
         switch (type) {
             case "manual_scrape":
-                await handleManualScrape(userId, input, keyManager, input.tags || ["Manual"], jobId);
+                await handleManualScrape(userId, input, keyManager, input.tags || ["Manual"], jobId, force);
                 break;
 
             case "engagement_scrape":
@@ -68,6 +68,18 @@ async function processJob(jobData) {
             
             case "website_contact":
                 await handleWebsiteContactsScrape(userId, input, keyManager, input.tags || ["WebsiteContact"], jobId);
+                break;
+            
+            case "instagram_profiles":
+                await handleInstagramProfilesScrape(userId, input, keyManager, input.tags || ["InstagramProfile"], jobId, force);
+                break;
+
+            case "instagram_engagement":
+                await handleInstagramEngagementScrape(userId, input, keyManager, input.tags || ["InstagramEngagement"], jobId);
+                break;
+
+            case "instagram_followers":
+                await handleInstagramFollowersScrape(userId, input, keyManager, input.tags || ["InstagramFollowers"], jobId);
                 break;
 
             default:
@@ -187,21 +199,17 @@ async function handleWebsiteContactsScrape(userId, input, keyManager, tags = ["W
         const existing = await supabaseApi.getWebsiteContactsByDomains(domains);
         const existingMap = new Map(existing.map(c => [c.domain, c]));
         
-        // Only scrape domains not in DB or older than 30 days
-        const staleThreshold = new Date();
-        staleThreshold.setDate(staleThreshold.getDate() - 30);
-        
+        // Only scrape domains not in DB
         const toScrape = domains.filter(domain => {
             const found = existingMap.get(domain);
-            if (!found) return true;
-            return new Date(found.updated_at) < staleThreshold;
+            return !found;
         });
         
         let allResults = [...existing];
         
         if (toScrape.length > 0) {
             if (jobId) await supabaseApi.updateJobProgress(jobId, 10);
-            console.log(`📡 Scraping ${toScrape.length} new/stale domains: ${toScrape.join(', ')}`);
+            console.log(`📡 Scraping ${toScrape.length} new domains: ${toScrape.join(', ')}`);
             
             // Prepare URLs to check for each domain (limit to 3 URLs per domain)
             const urlsToCheck = [];
@@ -405,17 +413,17 @@ async function executeWithRetry(keyManager, taskDescription, taskFn, maxRetries 
     throw lastError;
 }
 
-async function handleManualScrape(userId, input, keyManager, tags = ["Manual"], jobId) {
+async function handleManualScrape(userId, input, keyManager, tags = ["Manual"], jobId, force = false) {
     const { profileUrls = [], companyUrls = [] } = input;
 
     if (profileUrls.length > 0) {
-        console.log(`👤 Processing ${profileUrls.length} personal profile URLs`);
-        await processProfiles(userId, profileUrls, "personal", keyManager, tags, jobId, 0);
+        console.log(`👤 Processing ${profileUrls.length} personal profile URLs (Force: ${force})`);
+        await processProfiles(userId, profileUrls, "personal", keyManager, tags, jobId, 0, force);
     }
 
     if (companyUrls.length > 0) {
-        console.log(`🏢 Processing ${companyUrls.length} company URLs`);
-        await processProfiles(userId, companyUrls, "company", keyManager, tags, jobId, profileUrls.length > 0 ? 50 : 0);
+        console.log(`🏢 Processing ${companyUrls.length} company URLs (Force: ${force})`);
+        await processProfiles(userId, companyUrls, "company", keyManager, tags, jobId, profileUrls.length > 0 ? 50 : 0, force);
     }
 }
 
@@ -512,7 +520,7 @@ async function handleEngagementScrape(userId, postUrls, engagementTypes, keyMana
     }
 }
 
-async function processProfiles(userId, urls, type, keyManager, tags = [], jobId, baseProgress = 0) {
+async function processProfiles(userId, urls, type, keyManager, tags = [], jobId, baseProgress = 0, force = false) {
     const BATCH_SIZE = 20;
     const THRESHOLD = 5;
     const normalizedUrls = Array.from(new Set(urls.map(u => scraper.normalizeUrl(u)).filter(Boolean)));
@@ -521,7 +529,7 @@ async function processProfiles(userId, urls, type, keyManager, tags = [], jobId,
     // 1. Initial Cache Check
     for (const url of normalizedUrls) {
         try {
-            const cached = await supabaseApi.getCachedProfile(url, type);
+            const cached = !force ? await supabaseApi.getCachedProfile(url, type) : null;
             if (cached && cached.isFresh) {
                 const sid = cached.profile?.id || cached.company?.id;
                 console.log(`📦 Cache Hit [${type}] (Supabase): ${url}`);
@@ -654,6 +662,214 @@ async function scrapeBatch(userId, urls, type, keyManager, tags) {
         }
     } catch (error) {
         console.error(`   🔴 Batch failed:`, error.message);
+    }
+}
+
+async function handleInstagramProfilesScrape(userId, input, keyManager, tags = ["InstagramProfile"], jobId, force = false) {
+    const { usernames = [], metadataMap = {} } = input;
+    if (usernames.length === 0) return;
+
+    const toScrape = [];
+    const uniqueUsernames = Array.from(new Set(usernames.map(u => u.trim()).filter(Boolean)));
+
+    // 1. Initial Cache Check
+    for (const username of uniqueUsernames) {
+        try {
+            const cached = !force ? await supabaseApi.getCachedInstagramProfile(username) : null;
+            if (cached && cached.isFresh) {
+                const sid = cached.profile.id;
+                console.log(`📦 Cache Hit [instagram] (Supabase): ${username}`);
+                await supabaseApi.linkUserToLeadsBulk(userId, [sid], "instagram", tags);
+            } else {
+                toScrape.push(username);
+            }
+        } catch (e) {
+            toScrape.push(username);
+        }
+    }
+
+    if (toScrape.length === 0) {
+        if (jobId) await supabaseApi.updateJobProgress(jobId, 100);
+        return;
+    }
+
+    try {
+        if (jobId) await supabaseApi.updateJobProgress(jobId, 20);
+
+        // Batch the scraping in groups of 50
+        const BATCH_SIZE = 50;
+        const batches = [];
+        for (let i = 0; i < toScrape.length; i += BATCH_SIZE) {
+            batches.push(toScrape.slice(i, i + BATCH_SIZE));
+        }
+
+        console.log(`🚀 Starting parallel research of ${toScrape.length} Instagram profiles across ${batches.length} batches...`);
+
+        let completedBatches = 0;
+
+        await Promise.all(batches.map((batch, index) => {
+            return (async () => {
+                // Staggered start to avoid simultaneous key selection collisions
+                await new Promise(r => setTimeout(r, index * 200));
+                
+                await keyManager.refreshIfLow();
+                
+                try {
+                    const results = await executeWithRetry(
+                        keyManager,
+                        `Instagram Batch ${index + 1}`,
+                        (key) => scraper.scrapeInstagramProfiles(batch, key)
+                    );
+                    
+                    if (results && results.length > 0) {
+                        const formatted = results.map(r => ({
+                            username: r.username,
+                            full_name: r.name || r.full_name,
+                            profile_pic_url: r.profileImage || r.profile_pic_url,
+                            biography: r.bio || r.biography,
+                            external_url: r.homepage || r.external_url,
+                            email: r.businessEmail || (r.allEmails && r.allEmails[0]),
+                            phone: r.businessPhone || (r.allPhoneNumbers && r.allPhoneNumbers[0]),
+                            followers_count: r.followers || r.followers_count,
+                            following_count: r.follows || r.following_count,
+                            posts_count: r.videoCount + r.imageCount || r.posts_count,
+                            is_business_account: r.isBusinessAccount,
+                            is_verified: r.isVerified,
+                            is_private: r.isPrivate,
+                            city_name: r.city_name,
+                            address_street: r.address_street,
+                            public_email: r.public_email,
+                            public_phone_country_code: r.public_phone_country_code,
+                            public_phone_number: r.public_phone_number,
+                            socials: {
+                                twitter: (r.socialLinks || r.websiteLinks || []).find(l => l && (l.includes("twitter.com") || l.includes("x.com"))),
+                                facebook: (r.socialLinks || r.websiteLinks || []).find(l => l && l.includes("facebook.com")),
+                                youtube: (r.socialLinks || r.websiteLinks || []).find(l => l && l.includes("youtube.com")),
+                            },
+                            reels_count: metadataMap[r.username]?.["Reels Count"] || r.highlightReelCount || 0,
+                            median_views: metadataMap[r.username]?.["Median Views"] || 0,
+                            views_followers_ratio: metadataMap[r.username]?.["Views/Followers Ratio"] || null,
+                            median_er: metadataMap[r.username]?.["Median ER"] || null,
+                            quality: metadataMap[r.username]?.["Quality"] || null,
+                            last_post_days: metadataMap[r.username]?.["Last Post Within (Days)"] || null,
+                            category: r.category || r.businessCategory || r.overallCategory || null,
+                            is_professional_account: r.isProfessionalAccount || false,
+                            highlight_reel_count: r.highlightReelCount || 0,
+                            mutual_follow: metadataMap[r.username]?.["Mutual Follow"] === "Yes",
+                            detected_language: metadataMap[r.username]?.["Detected Language"] || null,
+                            extra_data: { ...r, ...(metadataMap[r.username] || {}) }
+                        })).filter(f => f.username);
+
+                        const saved = await supabaseApi.upsertInstagramLeadsBulk(formatted);
+                        if (saved && saved.length > 0) {
+                            const sids = saved.map(s => s.id);
+                            await supabaseApi.linkUserToLeadsBulk(userId, sids, "instagram", tags);
+                        }
+                    }
+                } catch (err) {
+                    console.error(`❌ Batch ${index + 1} failed completely after retries:`, err.message);
+                }
+
+                completedBatches++;
+                if (jobId) {
+                    const progress = 20 + Math.floor((completedBatches / batches.length) * 79);
+                    await supabaseApi.updateJobProgress(jobId, Math.min(progress, 99));
+                }
+            })();
+        }));
+
+        if (jobId) await supabaseApi.updateJobProgress(jobId, 100);
+    } catch (err) {
+        throw err;
+    }
+}
+
+async function handleInstagramEngagementScrape(userId, input, keyManager, tags = ["InstagramEngagement"], jobId) {
+    const { postUrls = [], extractLikers = true, extractCommenters = true, maxPages = 1, sortBy = "recent" } = input;
+    if (postUrls.length === 0) return;
+
+    const allUsernames = new Set();
+
+    try {
+        for (const postUrl of postUrls) {
+            // Extract shortcode from URL
+            const postCode = postUrl.split('/p/')[1]?.split('/')[0] || postUrl.split('/reels/')[1]?.split('/')[0];
+            if (!postCode) continue;
+
+            if (extractLikers) {
+                console.log(`❤️ Extracting likers for post: ${postCode}`);
+                const likers = await executeWithRetry(
+                    keyManager,
+                    "Instagram Likers Scrape",
+                    (key) => scraper.scrapeInstagramLikes(postCode, key)
+                );
+                likers.forEach(l => { if (l.username) allUsernames.add(l.username); });
+            }
+
+            if (extractCommenters) {
+                console.log(`💬 Extracting commenters for post: ${postCode} (Pages: ${maxPages}, Sort: ${sortBy})`);
+                const commenters = await executeWithRetry(
+                    keyManager,
+                    "Instagram Commenters Scrape",
+                    (key) => scraper.scrapeInstagramComments(postCode, key, sortBy, maxPages)
+                );
+                commenters.forEach(c => { if (c.user?.username) allUsernames.add(c.user.username); });
+            }
+        }
+
+        if (allUsernames.size > 0) {
+            const usernames = Array.from(allUsernames);
+            console.log(`✨ Enriching ${usernames.length} Instagram profiles...`);
+            // We can reuse handleInstagramProfilesScrape but maybe in smaller batches if needed
+            // For now, let's just call it directly
+            await handleInstagramProfilesScrape(userId, { usernames, tags }, keyManager, tags, jobId);
+        } else {
+            if (jobId) await supabaseApi.updateJobProgress(jobId, 100);
+        }
+    } catch (err) {
+        throw err;
+    }
+}
+
+async function handleInstagramFollowersScrape(userId, input, keyManager, tags = ["InstagramFollowers"], jobId) {
+    const { urls = [], extractFollowers = true, extractFollowing = true } = input;
+    if (urls.length === 0) return;
+
+    const allUsernames = new Set();
+    const metadataMap = {};
+
+    try {
+        for (const url of urls) {
+            console.log(`👥 Extracting audience for: ${url}`);
+            const audience = await executeWithRetry(
+                keyManager,
+                "Instagram Followers Scrape",
+                (key) => scraper.scrapeInstagramFollowers([url], key, extractFollowers, extractFollowing)
+            );
+            
+            if (audience && Array.isArray(audience)) {
+                audience.forEach(u => {
+                    const profileUrl = u.Account || u.profileUrl;
+                    if (profileUrl) {
+                        const username = profileUrl.replace(/\/$/, '').split('/').pop();
+                        if (username) {
+                            allUsernames.add(username);
+                            metadataMap[username] = u;
+                        }
+                    }
+                });
+            }
+        }
+
+        if (allUsernames.size > 0) {
+            const usernames = Array.from(allUsernames);
+            console.log(`✨ Enriching ${usernames.length} extracted Instagram audience members...`);
+            await handleInstagramProfilesScrape(userId, { usernames, tags, metadataMap }, keyManager, tags, jobId);
+        } else {
+            if (jobId) await supabaseApi.updateJobProgress(jobId, 100);
+        }
+    } catch (err) {
+        throw err;
     }
 }
 

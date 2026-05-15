@@ -31,7 +31,9 @@ import {
     IconBrandX,
     IconBrandTiktok,
     IconMapPin,
-    IconBrandGoogleMaps
+    IconBrandGoogleMaps,
+    IconCopy,
+    IconClipboardCheck
 } from "@tabler/icons-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from "@/components/ui/sheet";
 import { Label } from "@/components/ui/label";
@@ -157,12 +159,47 @@ type WebsiteContact = {
     extraData?: any;
 };
 
+type InstagramLead = {
+    _id: string;
+    junctionId: any;
+    username: string;
+    fullName?: string;
+    profilePicUrl?: string;
+    biography?: string;
+    externalUrl?: string;
+    email?: string;
+    phone?: string;
+    followersCount?: number;
+    followingCount?: number;
+    postsCount?: number;
+    isBusinessAccount?: boolean;
+    isVerified?: boolean;
+    isPrivate?: boolean;
+    cityName?: string;
+    publicEmail?: string;
+    publicPhoneNumber?: string;
+    socials?: any;
+    updatedAt: number;
+    tags?: string[];
+    reelsCount?: number;
+    medianViews?: number;
+    viewsFollowersRatio?: string;
+    medianEr?: string;
+    quality?: string;
+    lastPostDays?: number;
+    category?: string;
+    isProfessionalAccount?: boolean;
+    highlightReelCount?: number;
+    mutualFollow?: boolean;
+    detectedLanguage?: string;
+};
+
 // --- Page Component ---
 
 export default function ProfilesPage() {
     const user = useQuery(api.auth.getCurrentUser);
     const getToken = useAction(api.actions.supabaseAuth.getSupabaseToken);
-    
+
     // --- Helper hook for Supabase fetching ---
     function useLeadsFromSupabase(userId: string | undefined, profileType: string) {
         const [leads, setLeads] = useState<any[]>([]);
@@ -192,99 +229,136 @@ export default function ProfilesPage() {
                         personal: linkedin_profiles (*),
                         company: company_profiles (*),
                         google_maps: google_maps_leads (*),
-                        website_contact: website_contacts (*)
+                        website_contact: website_contacts (*),
+                        instagram: instagram_leads (*)
                     `)
                     .eq("user_id", userId)
                     .eq("profile_type", profileType)
                     .order("created_at", { ascending: false })
                     .then(({ data, error }) => {
-                    if (error) {
-                        console.error("Supabase fetch error:", error);
+                        if (error) {
+                            console.error("Supabase fetch error:", error);
+                            setLoading(false);
+                            return;
+                        }
+                        if (data) {
+                            const formatted = data
+                                .map(d => {
+                                    const detailsRaw = d.personal || d.company || d.google_maps || d.website_contact || d.instagram;
+                                    if (!detailsRaw) return null;
+                                    const details = Array.isArray(detailsRaw) ? detailsRaw[0] : detailsRaw;
+                                    if (!details) return null;
+                                    if (profileType === "personal") {
+                                        return {
+                                            ...details,
+                                            linkedinUrl: details.linkedin_url,
+                                            publicIdentifier: details.public_identifier,
+                                            firstName: details.first_name,
+                                            lastName: details.last_name,
+                                            fullName: details.full_name,
+                                            companyName: details.company_name,
+                                            jobTitle: details.job_title,
+                                            isPremium: details.is_premium,
+                                            isInfluencer: details.is_influencer,
+                                            openToWork: details.open_to_work,
+                                            isVerified: details.is_verified,
+                                            profilePic: details.profile_pic,
+                                            updatedAt: new Date(details.updated_at || d.created_at).getTime(),
+                                            tags: d.tags,
+                                            junctionId: d.id,
+                                            _id: d.id
+                                        };
+                                    } else if (profileType === "company") {
+                                        return {
+                                            ...details,
+                                            companyName: details.company_name,
+                                            linkedinUrl: details.linkedin_url,
+                                            websiteUrl: details.website_url,
+                                            logoUrl: details.logo_url,
+                                            employeeCount: details.employee_count,
+                                            employeeCountRange: details.employee_count_range,
+                                            followerCount: details.follower_count,
+                                            isVerified: details.is_verified,
+                                            updatedAt: new Date(details.updated_at || d.created_at).getTime(),
+                                            tags: d.tags,
+                                            junctionId: d.id,
+                                            _id: d.id
+                                        };
+                                    } else if (profileType === "website_contact") {
+                                        let socials = details.socials;
+                                        if (typeof socials === 'string') {
+                                            try { socials = JSON.parse(socials); } catch (e) { socials = {}; }
+                                        }
+                                        return {
+                                            ...details,
+                                            socials,
+                                            sourceUrls: details.source_urls || [],
+                                            extraData: details.extra_data || {},
+                                            updatedAt: new Date(details.updated_at || d.created_at).getTime(),
+                                            tags: d.tags,
+                                            junctionId: d.id,
+                                            _id: d.id
+                                        };
+                                    } else if (profileType === "google_maps") {
+                                        let socials = details.socials;
+                                        if (typeof socials === 'string') {
+                                            try { socials = JSON.parse(socials); } catch (e) { socials = {}; }
+                                        }
+                                        return {
+                                            ...details,
+                                            socials,
+                                            totalScore: details.total_score || details.totalScore,
+                                            reviewsCount: details.reviews_count || details.reviewsCount,
+                                            imageUrl: details.image_url || details.imageUrl,
+                                            placeId: details.place_id || details.placeId,
+                                            updatedAt: new Date(details.updated_at || d.created_at).getTime(),
+                                            tags: d.tags,
+                                            junctionId: d.id,
+                                            _id: d.id
+                                        };
+                                    } else { // instagram
+                                        let socials = details.socials;
+                                        if (typeof socials === 'string') {
+                                            try { socials = JSON.parse(socials); } catch (e) { socials = {}; }
+                                        }
+                                        return {
+                                            ...details,
+                                            socials,
+                                            fullName: details.full_name,
+                                            profilePicUrl: details.profile_pic_url,
+                                            externalUrl: details.external_url,
+                                            followersCount: details.followers_count,
+                                            followingCount: details.following_count,
+                                            postsCount: details.posts_count,
+                                            isBusinessAccount: details.is_business_account,
+                                            isVerified: details.is_verified,
+                                            isPrivate: details.is_private,
+                                            cityName: details.city_name,
+                                            publicEmail: details.public_email,
+                                            publicPhoneNumber: details.public_phone_number,
+                                            reelsCount: details.reels_count,
+                                            medianViews: details.median_views,
+                                            viewsFollowersRatio: details.views_followers_ratio,
+                                            medianEr: details.median_er,
+                                            quality: details.quality,
+                                            lastPostDays: details.last_post_days,
+                                            category: details.category,
+                                            isProfessionalAccount: details.is_professional_account,
+                                            highlightReelCount: details.highlight_reel_count,
+                                            mutualFollow: details.mutual_follow,
+                                            detectedLanguage: details.detected_language,
+                                            updatedAt: new Date(details.updated_at || d.created_at).getTime(),
+                                            tags: d.tags,
+                                            junctionId: d.id,
+                                            _id: d.id
+                                        };
+                                    }
+                                })
+                                .filter(Boolean);
+                            setLeads(formatted);
+                        }
                         setLoading(false);
-                        return;
-                    }
-                    if (data) {
-                        const formatted = data
-                            .map(d => {
-                                const detailsRaw = d.personal || d.company || d.google_maps || d.website_contact;
-                                if (!detailsRaw) return null;
-                                const details = Array.isArray(detailsRaw) ? detailsRaw[0] : detailsRaw;
-                                if (!details) return null;
-                                if (profileType === "personal") {
-                                    return {
-                                        ...details,
-                                        linkedinUrl: details.linkedin_url,
-                                        publicIdentifier: details.public_identifier,
-                                        firstName: details.first_name,
-                                        lastName: details.last_name,
-                                        fullName: details.full_name,
-                                        companyName: details.company_name,
-                                        jobTitle: details.job_title,
-                                        isPremium: details.is_premium,
-                                        isInfluencer: details.is_influencer,
-                                        openToWork: details.open_to_work,
-                                        isVerified: details.is_verified,
-                                        profilePic: details.profile_pic,
-                                        updatedAt: new Date(details.updated_at || d.created_at).getTime(),
-                                        tags: d.tags,
-                                        junctionId: d.id,
-                                        _id: d.id 
-                                    };
-                                } else if (profileType === "company") {
-                                    return {
-                                        ...details,
-                                        companyName: details.company_name,
-                                        linkedinUrl: details.linkedin_url,
-                                        websiteUrl: details.website_url,
-                                        logoUrl: details.logo_url,
-                                        employeeCount: details.employee_count,
-                                        employeeCountRange: details.employee_count_range,
-                                        followerCount: details.follower_count,
-                                        isVerified: details.is_verified,
-                                        updatedAt: new Date(details.updated_at || d.created_at).getTime(),
-                                        tags: d.tags,
-                                        junctionId: d.id,
-                                        _id: d.id 
-                                    };
-                                } else if (profileType === "website_contact") {
-                                    let socials = details.socials;
-                                    if (typeof socials === 'string') {
-                                        try { socials = JSON.parse(socials); } catch (e) { socials = {}; }
-                                    }
-                                    return {
-                                        ...details,
-                                        socials,
-                                        sourceUrls: details.source_urls || [],
-                                        extraData: details.extra_data || {},
-                                        updatedAt: new Date(details.updated_at || d.created_at).getTime(),
-                                        tags: d.tags,
-                                        junctionId: d.id,
-                                        _id: d.id
-                                    };
-                                } else { // google_maps
-                                    let socials = details.socials;
-                                    if (typeof socials === 'string') {
-                                        try { socials = JSON.parse(socials); } catch (e) { socials = {}; }
-                                    }
-                                    return {
-                                        ...details,
-                                        socials,
-                                        totalScore: details.total_score || details.totalScore,
-                                        reviewsCount: details.reviews_count || details.reviewsCount,
-                                        imageUrl: details.image_url || details.imageUrl,
-                                        placeId: details.place_id || details.placeId,
-                                        updatedAt: new Date(details.updated_at || d.created_at).getTime(),
-                                        tags: d.tags,
-                                        junctionId: d.id,
-                                        _id: d.id 
-                                    };
-                                }
-                            })
-                            .filter(Boolean);
-                        setLeads(formatted);
-                    }
-                    setLoading(false);
-                });
+                    });
             });
         }, [userId, profileType, refreshKey]);
 
@@ -296,6 +370,7 @@ export default function ProfilesPage() {
     const { leads: company, loading: loadingCompany } = useLeadsFromSupabase(user?._id, "company");
     const { leads: googleMaps, loading: loadingGoogleMaps } = useLeadsFromSupabase(user?._id, "google_maps");
     const { leads: websiteContacts, loading: loadingWebsiteContacts, refresh: refreshWebsiteContacts } = useLeadsFromSupabase(user?._id, "website_contact");
+    const { leads: instagramLeads, loading: loadingInstagramLeads } = useLeadsFromSupabase(user?._id, "instagram");
 
     const getOrCreateKey = useAction(api.actions.supabase.getOrCreateWebhookKey);
 
@@ -358,6 +433,21 @@ export default function ProfilesPage() {
         tags: "",
     });
 
+    const [instagramFilters, setInstagramFilters] = useState({
+        hasEmail: "all" as "all" | "yes" | "no",
+        hasPhone: "all" as "all" | "yes" | "no",
+        minFollowers: 0,
+        maxFollowers: 10000000,
+        isVerified: "all" as "all" | "yes" | "no",
+        isBusinessAccount: "all" as "all" | "yes" | "no",
+        isProfessionalAccount: "all" as "all" | "yes" | "no",
+        isPrivate: "all" as "all" | "yes" | "no",
+        mutualFollow: "all" as "all" | "yes" | "no",
+        quality: "all" as "all" | "Good" | "Average" | "Bad",
+        location: "",
+        tags: "",
+    });
+
     // --- Handlers ---
     const handleDeleteProfile = async (id: any) => {
         if (!confirm("Are you sure you want to remove this lead from your list? (Global data will be preserved)")) return;
@@ -370,11 +460,11 @@ export default function ProfilesPage() {
                 .from("user_leads")
                 .delete()
                 .eq("id", id);
-            
+
             if (error) throw error;
 
             toast.success("Lead removed");
-            window.location.reload(); 
+            window.location.reload();
         } catch (e: any) {
             toast.error(e.message);
         }
@@ -409,7 +499,7 @@ export default function ProfilesPage() {
             toast.info("Queueing update...");
             const apiData = await getOrCreateKey();
             if (!apiData?.key) throw new Error("Could not retrieve API Key");
-            
+
             const res = await fetch(`${process.env.NEXT_PUBLIC_RENDER_BACKEND_URL || "http://localhost:8000"}/api/scrape-linkedin`, {
                 method: "POST",
                 headers: {
@@ -440,7 +530,7 @@ export default function ProfilesPage() {
             if (personalFilters.hasHeadline === "no" && p.headline) return false;
             if (personalFilters.hasProfilePic === "yes" && !p.profilePic) return false;
             if (personalFilters.hasProfilePic === "no" && p.profilePic) return false;
-            
+
             const connections = p.connections || 0;
             if (connections < personalFilters.minConnections) return false;
             if (personalFilters.maxConnections > 0 && connections > personalFilters.maxConnections) return false;
@@ -551,7 +641,7 @@ export default function ProfilesPage() {
             if (websiteContactsFilters.hasEmail === "no" && w.emails && w.emails.length > 0) return false;
             if (websiteContactsFilters.hasPhone === "yes" && (!w.phones || w.phones.length === 0)) return false;
             if (websiteContactsFilters.hasPhone === "no" && w.phones && w.phones.length > 0) return false;
-            
+
             if (websiteContactsFilters.hasInstagram === "yes" && !w.socials?.instagram) return false;
             if (websiteContactsFilters.hasInstagram === "no" && w.socials?.instagram) return false;
             if (websiteContactsFilters.hasTikTok === "yes" && !w.socials?.tiktok) return false;
@@ -572,6 +662,49 @@ export default function ProfilesPage() {
             return true;
         });
     }, [websiteContacts, websiteContactsFilters]);
+
+    const filteredInstagram = useMemo(() => {
+        return instagramLeads.filter((ig) => {
+            if (instagramFilters.hasEmail === "yes" && !ig.email && !ig.publicEmail) return false;
+            if (instagramFilters.hasEmail === "no" && (ig.email || ig.publicEmail)) return false;
+            if (instagramFilters.hasPhone === "yes" && !ig.phone && !ig.publicPhoneNumber) return false;
+            if (instagramFilters.hasPhone === "no" && (ig.phone || ig.publicPhoneNumber)) return false;
+
+            const followers = ig.followersCount || 0;
+            if (followers < instagramFilters.minFollowers) return false;
+            if (instagramFilters.maxFollowers > 0 && followers > instagramFilters.maxFollowers) return false;
+
+            if (instagramFilters.isVerified === "yes" && !ig.isVerified) return false;
+            if (instagramFilters.isVerified === "no" && ig.isVerified) return false;
+            if (instagramFilters.isBusinessAccount === "yes" && !ig.isBusinessAccount) return false;
+            if (instagramFilters.isBusinessAccount === "no" && ig.isBusinessAccount) return false;
+            if (instagramFilters.isPrivate === "yes" && !ig.isPrivate) return false;
+            if (instagramFilters.isPrivate === "no" && ig.isPrivate) return false;
+            if (instagramFilters.isProfessionalAccount === "yes" && !ig.isProfessionalAccount) return false;
+            if (instagramFilters.isProfessionalAccount === "no" && ig.isProfessionalAccount) return false;
+            if (instagramFilters.mutualFollow === "yes" && !ig.mutualFollow) return false;
+            if (instagramFilters.mutualFollow === "no" && ig.mutualFollow) return false;
+
+            if (instagramFilters.quality !== "all") {
+                if (ig.quality !== instagramFilters.quality) return false;
+            }
+
+            if (instagramFilters.location) {
+                const city = (ig.cityName || "").toLowerCase();
+                const street = (ig.addressStreet || "").toLowerCase();
+                const q = instagramFilters.location.toLowerCase();
+                if (!city.includes(q) && !street.includes(q)) return false;
+            }
+
+            if (instagramFilters.tags) {
+                const q = instagramFilters.tags.toLowerCase();
+                const hasMatch = (ig.tags || []).some((t: string) => t.toLowerCase().includes(q));
+                if (!hasMatch) return false;
+            }
+
+            return true;
+        });
+    }, [instagramLeads, instagramFilters]);
 
     // --- Column Definitions ---
     const personalColumns = useMemo<ColumnDef<PersonalProfile>[]>(() => [
@@ -871,8 +1004,8 @@ export default function ProfilesPage() {
             header: "Image",
             cell: ({ row }) => (
                 <Avatar className="h-9 w-9 rounded-md border border-border/50">
-                    <AvatarImage 
-                        src={row.original.imageUrl || undefined} 
+                    <AvatarImage
+                        src={row.original.imageUrl || undefined}
                         alt={row.original.title}
                         className="object-cover"
                         referrerPolicy="no-referrer"
@@ -970,10 +1103,10 @@ export default function ProfilesPage() {
             accessorKey: "url",
             header: "Google Maps Url",
             cell: ({ row }) => (
-                <a 
-                    href={row.original.url} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
+                <a
+                    href={row.original.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="text-xs text-blue-500 hover:underline flex items-center gap-1"
                 >
                     <IconBrandGoogleMaps size={14} className="text-red-500" /> View
@@ -998,6 +1131,159 @@ export default function ProfilesPage() {
                         <DropdownMenuItem asChild>
                             <a href={row.original.url} target="_blank" rel="noopener noreferrer">
                                 <IconExternalLink className="mr-2 h-4 w-4" /> View on Google Maps
+                            </a>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteProfile(row.original.junctionId)}>
+                            Delete Lead
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            ),
+        }
+    ], []);
+
+    const instagramColumns = useMemo<ColumnDef<InstagramLead>[]>(() => [
+        {
+            id: "select",
+            header: ({ table }) => (
+                <Checkbox
+                    checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")}
+                    onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+                    aria-label="Select all"
+                />
+            ),
+            cell: ({ row }) => (
+                <Checkbox
+                    checked={row.getIsSelected()}
+                    onCheckedChange={(value) => row.toggleSelected(!!value)}
+                    aria-label="Select row"
+                />
+            ),
+            enableSorting: false,
+            enableHiding: false,
+        },
+        {
+            accessorKey: "profilePicUrl",
+            header: "Profile",
+            cell: ({ row }) => (
+                <Avatar className="h-9 w-9">
+                    <AvatarImage src={row.original.profilePicUrl || undefined} alt={row.original.username} />
+                    <AvatarFallback>{row.original.username?.slice(0, 2) || "IG"}</AvatarFallback>
+                </Avatar>
+            ),
+        },
+        {
+            accessorKey: "username",
+            header: "Username",
+            cell: ({ row }) => (
+                <div className="flex flex-col">
+                    <span className="font-medium">@{row.original.username}</span>
+                    <span className="text-xs text-muted-foreground">{row.original.fullName}</span>
+                </div>
+            ),
+        },
+        {
+            id: "badges",
+            header: "Badges",
+            cell: ({ row }) => (
+                <div className="flex flex-wrap gap-1">
+                    {row.original.isVerified && <IconCircleCheckFilled className="size-4 text-blue-500" title="Verified" />}
+                    {row.original.isBusinessAccount && <Badge variant="secondary" className="bg-amber-100 text-amber-700 hover:bg-amber-100 text-[10px] h-4 px-1">BUSINESS</Badge>}
+                    {row.original.isProfessionalAccount && <Badge variant="secondary" className="bg-blue-100 text-blue-700 hover:bg-blue-100 text-[10px] h-4 px-1">PROFESSIONAL</Badge>}
+                    {row.original.isPrivate && <Badge className="bg-slate-100 text-slate-700 hover:bg-slate-100 text-[10px] h-4 px-1">PRIVATE</Badge>}
+                    {row.original.mutualFollow && <Badge className="bg-pink-100 text-pink-700 hover:bg-pink-100 text-[10px] h-4 px-1">MUTUAL</Badge>}
+                </div>
+            )
+        },
+        {
+            accessorKey: "category",
+            header: "Category",
+            cell: ({ row }) => row.original.category || "-",
+        },
+        {
+            accessorKey: "medianEr",
+            header: "ER",
+            cell: ({ row }) => row.original.medianEr || "-",
+        },
+        {
+            accessorKey: "quality",
+            header: "Quality",
+            cell: ({ row }) => {
+                const q = row.original.quality;
+                if (!q) return "-";
+                const color = q.toLowerCase() === "good" ? "text-green-600" : q.toLowerCase() === "average" ? "text-amber-600" : "text-red-600";
+                return <span className={`font-medium ${color}`}>{q}</span>
+            },
+        },
+        {
+            accessorKey: "reelsCount",
+            header: "Reels",
+            cell: ({ row }) => row.original.reelsCount || "-",
+        },
+        {
+            accessorKey: "medianViews",
+            header: "Avg Views",
+            cell: ({ row }) => row.original.medianViews?.toLocaleString() || "-",
+        },
+        {
+            accessorKey: "detectedLanguage",
+            header: "Lang",
+            cell: ({ row }) => row.original.detectedLanguage || "-",
+        },
+        {
+            accessorKey: "followersCount",
+            header: "Followers",
+            cell: ({ row }) => row.original.followersCount?.toLocaleString() || "-",
+        },
+        {
+            accessorKey: "followingCount",
+            header: "Following",
+            cell: ({ row }) => row.original.followingCount?.toLocaleString() || "-",
+        },
+        {
+            accessorKey: "email",
+            header: "Email",
+            cell: ({ row }) => row.original.email || row.original.publicEmail || <span className="text-muted-foreground text-xs">N/A</span>,
+        },
+        {
+            accessorKey: "phone",
+            header: "Phone",
+            cell: ({ row }) => row.original.phone || row.original.publicPhoneNumber || <span className="text-muted-foreground text-xs">N/A</span>,
+        },
+        {
+            accessorKey: "cityName",
+            header: "City",
+            cell: ({ row }) => row.original.cityName || "-",
+        },
+        {
+            accessorKey: "tags",
+            header: "Tags",
+            cell: ({ row }) => (
+                <div className="flex flex-wrap gap-1 max-w-[150px]">
+                    {row.original.tags?.map((tag, idx) => (
+                        <Badge key={idx} variant="outline" className="text-[9px] px-1 h-3.5 bg-muted/30">
+                            {tag}
+                        </Badge>
+                    ))}
+                    {(!row.original.tags || row.original.tags.length === 0) && <span className="text-muted-foreground text-[10px]">-</span>}
+                </div>
+            )
+        },
+        {
+            id: "actions",
+            cell: ({ row }) => (
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                            <IconDotsVertical className="h-4 w-4" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuItem asChild>
+                            <a href={`https://instagram.com/${row.original.username}`} target="_blank" rel="noopener noreferrer">
+                                <IconExternalLink className="mr-2 h-4 w-4" /> View on Instagram
                             </a>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
@@ -1035,14 +1321,14 @@ export default function ProfilesPage() {
             header: "Domain",
             cell: ({ row }) => (
                 <div className="flex items-center gap-2">
-                    <img 
-                        src={`https://www.google.com/s2/favicons?sz=64&domain=${row.original.domain}`} 
-                        alt="" 
+                    <img
+                        src={`https://www.google.com/s2/favicons?sz=64&domain=${row.original.domain}`}
+                        alt=""
                         className="size-4 rounded-sm"
                     />
-                    <a 
-                        href={`https://${row.original.domain}`} 
-                        target="_blank" 
+                    <a
+                        href={`https://${row.original.domain}`}
+                        target="_blank"
                         className="font-medium hover:text-blue-500 transition-colors"
                     >
                         {row.original.domain}
@@ -1057,22 +1343,22 @@ export default function ProfilesPage() {
                 const urls = row.original.sourceUrls || [];
                 const s = row.original.socials || {};
                 const extra = row.original.extraData || {};
-                const hasDetails = ((row.original.emails?.length || 0) > 0) || ((row.original.phones?.length || 0) > 0) || 
-                                   (s.linkedin || s.facebook || s.instagram || s.twitter || s.tiktok || s.youtube || s.pinterest);
-                
+                const hasDetails = ((row.original.emails?.length || 0) > 0) || ((row.original.phones?.length || 0) > 0) ||
+                    (s.linkedin || s.facebook || s.instagram || s.twitter || s.tiktok || s.youtube || s.pinterest);
+
                 if (!hasDetails) return "-";
 
                 // Use sourceUrls if available, otherwise fallback to the original start URL we checked
                 const displayUrls = urls.length > 0 ? urls : (extra.originalStartUrl ? [extra.originalStartUrl] : []);
-                
+
                 if (displayUrls.length === 0) return "-";
                 return (
                     <div className="flex flex-col gap-0.5">
                         {displayUrls.slice(0, 1).map((url, i) => (
-                            <a 
-                                key={i} 
-                                href={url} 
-                                target="_blank" 
+                            <a
+                                key={i}
+                                href={url}
+                                target="_blank"
                                 className="text-[10px] text-blue-500 hover:underline truncate max-w-[120px]"
                                 title={url}
                             >
@@ -1209,6 +1495,7 @@ export default function ProfilesPage() {
                                 <TabsTrigger value="company">Linkedin Company Profiles</TabsTrigger>
                                 <TabsTrigger value="google_maps">Google Map Lead</TabsTrigger>
                                 <TabsTrigger value="website_contact">Website Contacts</TabsTrigger>
+                                <TabsTrigger value="instagram">Instagram Lead</TabsTrigger>
                             </TabsList>
 
                             <TabsContent value="personal">
@@ -1243,7 +1530,7 @@ export default function ProfilesPage() {
                                                     "Content-Type": "application/json",
                                                     "Authorization": `Bearer ${apiData.key}`
                                                 },
-                                                body: JSON.stringify({ profileUrls: urls })
+                                                body: JSON.stringify({ profileUrls: urls, force: true })
                                             });
                                             if (!res.ok) throw new Error("Bulk update failed");
                                             toast.success("Bulk update queued");
@@ -1286,7 +1573,7 @@ export default function ProfilesPage() {
                                                     "Content-Type": "application/json",
                                                     "Authorization": `Bearer ${apiData.key}`
                                                 },
-                                                body: JSON.stringify({ profileUrls: urls })
+                                                body: JSON.stringify({ profileUrls: urls, force: true })
                                             });
                                             if (!res.ok) throw new Error("Bulk update failed");
                                             toast.success("Bulk update queued");
@@ -1339,6 +1626,27 @@ export default function ProfilesPage() {
                                     }}
                                 />
                             </TabsContent>
+                            <TabsContent value="instagram">
+                                <GenericProfileTable
+                                    data={filteredInstagram}
+                                    columns={instagramColumns}
+                                    isLoading={loadingInstagramLeads}
+                                    filterColumn="username"
+                                    type="instagram"
+                                    filters={instagramFilters}
+                                    setFilters={setInstagramFilters}
+                                    onBulkDelete={async (ids) => {
+                                        if (confirm(`Are you sure you want to remove ${ids.length} Instagram leads?`)) {
+                                            const { error } = await supabase.from("user_leads").delete().in("id", ids);
+                                            if (error) toast.error(error.message);
+                                            else {
+                                                toast.success("Leads removed");
+                                                window.location.reload();
+                                            }
+                                        }
+                                    }}
+                                />
+                            </TabsContent>
                         </Tabs>
                     </CardContent>
                 </Card>
@@ -1356,7 +1664,7 @@ interface DataTableProps<TData, TValue> {
     data: TData[]
     isLoading?: boolean
     filterColumn: string
-    type: "personal" | "company" | "google_maps" | "website_contact"
+    type: "personal" | "company" | "google_maps" | "website_contact" | "instagram"
     filters: any
     setFilters: (filters: any) => void
     onBulkDelete?: (ids: any[]) => Promise<void>
@@ -1458,6 +1766,148 @@ function GenericProfileTable<TData, TValue>({
                             <Button
                                 variant="ghost"
                                 size="sm"
+                                className="h-8 text-xs gap-1.5"
+                                onClick={() => {
+                                    const selectedRows = table.getSelectedRowModel().rows.map(r => r.original);
+                                    const csvData = selectedRows.map((item: any) => {
+                                        if (type === "personal") {
+                                            return {
+                                                "Full Name": item.fullName || "",
+                                                "First Name": item.firstName || "",
+                                                "Last Name": item.lastName || "",
+                                                "LinkedIn URL": item.linkedinUrl || "",
+                                                "Public Identifier": item.publicIdentifier || item.public_identifier || "",
+                                                "Profile Pic URL": item.profilePic || "",
+                                                "Headline": item.headline || "",
+                                                "Email": item.email || "",
+                                                "Company Name": item.companyName || "",
+                                                "Job Title": item.jobTitle || "",
+                                                "City": item.city || item.location?.city || "",
+                                                "Country": item.country || item.location?.country || "",
+                                                "Postal Code": item.postal_code || "",
+                                                "Followers": item.followers || 0,
+                                                "Connections": item.connections || 0,
+                                                "Premium": item.isPremium ? "Yes" : "No",
+                                                "Influencer": item.isInfluencer ? "Yes" : "No",
+                                                "Open To Work": item.openToWork ? "Yes" : "No",
+                                                "Verified": item.isVerified ? "Yes" : "No",
+                                                "Tags": (item.tags || []).join(", "),
+                                                "About": (item.about || "").replace(/\n/g, " "),
+                                                "Updated At": item.updatedAt ? new Date(item.updatedAt).toISOString() : ""
+                                            };
+                                        } else if (type === "company") {
+                                            return {
+                                                "Company Name": item.companyName || "",
+                                                "Website": item.websiteUrl || "",
+                                                "LinkedIn URL": item.linkedinUrl || "",
+                                                "Logo URL": item.logoUrl || "",
+                                                "Description": (item.description || "").replace(/\n/g, " "),
+                                                "Employee Count": item.employeeCount || 0,
+                                                "Employee Range": item.employeeCountRange || "",
+                                                "Follower Count": item.followerCount || 0,
+                                                "City": item.city || "",
+                                                "Country": item.country || "",
+                                                "Postal Code": item.postal_code || "",
+                                                "Verified": item.isVerified ? "Yes" : "No",
+                                                "Tags": (item.tags || []).join(", "),
+                                                "Updated At": item.updatedAt ? new Date(item.updatedAt).toISOString() : ""
+                                            };
+                                        } else if (type === "google_maps") {
+                                            return {
+                                                "Business Name": item.title || "",
+                                                "Category": item.category || "",
+                                                "Address": item.address || "",
+                                                "Rating": item.totalScore || 0,
+                                                "Reviews": item.reviewsCount || 0,
+                                                "Phone": item.phone || "",
+                                                "Website": item.website || "",
+                                                "Google Maps URL": item.url || "",
+                                                "Place ID": item.placeId || item.place_id || "",
+                                                "Image URL": item.imageUrl || item.image_url || "",
+                                                "Emails": (item.emails || []).join(", "),
+                                                "Facebook": item.socials?.facebook || "",
+                                                "Instagram": item.socials?.instagram || "",
+                                                "Twitter": item.socials?.twitter || "",
+                                                "TikTok": item.socials?.tiktok || "",
+                                                "LinkedIn": item.socials?.linkedin || "",
+                                                "Youtube": item.socials?.youtube || "",
+                                                "Pinterest": item.socials?.pinterest || "",
+                                                "City": item.city || "",
+                                                "Tags": (item.tags || []).join(", "),
+                                                "Updated At": item.updatedAt ? new Date(item.updatedAt).toISOString() : ""
+                                            };
+                                        } else if (type === "website_contact") {
+                                            return {
+                                                "Domain": item.domain || "",
+                                                "Emails": (item.emails || []).join(", "),
+                                                "Phones": (item.phones || []).join(", "),
+                                                "LinkedIn": item.linkedin || item.socials?.linkedin || "",
+                                                "Facebook": item.facebook || item.socials?.facebook || "",
+                                                "Instagram": item.instagram || item.socials?.instagram || "",
+                                                "Twitter": item.twitter || item.socials?.twitter || "",
+                                                "TikTok": item.tiktok || item.socials?.tiktok || "",
+                                                "Youtube": item.youtube || item.socials?.youtube || "",
+                                                "Pinterest": item.pinterest || item.socials?.pinterest || "",
+                                                "Source URLs": (item.sourceUrls || []).join(", "),
+                                                "Tags": (item.tags || []).join(", "),
+                                                "Updated At": item.updatedAt ? new Date(item.updatedAt).toISOString() : ""
+                                            };
+                                        } else if (type === "instagram") {
+                                            return {
+                                                "Username": item.username || "",
+                                                "Full Name": item.fullName || "",
+                                                "Profile Pic URL": item.profilePicUrl || "",
+                                                "Biography": (item.biography || "").replace(/\n/g, " "),
+                                                "External URL": item.externalUrl || "",
+                                                "Email": item.email || item.publicEmail || "",
+                                                "Phone": item.phone || item.publicPhoneNumber || "",
+                                                "Followers": item.followersCount || 0,
+                                                "Following": item.followingCount || 0,
+                                                "Posts": item.postsCount || 0,
+                                                "Business Account": item.isBusinessAccount ? "Yes" : "No",
+                                                "Professional Account": item.isProfessionalAccount ? "Yes" : "No",
+                                                "Private": item.isPrivate ? "Yes" : "No",
+                                                "Verified": item.isVerified ? "Yes" : "No",
+                                                "City": item.cityName || "",
+                                                "Category": item.category || "",
+                                                "Engagement Rate": item.medianEr || "",
+                                                "Quality": item.quality || "",
+                                                "Reels Count": item.reelsCount || 0,
+                                                "Avg Views": item.medianViews || 0,
+                                                "Views/Followers Ratio": item.viewsFollowersRatio || "",
+                                                "Last Post (Days)": item.lastPostDays || "",
+                                                "Mutual Follow": item.mutualFollow ? "Yes" : "No",
+                                                "Detected Language": item.detectedLanguage || "",
+                                                "Tags": (item.tags || []).join(", "),
+                                                "Updated At": item.updatedAt ? new Date(item.updatedAt).toISOString() : ""
+                                            };
+                                        }
+                                        return {};
+                                    });
+
+                                    if (csvData.length > 0) {
+                                        const headers = Object.keys(csvData[0] as any);
+                                        const rows = csvData.map(obj => {
+                                            return headers.map(header => {
+                                                let val = (obj as any)[header] ?? "";
+                                                let str = String(val).replace(/"/g, '""');
+                                                return `"${str}"`;
+                                            }).join(',');
+                                        });
+                                        const csvContent = [headers.join(','), ...rows].join('\n');
+
+                                        navigator.clipboard.writeText(csvContent);
+                                        toast.success(`${csvData.length} leads copied as CSV to clipboard`);
+                                    }
+                                }}
+                            >
+                                <IconCopy className="size-3.5" />
+                                Copy CSV
+                            </Button>
+                            <div className="h-4 w-px bg-border mx-1" />
+                            <Button
+                                variant="ghost"
+                                size="sm"
                                 className="h-8 text-xs"
                                 onClick={() => setRowSelection({})}
                             >
@@ -1552,7 +2002,37 @@ function GenericProfileTable<TData, TValue>({
                                         "Tags": (item.tags || []).join(", "),
                                         "Updated At": item.updatedAt ? new Date(item.updatedAt).toISOString() : ""
                                     };
+                                } else if (type === "instagram") {
+                                    return {
+                                        "Username": item.username || "",
+                                        "Full Name": item.fullName || "",
+                                        "Profile Pic URL": item.profilePicUrl || "",
+                                        "Biography": (item.biography || "").replace(/\n/g, " "),
+                                        "External URL": item.externalUrl || "",
+                                        "Email": item.email || item.publicEmail || "",
+                                        "Phone": item.phone || item.publicPhoneNumber || "",
+                                        "Followers": item.followersCount || 0,
+                                        "Following": item.followingCount || 0,
+                                        "Posts": item.postsCount || 0,
+                                        "Business Account": item.isBusinessAccount ? "Yes" : "No",
+                                        "Professional Account": item.isProfessionalAccount ? "Yes" : "No",
+                                        "Private": item.isPrivate ? "Yes" : "No",
+                                        "Verified": item.isVerified ? "Yes" : "No",
+                                        "City": item.cityName || "",
+                                        "Category": item.category || "",
+                                        "Engagement Rate": item.medianEr || "",
+                                        "Quality": item.quality || "",
+                                        "Reels Count": item.reelsCount || 0,
+                                        "Avg Views": item.medianViews || 0,
+                                        "Views/Followers Ratio": item.viewsFollowersRatio || "",
+                                        "Last Post (Days)": item.lastPostDays || "",
+                                        "Mutual Follow": item.mutualFollow ? "Yes" : "No",
+                                        "Detected Language": item.detectedLanguage || "",
+                                        "Tags": (item.tags || []).join(", "),
+                                        "Updated At": item.updatedAt ? new Date(item.updatedAt).toISOString() : ""
+                                    };
                                 }
+                                return {};
                             });
                             const filename = `${type}-profiles-${new Date().toISOString().split('T')[0]}.csv`;
                             exportToCSV(csvData, filename);
@@ -1582,8 +2062,8 @@ function GenericProfileTable<TData, TValue>({
                                                 column.toggleVisibility(!!value)
                                             }
                                         >
-                                            {typeof column.columnDef.header === 'string' 
-                                                ? column.columnDef.header 
+                                            {typeof column.columnDef.header === 'string'
+                                                ? column.columnDef.header
                                                 : column.id.replace(/([A-Z])/g, ' $1').trim()}
                                         </DropdownMenuCheckboxItem>
                                     )
@@ -1722,7 +2202,7 @@ function GenericProfileTable<TData, TValue>({
     )
 }
 
-function FilterSheet({ type, filters, setFilters }: { type: "personal" | "company" | "google_maps" | "website_contact", filters: any, setFilters: (f: any) => void }) {
+function FilterSheet({ type, filters, setFilters }: { type: "personal" | "company" | "google_maps" | "website_contact" | "instagram", filters: any, setFilters: (f: any) => void }) {
     return (
         <Sheet>
             <SheetTrigger asChild>
@@ -1738,7 +2218,7 @@ function FilterSheet({ type, filters, setFilters }: { type: "personal" | "compan
                 <SheetHeader>
                     <SheetTitle>Advanced Filters</SheetTitle>
                     <SheetDescription>
-                        Narrow down your {type === "personal" ? "personal" : type === "company" ? "company" : type === "google_maps" ? "Google Maps" : "website contact"} leads.
+                        Narrow down your {type === "personal" ? "personal" : type === "company" ? "company" : type === "google_maps" ? "Google Maps" : type === "instagram" ? "Instagram" : "website contact"} leads.
                     </SheetDescription>
                 </SheetHeader>
                 <div className="py-6 space-y-6 px-1 pb-10">
@@ -1759,7 +2239,17 @@ function FilterSheet({ type, filters, setFilters }: { type: "personal" | "compan
                                 });
                             } else if (type === "google_maps") {
                                 setFilters({
+                                    hasEmail: "all", hasPhone: "all", hasWebsite: "all",
+                                    hasInstagram: "all", hasTikTok: "all", hasFacebook: "all", hasTwitter: "all", hasLinkedIn: "all",
                                     minScore: 0, minReviews: 0, location: "", tags: ""
+                                });
+                            } else if (type === "instagram") {
+                                setFilters({
+                                    hasEmail: "all", hasPhone: "all",
+                                    minFollowers: 0, maxFollowers: 10000000,
+                                    isVerified: "all", isBusinessAccount: "all", isProfessionalAccount: "all",
+                                    isPrivate: "all", mutualFollow: "all", quality: "all",
+                                    location: "", tags: ""
                                 });
                             } else {
                                 setFilters({
@@ -1772,18 +2262,20 @@ function FilterSheet({ type, filters, setFilters }: { type: "personal" | "compan
                     </div>
 
                     <div className="grid grid-cols-1 gap-4">
-                        <div className="space-y-2">
-                            <Label className="text-xs">Location Search</Label>
-                            <div className="relative">
-                                <IconSearch className="absolute left-2 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-                                <Input
-                                    placeholder="Country or city..."
-                                    value={filters.location ?? ""}
-                                    onChange={(e) => setFilters({ ...filters, location: e.target.value })}
-                                    className="pl-8 h-8 text-xs bg-muted/20"
-                                />
+                        {type !== "website_contact" && (
+                            <div className="space-y-2">
+                                <Label className="text-xs">Location Search</Label>
+                                <div className="relative">
+                                    <IconSearch className="absolute left-2 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                                    <Input
+                                        placeholder="Country or city..."
+                                        value={filters.location ?? ""}
+                                        onChange={(e) => setFilters({ ...filters, location: e.target.value })}
+                                        className="pl-8 h-8 text-xs bg-muted/20"
+                                    />
+                                </div>
                             </div>
-                        </div>
+                        )}
                         <div className="space-y-2">
                             <Label className="text-xs">Filter by Tag</Label>
                             <div className="relative">
@@ -1812,6 +2304,14 @@ function FilterSheet({ type, filters, setFilters }: { type: "personal" | "compan
                                 </>
                             ) : type === "company" ? (
                                 <ThreeStateFilter label="Verified Page" value={filters.isVerified} onChange={(v) => setFilters({ ...filters, isVerified: v })} />
+                            ) : type === "instagram" ? (
+                                <>
+                                    <ThreeStateFilter label="Verified" value={filters.isVerified} onChange={(v) => setFilters({ ...filters, isVerified: v })} />
+                                    <ThreeStateFilter label="Business Account" value={filters.isBusinessAccount} onChange={(v) => setFilters({ ...filters, isBusinessAccount: v })} />
+                                    <ThreeStateFilter label="Professional" value={filters.isProfessionalAccount} onChange={(v) => setFilters({ ...filters, isProfessionalAccount: v })} />
+                                    <ThreeStateFilter label="Private" value={filters.isPrivate} onChange={(v) => setFilters({ ...filters, isPrivate: v })} />
+                                    <ThreeStateFilter label="Mutual Follow" value={filters.mutualFollow} onChange={(v) => setFilters({ ...filters, mutualFollow: v })} />
+                                </>
                             ) : null}
                         </div>
                     </div>
@@ -1833,6 +2333,25 @@ function FilterSheet({ type, filters, setFilters }: { type: "personal" | "compan
                                     <ThreeStateFilter label="Has Website" value={filters.hasWebsite} onChange={(v) => setFilters({ ...filters, hasWebsite: v })} />
                                     <ThreeStateFilter label="Has Logo" value={filters.hasLogo} onChange={(v) => setFilters({ ...filters, hasLogo: v })} />
                                     <ThreeStateFilter label="Has Description" value={filters.hasDescription} onChange={(v) => setFilters({ ...filters, hasDescription: v })} />
+                                </>
+                            ) : type === "instagram" ? (
+                                <>
+                                    <ThreeStateFilter label="Has Email" value={filters.hasEmail} onChange={(v) => setFilters({ ...filters, hasEmail: v })} />
+                                    <ThreeStateFilter label="Has Phone" value={filters.hasPhone} onChange={(v) => setFilters({ ...filters, hasPhone: v })} />
+                                    <div className="space-y-1">
+                                        <Label className="text-[10px]">Lead Quality</Label>
+                                        <Select value={filters.quality} onValueChange={(v) => setFilters({ ...filters, quality: v })}>
+                                            <SelectTrigger className="h-8 text-xs bg-muted/20">
+                                                <SelectValue placeholder="Any Quality" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">Any Quality</SelectItem>
+                                                <SelectItem value="Good">Good</SelectItem>
+                                                <SelectItem value="Average">Average</SelectItem>
+                                                <SelectItem value="Bad">Bad</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
                                 </>
                             ) : (
                                 <>
@@ -1960,13 +2479,13 @@ function exportToCSV(data: any[], filename: string) {
     if (data.length === 0) return;
 
     // 1. Extract headers from the first object
-    const headers = Object.keys(data[0]);
+    const headers = Object.keys(data[0] as any);
 
     // 2. Map data rows
     const rows = data.map(obj => {
         return headers
             .map(header => {
-                let val = obj[header] ?? "";
+                let val = (obj as any)[header] ?? "";
                 let str = String(val);
                 // Escape quotes and wrap in quotes to handle commas within text
                 str = str.replace(/"/g, '""');

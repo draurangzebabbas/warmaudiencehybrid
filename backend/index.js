@@ -61,7 +61,7 @@ app.use(async (req, res, next) => {
 // ─────────────────────────────────────────
 app.post(["/api/scrape-profiles", "/api/scrape-linkedin"], async (req, res) => {
     try {
-        const { urls, profileUrls, companyUrls: rawCompanyUrls, tags = [] } = req.body;
+        const { urls, profileUrls, companyUrls: rawCompanyUrls, tags = [], force = false } = req.body;
         const inputUrls = urls || profileUrls || [];
 
         if (!Array.isArray(inputUrls) && !rawCompanyUrls) {
@@ -111,6 +111,7 @@ app.post(["/api/scrape-profiles", "/api/scrape-linkedin"], async (req, res) => {
             userId: req.userId,
             type: "manual_scrape",
             input: { profileUrls: personalUrls, companyUrls, tags },
+            force,
         }).catch((err) => console.error("❌ Background scrape failed:", err));
 
         res.json({
@@ -242,20 +243,17 @@ app.post("/api/update-website-contact", async (req, res) => {
 });
 
 // ─────────────────────────────────────────
-// POST /api/scrape-engagers
-// Extract profiles from post commenters/reactors
-// ─────────────────────────────────────────
-app.post("/api/scrape-engagers", async (req, res) => {
+app.post("/api/scrape-instagram-engagement", async (req, res) => {
     try {
-        const { postUrls, commenters = true, reactors = true, tags = [] } = req.body;
+        const { postUrls, extractLikers = true, extractCommenters = true, maxPages = 1, sortBy = "recent", tags = [] } = req.body;
 
         if (!postUrls || !Array.isArray(postUrls) || postUrls.length === 0) {
             return res.status(400).json({ error: "postUrls array is required" });
         }
 
         const engagementTypes = [];
-        if (commenters) engagementTypes.push("commenters");
-        if (reactors) engagementTypes.push("reactors");
+        if (extractCommenters) engagementTypes.push("commenters");
+        if (extractLikers) engagementTypes.push("reactors");
 
         if (engagementTypes.length === 0) {
             return res.status(400).json({ error: "Select at least one engagement type (commenters or reactors)" });
@@ -288,7 +286,7 @@ app.post("/api/scrape-engagers", async (req, res) => {
         processJob({
             userId: req.userId,
             type: "engagement_scrape",
-            input: { postUrls, engagementTypes, tags },
+            input: { postUrls, engagementTypes, maxPages, sortBy, tags },
         }).catch((err) => console.error("❌ Engagement scrape failed:", err));
 
         res.json({
@@ -297,6 +295,161 @@ app.post("/api/scrape-engagers", async (req, res) => {
         });
     } catch (e) {
         console.error("scrape-engagers error:", e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// ─────────────────────────────────────────
+// POST /api/scrape-instagram-profiles
+// ─────────────────────────────────────────
+app.post("/api/scrape-instagram-profiles", async (req, res) => {
+    try {
+        const { usernames, tags = [], force = false } = req.body;
+
+        if (!usernames || !Array.isArray(usernames) || usernames.length === 0) {
+            return res.status(400).json({ error: "usernames array is required" });
+        }
+
+        // 0. Check Usage Limit
+        const [subscription, currentCount] = await Promise.all([
+            supabaseApi.getUserSubscription(req.userId),
+            supabaseApi.getMonthlyLeadCount(req.userId)
+        ]);
+        
+        const planLimits = {
+            free: 1000,
+            growth: 10000,
+            pro: 10000,
+            elite: 1000000,
+            scale: 1000000
+        };
+
+        const profilesLimit = planLimits[subscription.plan_slug] || 1000;
+        
+        if (currentCount >= profilesLimit) {
+            return res.status(403).json({
+                error: `Limit Reached: You have consumed all your lead storage for this month (${profilesLimit} leads). Please upgrade your plan for more capacity.`,
+                code: "LIMIT_REACHED"
+            });
+        }
+
+        processJob({
+            userId: req.userId,
+            type: "instagram_profiles",
+            input: { usernames, tags },
+            force,
+        }).catch((err) => console.error("❌ Instagram profiles scrape failed:", err));
+
+        res.json({
+            status: "processing",
+            message: `Instagram profile research started for ${usernames.length} profiles`,
+        });
+    } catch (e) {
+        console.error("scrape-instagram-profiles error:", e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// ─────────────────────────────────────────
+// POST /api/scrape-instagram-engagement
+// ─────────────────────────────────────────
+app.post("/api/scrape-instagram-engagement", async (req, res) => {
+    try {
+        const { postUrls, extractLikers = true, extractCommenters = true, tags = [] } = req.body;
+
+        if (!postUrls || !Array.isArray(postUrls) || postUrls.length === 0) {
+            return res.status(400).json({ error: "postUrls array is required" });
+        }
+
+        // 0. Check Usage Limit
+        const [subscription, currentCount] = await Promise.all([
+            supabaseApi.getUserSubscription(req.userId),
+            supabaseApi.getMonthlyLeadCount(req.userId)
+        ]);
+        
+        const planLimits = {
+            free: 1000,
+            growth: 10000,
+            pro: 10000,
+            elite: 1000000,
+            scale: 1000000
+        };
+
+        const profilesLimit = planLimits[subscription.plan_slug] || 1000;
+        
+        if (currentCount >= profilesLimit) {
+            return res.status(403).json({
+                error: `Limit Reached: You have consumed all your lead storage for this month (${profilesLimit} leads). Please upgrade your plan for more capacity.`,
+                code: "LIMIT_REACHED"
+            });
+        }
+
+        processJob({
+            userId: req.userId,
+            type: "instagram_engagement",
+            input: { postUrls, extractLikers, extractCommenters, tags },
+        }).catch((err) => console.error("❌ Instagram engagement scrape failed:", err));
+
+        res.json({
+            status: "processing",
+            message: `Instagram engagement research started for ${postUrls.length} posts`,
+        });
+    } catch (e) {
+        console.error("scrape-instagram-engagement error:", e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// ─────────────────────────────────────────
+// POST /api/scrape-instagram-followers
+// ─────────────────────────────────────────
+app.post("/api/scrape-instagram-followers", async (req, res) => {
+    try {
+        const { urls, extractFollowers = true, extractFollowing = true, tags = [] } = req.body;
+
+        if (!urls || !Array.isArray(urls) || urls.length === 0) {
+            return res.status(400).json({ error: "urls array is required" });
+        }
+
+        if (!extractFollowers && !extractFollowing) {
+            return res.status(400).json({ error: "Select at least one extraction type (followers or following)" });
+        }
+
+        // 0. Check Usage Limit
+        const [subscription, currentCount] = await Promise.all([
+            supabaseApi.getUserSubscription(req.userId),
+            supabaseApi.getMonthlyLeadCount(req.userId)
+        ]);
+        
+        const planLimits = {
+            free: 1000,
+            growth: 10000,
+            pro: 10000,
+            elite: 1000000,
+            scale: 1000000
+        };
+
+        const profilesLimit = planLimits[subscription.plan_slug] || 1000;
+        
+        if (currentCount >= profilesLimit) {
+            return res.status(403).json({
+                error: `Limit Reached: You have consumed all your lead storage for this month (${profilesLimit} leads). Please upgrade your plan for more capacity.`,
+                code: "LIMIT_REACHED"
+            });
+        }
+
+        processJob({
+            userId: req.userId,
+            type: "instagram_followers",
+            input: { urls, extractFollowers, extractFollowing, tags },
+        }).catch((err) => console.error("❌ Instagram followers scrape failed:", err));
+
+        res.json({
+            status: "processing",
+            message: `Instagram follower research started for ${urls.length} profiles`,
+        });
+    } catch (e) {
+        console.error("scrape-instagram-followers error:", e);
         res.status(500).json({ error: e.message });
     }
 });

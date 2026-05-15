@@ -46,7 +46,6 @@ async function updateApiKeyStatus(userId, provider, keyString, status, increment
 
 /**
  * Check if we have a cached profile — returns { isFresh, profile, company }
- * isFresh = scraped within 30 days
  */
 async function getCachedProfile(url, type) {
     return convex.query("profiles:checkCache", { url, type });

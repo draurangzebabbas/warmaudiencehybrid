@@ -97,6 +97,7 @@ export default function ApiKeysPage() {
     const [key, setKey] = useState("");
     const [isAdding, setIsAdding] = useState(false);
     const [rowSelection, setRowSelection] = useState({});
+    const [isBulkUpdating, setIsBulkUpdating] = useState(false);
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
@@ -163,6 +164,52 @@ export default function ApiKeysPage() {
             fetchKeys();
         } catch (error) {
             toast.error("Failed to update status");
+        }
+    };
+
+    const handleBulkToggle = async (status: string) => {
+        const selectedIds = table.getSelectedRowModel().rows.map(r => r.original.id);
+        if (selectedIds.length === 0) return;
+
+        setIsBulkUpdating(true);
+        try {
+            const { error } = await supabase
+                .from("user_api_keys")
+                .update({ status })
+                .in("id", selectedIds);
+
+            if (error) throw error;
+            toast.success(`${selectedIds.length} keys ${status === 'active' ? 'activated' : 'deactivated'}`);
+            setRowSelection({});
+            fetchKeys();
+        } catch (error: any) {
+            toast.error(`Bulk update failed: ${error.message}`);
+        } finally {
+            setIsBulkUpdating(false);
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        const selectedIds = table.getSelectedRowModel().rows.map(r => r.original.id);
+        if (selectedIds.length === 0) return;
+
+        if (confirm(`Are you sure you want to delete ${selectedIds.length} keys?`)) {
+            setIsBulkUpdating(true);
+            try {
+                const { error } = await supabase
+                    .from("user_api_keys")
+                    .delete()
+                    .in("id", selectedIds);
+
+                if (error) throw error;
+                toast.success(`${selectedIds.length} keys deleted`);
+                setRowSelection({});
+                fetchKeys();
+            } catch (error: any) {
+                toast.error(`Bulk delete failed: ${error.message}`);
+            } finally {
+                setIsBulkUpdating(false);
+            }
         }
     };
 
@@ -560,6 +607,67 @@ export default function ApiKeysPage() {
                         </div>
                     </div>
                 </div>
+
+                {/* Bulk Actions Bar */}
+                {Object.keys(rowSelection).length > 0 && (
+                    <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                        <div className="bg-background/80 backdrop-blur-md border border-primary/20 shadow-2xl rounded-full px-6 py-3 flex items-center gap-6">
+                            <div className="flex items-center gap-2">
+                                <div className="bg-primary text-primary-foreground size-6 rounded-full flex items-center justify-center text-[10px] font-bold">
+                                    {Object.keys(rowSelection).length}
+                                </div>
+                                <span className="text-sm font-medium">Keys Selected</span>
+                            </div>
+
+                            <div className="h-6 w-px bg-border mx-2" />
+
+                            <div className="flex items-center gap-2">
+                                <Button 
+                                    size="sm" 
+                                    variant="ghost" 
+                                    className="h-9 px-3 gap-2 hover:bg-green-500/10 hover:text-green-600"
+                                    onClick={() => handleBulkToggle('active')}
+                                    disabled={isBulkUpdating}
+                                >
+                                    <IconPower className="size-4 text-green-500" />
+                                    Activate
+                                </Button>
+                                <Button 
+                                    size="sm" 
+                                    variant="ghost" 
+                                    className="h-9 px-3 gap-2 hover:bg-orange-500/10 hover:text-orange-600"
+                                    onClick={() => handleBulkToggle('inactive')}
+                                    disabled={isBulkUpdating}
+                                >
+                                    <IconPower className="size-4 text-orange-500" />
+                                    Deactivate
+                                </Button>
+                                <Button 
+                                    size="sm" 
+                                    variant="ghost" 
+                                    className="h-9 px-3 gap-2 hover:bg-destructive/10 hover:text-destructive"
+                                    onClick={handleBulkDelete}
+                                    disabled={isBulkUpdating}
+                                >
+                                    <IconTrash className="size-4" />
+                                    Delete
+                                </Button>
+                            </div>
+
+                            <div className="h-6 w-px bg-border mx-2" />
+
+                            <Button 
+                                size="sm" 
+                                variant="ghost" 
+                                className="h-9 px-4 text-muted-foreground"
+                                onClick={() => setRowSelection({})}
+                                disabled={isBulkUpdating}
+                            >
+                                Cancel
+                            </Button>
+                        </div>
+                    </div>
+                )}
 
                 <div className="bg-muted/30 rounded-2xl p-8 border border-dashed flex flex-col md:flex-row gap-8 items-start md:items-center">
                     <div className="flex-1">

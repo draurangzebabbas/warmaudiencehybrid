@@ -22,7 +22,8 @@ import {
   IconBrandLinkedin,
   IconBrandGoogleMaps,
   IconLayoutDashboard,
-  IconWorldSearch
+  IconWorldSearch,
+  IconBrandInstagram
 } from "@tabler/icons-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -64,6 +65,11 @@ const data = {
       title: "Website Contact Details",
       url: "/website-contact-researcher",
       icon: IconWorldSearch,
+    },
+    {
+      title: "Instagram Lead",
+      url: "/instagram-researcher",
+      icon: IconBrandInstagram,
     },
     {
       title: "My Leads",

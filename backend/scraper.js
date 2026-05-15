@@ -17,6 +17,10 @@ const ACTORS = {
     PROFILE_COMMENTS: "FiHYLewnJwS6GnRpo",
     GOOGLE_MAPS: "WnMxbsRLNbPeYL6ge",
     WEBSITE_CONTACTS: "9Sk4JJhEma9vBKqrg",
+    INSTAGRAM_PROFILE: "JNb6iSRuMKLF3OA3v",
+    INSTAGRAM_LIKES: "zLHxSG7mqmCcdnX6p",
+    INSTAGRAM_COMMENTS: "VCTzrlR4xt1YZP81x",
+    INSTAGRAM_FOLLOWERS: "vaCTgYFLVBaaYUaBY",
 };
 
 // ─────────────────────────────────────────
@@ -327,6 +331,47 @@ async function scrapeWebsiteContacts(urls, token) {
     return callApifyActor(ACTORS.WEBSITE_CONTACTS, payload, token, 600000);
 }
 
+/**
+ * Scrape Instagram personal profiles
+ */
+async function scrapeInstagramProfiles(usernames, token) {
+    return callApifyActor(ACTORS.INSTAGRAM_PROFILE, {
+        usernames: usernames,
+    }, token);
+}
+
+/**
+ * Scrape Instagram post likes
+ */
+async function scrapeInstagramLikes(postCode, token) {
+    return callApifyActor(ACTORS.INSTAGRAM_LIKES, {
+        postCode: postCode,
+    }, token);
+}
+
+/**
+ * Scrape Instagram post comments
+ */
+async function scrapeInstagramComments(postCode, token, sortBy = "recent", maxPages = 1) {
+    return callApifyActor(ACTORS.INSTAGRAM_COMMENTS, {
+        postCode: postCode,
+        sortBy: sortBy,
+        maxPages: Number(maxPages)
+    }, token);
+}
+
+/**
+ * Scrape Instagram followers/following
+ */
+async function scrapeInstagramFollowers(usernames, token, extractFollowers = true, extractFollowing = true) {
+    return callApifyActor(ACTORS.INSTAGRAM_FOLLOWERS, {
+        usernames: usernames,
+        extractFollowers,
+        extractFollowing,
+        mustBeVerified: false
+    }, token);
+}
+
 module.exports = {
     ACTORS,
     callApifyActor,
@@ -340,6 +385,10 @@ module.exports = {
     scrapePostReactors,
     scrapeCompanyEmployees,
     scrapeProfileComments,
+    scrapeInstagramProfiles,
+    scrapeInstagramLikes,
+    scrapeInstagramComments,
+    scrapeInstagramFollowers,
     testKey,
     normalizeUrl,
 };
