@@ -44,7 +44,9 @@ export function RecentActivityTable() {
                         created_at,
                         personal: linkedin_id (*),
                         company: company_id (*),
-                        google_maps: lead_id (*)
+                        google_maps: lead_id (*),
+                        instagram: instagram_id (*),
+                        website_contact: website_contact_id (*)
                     `)
                     .eq("user_id", user._id)
                     .order("created_at", { ascending: false })
@@ -74,6 +76,12 @@ export function RecentActivityTable() {
                         if (g) {
                             name = g.title || g.url;
                             url = g.url;
+                        }
+                    } else if (type === "instagram" && item.instagram) {
+                        const i = Array.isArray(item.instagram) ? item.instagram[0] : item.instagram;
+                        if (i) {
+                            name = i.username || i.full_name;
+                            url = `https://instagram.com/${i.username}`;
                         }
                     }
 

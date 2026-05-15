@@ -666,7 +666,16 @@ async function scrapeBatch(userId, urls, type, keyManager, tags) {
 }
 
 async function handleInstagramProfilesScrape(userId, input, keyManager, tags = ["InstagramProfile"], jobId, force = false) {
-    const { usernames = [], metadataMap = {} } = input;
+    const { usernames: rawUsernames = [], metadataMap = {} } = input;
+    
+    // Normalize usernames (extract from URLs if needed)
+    const usernames = rawUsernames.map(u => {
+        if (u && typeof u === 'string' && u.includes('instagram.com/')) {
+            return u.replace(/\/$/, '').split('/').pop();
+        }
+        return u;
+    }).filter(Boolean);
+
     if (usernames.length === 0) return;
 
     const toScrape = [];
@@ -722,43 +731,62 @@ async function handleInstagramProfilesScrape(userId, input, keyManager, tags = [
                     );
                     
                     if (results && results.length > 0) {
-                        const formatted = results.map(r => ({
-                            username: r.username,
-                            full_name: r.name || r.full_name,
-                            profile_pic_url: r.profileImage || r.profile_pic_url,
-                            biography: r.bio || r.biography,
-                            external_url: r.homepage || r.external_url,
-                            email: r.businessEmail || (r.allEmails && r.allEmails[0]),
-                            phone: r.businessPhone || (r.allPhoneNumbers && r.allPhoneNumbers[0]),
-                            followers_count: r.followers || r.followers_count,
-                            following_count: r.follows || r.following_count,
-                            posts_count: r.videoCount + r.imageCount || r.posts_count,
-                            is_business_account: r.isBusinessAccount,
-                            is_verified: r.isVerified,
-                            is_private: r.isPrivate,
-                            city_name: r.city_name,
-                            address_street: r.address_street,
-                            public_email: r.public_email,
-                            public_phone_country_code: r.public_phone_country_code,
-                            public_phone_number: r.public_phone_number,
-                            socials: {
-                                twitter: (r.socialLinks || r.websiteLinks || []).find(l => l && (l.includes("twitter.com") || l.includes("x.com"))),
-                                facebook: (r.socialLinks || r.websiteLinks || []).find(l => l && l.includes("facebook.com")),
-                                youtube: (r.socialLinks || r.websiteLinks || []).find(l => l && l.includes("youtube.com")),
-                            },
-                            reels_count: metadataMap[r.username]?.["Reels Count"] || r.highlightReelCount || 0,
-                            median_views: metadataMap[r.username]?.["Median Views"] || 0,
-                            views_followers_ratio: metadataMap[r.username]?.["Views/Followers Ratio"] || null,
-                            median_er: metadataMap[r.username]?.["Median ER"] || null,
-                            quality: metadataMap[r.username]?.["Quality"] || null,
-                            last_post_days: metadataMap[r.username]?.["Last Post Within (Days)"] || null,
-                            category: r.category || r.businessCategory || r.overallCategory || null,
-                            is_professional_account: r.isProfessionalAccount || false,
-                            highlight_reel_count: r.highlightReelCount || 0,
-                            mutual_follow: metadataMap[r.username]?.["Mutual Follow"] === "Yes",
-                            detected_language: metadataMap[r.username]?.["Detected Language"] || null,
-                            extra_data: { ...r, ...(metadataMap[r.username] || {}) }
-                        })).filter(f => f.username);
+                        const formatted = results.map(r => {
+                            const bioLinks = r.bioLinks || [];
+                            const allSocialUrls = [
+                                ...(r.socialLinks || []),
+                                ...(r.websiteLinks || []),
+                                ...bioLinks.map(bl => bl.url)
+                            ].filter(Boolean);
+
+                            return {
+                                username: r.username,
+                                full_name: r.name || r.full_name,
+                                profile_pic_url: r.profileImage || r.profile_pic_url,
+                                biography: r.bio || r.biography,
+                                external_url: r.homepage || r.external_url,
+                                email: r.businessEmail || (r.allEmails && r.allEmails[0]),
+                                phone: r.businessPhone || (r.allPhoneNumbers && r.allPhoneNumbers[0]),
+                                followers_count: r.followers || r.followers_count,
+                                following_count: r.follows || r.following_count,
+                                posts_count: r.videoCount + r.imageCount || r.posts_count,
+                                is_business_account: r.isBusinessAccount,
+                                is_verified: r.isVerified,
+                                is_private: r.isPrivate,
+                                city_name: r.city_name,
+                                address_street: r.address_street,
+                                public_email: r.public_email,
+                                public_phone_country_code: r.public_phone_country_code,
+                                public_phone_number: r.public_phone_number,
+                                socials: {
+                                    twitter: allSocialUrls.find(l => l.includes("twitter.com") || l.includes("x.com")),
+                                    facebook: allSocialUrls.find(l => l.includes("facebook.com")),
+                                    youtube: allSocialUrls.find(l => l.includes("youtube.com")),
+                                    tiktok: allSocialUrls.find(l => l.includes("tiktok.com")),
+                                },
+                                facebook_id: r.facebookId,
+                                bio_links: bioLinks,
+                                all_emails: r.allEmails || [],
+                                all_phones: r.allPhoneNumbers || [],
+                                business_contact_method: r.businessContactMethod,
+                                has_channel: r.hasChannel,
+                                business_category: r.businessCategory,
+                                overall_category: r.overallCategory,
+                                pronouns: r.pronouns || [],
+                                reels_count: metadataMap[r.username]?.["Reels Count"] || r.highlightReelCount || 0,
+                                median_views: metadataMap[r.username]?.["Median Views"] || 0,
+                                views_followers_ratio: metadataMap[r.username]?.["Views/Followers Ratio"] || null,
+                                median_er: metadataMap[r.username]?.["Median ER"] || null,
+                                quality: metadataMap[r.username]?.["Quality"] || null,
+                                last_post_days: metadataMap[r.username]?.["Last Post Within (Days)"] || null,
+                                category: r.category || r.businessCategory || r.overallCategory || null,
+                                is_professional_account: r.isProfessionalAccount || false,
+                                highlight_reel_count: r.highlightReelCount || 0,
+                                mutual_follow: metadataMap[r.username]?.["Mutual Follow"] === "Yes",
+                                detected_language: metadataMap[r.username]?.["Detected Language"] || null,
+                                extra_data: { ...r, ...(metadataMap[r.username] || {}) }
+                            };
+                        }).filter(f => f.username);
 
                         const saved = await supabaseApi.upsertInstagramLeadsBulk(formatted);
                         if (saved && saved.length > 0) {
@@ -841,10 +869,19 @@ async function handleInstagramFollowersScrape(userId, input, keyManager, tags = 
     try {
         for (const url of urls) {
             console.log(`👥 Extracting audience for: ${url}`);
+            
+            // Extract username if a full URL is provided
+            let username = url;
+            if (url.includes('instagram.com/')) {
+                username = url.replace(/\/$/, '').split('/').pop();
+            }
+            
+            if (!username) continue;
+
             const audience = await executeWithRetry(
                 keyManager,
                 "Instagram Followers Scrape",
-                (key) => scraper.scrapeInstagramFollowers([url], key, extractFollowers, extractFollowing)
+                (key) => scraper.scrapeInstagramFollowers([username], key, extractFollowers, extractFollowing)
             );
             
             if (audience && Array.isArray(audience)) {

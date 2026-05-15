@@ -243,7 +243,10 @@ app.post("/api/update-website-contact", async (req, res) => {
 });
 
 // ─────────────────────────────────────────
-app.post("/api/scrape-instagram-engagement", async (req, res) => {
+// ─────────────────────────────────────────
+// LinkedIn Engagement Scrape
+// ─────────────────────────────────────────
+app.post("/api/scrape-engagers", async (req, res) => {
     try {
         const { postUrls, extractLikers = true, extractCommenters = true, maxPages = 1, sortBy = "recent", tags = [] } = req.body;
 
@@ -403,7 +406,7 @@ app.post("/api/scrape-instagram-engagement", async (req, res) => {
 // ─────────────────────────────────────────
 // POST /api/scrape-instagram-followers
 // ─────────────────────────────────────────
-app.post("/api/scrape-instagram-followers", async (req, res) => {
+app.post(["/api/instagram/scrape-followers", "/api/scrape-instagram-followers"], async (req, res) => {
     try {
         const { urls, extractFollowers = true, extractFollowing = true, tags = [] } = req.body;
 
@@ -536,6 +539,13 @@ app.get("/api/heartbeat", async (req, res) => {
         console.error("Heartbeat endpoint error:", e);
         res.status(500).json({ error: e.message });
     }
+});
+
+// ─────────────────────────────────────────
+// 404 Handler
+// ─────────────────────────────────────────
+app.use((req, res) => {
+    res.status(404).json({ error: `Path not found: ${req.path}` });
 });
 
 // ─────────────────────────────────────────

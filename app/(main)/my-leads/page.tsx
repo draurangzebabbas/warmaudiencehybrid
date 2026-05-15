@@ -192,6 +192,16 @@ type InstagramLead = {
     highlightReelCount?: number;
     mutualFollow?: boolean;
     detectedLanguage?: string;
+    facebookId?: string;
+    bioLinks?: any[];
+    allEmails?: string[];
+    allPhones?: string[];
+    businessContactMethod?: string;
+    hasChannel?: boolean;
+    businessCategory?: string;
+    overallCategory?: string;
+    pronouns?: string[];
+    extraData?: any;
 };
 
 // --- Page Component ---
@@ -347,6 +357,16 @@ export default function ProfilesPage() {
                                             highlightReelCount: details.highlight_reel_count,
                                             mutualFollow: details.mutual_follow,
                                             detectedLanguage: details.detected_language,
+                                            facebookId: details.facebook_id,
+                                            bioLinks: details.bio_links,
+                                            allEmails: details.all_emails,
+                                            allPhones: details.all_phones,
+                                            businessContactMethod: details.business_contact_method,
+                                            hasChannel: details.has_channel,
+                                            businessCategory: details.business_category,
+                                            overallCategory: details.overall_category,
+                                            pronouns: details.pronouns,
+                                            extraData: details.extra_data,
                                             updatedAt: new Date(details.updated_at || d.created_at).getTime(),
                                             tags: d.tags,
                                             junctionId: d.id,
@@ -447,6 +467,8 @@ export default function ProfilesPage() {
         location: "",
         tags: "",
     });
+    
+    const [selectedInstagramLead, setSelectedInstagramLead] = useState<InstagramLead | null>(null);
 
     // --- Handlers ---
     const handleDeleteProfile = async (id: any) => {
@@ -1166,12 +1188,44 @@ export default function ProfilesPage() {
         {
             accessorKey: "profilePicUrl",
             header: "Profile",
-            cell: ({ row }) => (
-                <Avatar className="h-9 w-9">
-                    <AvatarImage src={row.original.profilePicUrl || undefined} alt={row.original.username} />
-                    <AvatarFallback>{row.original.username?.slice(0, 2) || "IG"}</AvatarFallback>
-                </Avatar>
-            ),
+            cell: ({ row }) => {
+                const [status, setStatus] = useState<'direct' | 'proxy' | 'error'>('direct');
+                const rawSrc = row.original.profilePicUrl || (row.original as any).profile_pic_url;
+                const username = row.original.username || "IG";
+                const initials = username.slice(0, 2).toUpperCase();
+
+                if (!rawSrc || status === 'error') {
+                    return (
+                        <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center text-xs font-medium text-muted-foreground">
+                            {initials}
+                        </div>
+                    );
+                }
+
+                // Using images.weserv.nl which is very reliable for proxying and resizing
+                const src = status === 'proxy' 
+                    ? `https://images.weserv.nl/?url=${encodeURIComponent(rawSrc)}&w=150&h=150&fit=cover`
+                    : rawSrc;
+
+                return (
+                    <div 
+                        className="h-9 w-9 rounded-full overflow-hidden border border-border bg-muted"
+                        title={username}
+                    >
+                        <img 
+                            key={src}
+                            src={src} 
+                            alt={username} 
+                            className="h-full w-full object-cover"
+                            referrerPolicy="no-referrer"
+                            onError={() => {
+                                if (status === 'direct') setStatus('proxy');
+                                else setStatus('error');
+                            }}
+                        />
+                    </div>
+                );
+            },
         },
         {
             accessorKey: "username",
@@ -1193,6 +1247,15 @@ export default function ProfilesPage() {
                     {row.original.isProfessionalAccount && <Badge variant="secondary" className="bg-blue-100 text-blue-700 hover:bg-blue-100 text-[10px] h-4 px-1">PROFESSIONAL</Badge>}
                     {row.original.isPrivate && <Badge className="bg-slate-100 text-slate-700 hover:bg-slate-100 text-[10px] h-4 px-1">PRIVATE</Badge>}
                     {row.original.mutualFollow && <Badge className="bg-pink-100 text-pink-700 hover:bg-pink-100 text-[10px] h-4 px-1">MUTUAL</Badge>}
+                </div>
+            )
+        },
+        {
+            accessorKey: "biography",
+            header: "Bio",
+            cell: ({ row }) => (
+                <div className="max-w-[200px] truncate text-[10px] text-muted-foreground" title={row.original.biography}>
+                    {row.original.biography || "-"}
                 </div>
             )
         },
@@ -1281,6 +1344,9 @@ export default function ProfilesPage() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => setSelectedInstagramLead(row.original)}>
+                            <IconSearch className="mr-2 h-4 w-4" /> View Details
+                        </DropdownMenuItem>
                         <DropdownMenuItem asChild>
                             <a href={`https://instagram.com/${row.original.username}`} target="_blank" rel="noopener noreferrer">
                                 <IconExternalLink className="mr-2 h-4 w-4" /> View on Instagram
@@ -1651,8 +1717,302 @@ export default function ProfilesPage() {
                     </CardContent>
                 </Card>
             </div>
+
+            <InstagramDetailsSheet 
+                lead={selectedInstagramLead} 
+                onClose={() => setSelectedInstagramLead(null)} 
+            />
         </div>
     );
+}
+
+function InstagramDetailsSheet({ lead, onClose }: { lead: InstagramLead | null, onClose: () => void }) {
+    if (!lead) return null;
+
+    return (
+        <Sheet open={!!lead} onOpenChange={(open) => !open && onClose()}>
+            <SheetContent className="sm:max-w-[500px] overflow-y-auto">
+                <SheetHeader>
+                    <SheetTitle className="flex items-center gap-2">
+                        <IconBrandInstagram className="size-5 text-pink-600" />
+                        Instagram Profile Details
+                    </SheetTitle>
+                    <SheetDescription>
+                        Comprehensive data extracted for @{lead.username}
+                    </SheetDescription>
+                </SheetHeader>
+
+                <div className="mt-6 space-y-6">
+                    {/* Header Info */}
+                    <div className="flex items-start gap-4">
+                        <div className="h-20 w-20 rounded-full overflow-hidden border-2 border-primary/20 bg-muted">
+                            <img 
+                                src={lead.profilePicUrl ? (lead.profilePicUrl.includes('googleusercontent.com') || lead.profilePicUrl.includes('weserv.nl') ? lead.profilePicUrl : `https://images.weserv.nl/?url=${encodeURIComponent(lead.profilePicUrl)}&w=200&h=200&fit=cover`) : ""} 
+                                alt={lead.username}
+                                className="h-full w-full object-cover"
+                            />
+                        </div>
+                        <div className="flex-1 space-y-1">
+                            <div className="flex items-center gap-2">
+                                <h3 className="text-lg font-bold">@{lead.username}</h3>
+                                {lead.hasChannel && <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 h-4 text-[9px] px-1">CHANNEL</Badge>}
+                            </div>
+                            <p className="text-sm text-muted-foreground font-medium">{lead.fullName}</p>
+                            {lead.pronouns && lead.pronouns.length > 0 && (
+                                <p className="text-[10px] text-muted-foreground italic">({lead.pronouns.join(" / ")})</p>
+                            )}
+                            <div className="flex flex-wrap gap-1.5 mt-2">
+                                {lead.isVerified && <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 h-5 text-[10px]">VERIFIED</Badge>}
+                                {lead.isBusinessAccount && <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 h-5 text-[10px]">BUSINESS</Badge>}
+                                {lead.isProfessionalAccount && <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100 h-5 text-[10px]">PROFESSIONAL</Badge>}
+                                {lead.isPrivate && <Badge className="bg-slate-100 text-slate-700 hover:bg-slate-100 h-5 text-[10px]">PRIVATE</Badge>}
+                            </div>
+                        </div>
+                    </div>
+
+                    <Separator />
+
+                    {/* Biography Section */}
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                            <Label className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Biography</Label>
+                            {lead.businessContactMethod && lead.businessContactMethod !== "UNKNOWN" && (
+                                <Badge variant="outline" className="text-[9px] h-4 text-muted-foreground border-muted-foreground/30">
+                                    {lead.businessContactMethod}
+                                </Badge>
+                            )}
+                        </div>
+                        <p className="text-sm whitespace-pre-wrap leading-relaxed bg-muted/30 p-3 rounded-lg border">
+                            {lead.biography || "No biography available."}
+                        </p>
+                    </div>
+
+                    {/* Categories */}
+                    {(lead.category || lead.businessCategory || lead.overallCategory) && (
+                        <div className="space-y-2">
+                            <Label className="text-[10px] text-muted-foreground uppercase font-bold">Categories</Label>
+                            <div className="flex flex-wrap gap-2">
+                                {lead.category && <Badge variant="secondary" className="text-[10px] h-5">{lead.category}</Badge>}
+                                {lead.businessCategory && <Badge variant="secondary" className="text-[10px] h-5">{lead.businessCategory}</Badge>}
+                                {lead.overallCategory && <Badge variant="secondary" className="text-[10px] h-5">{lead.overallCategory}</Badge>}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-3 gap-4">
+                        <div className="bg-muted/30 p-3 rounded-lg border text-center">
+                            <p className="text-lg font-bold">{lead.followersCount?.toLocaleString() || "0"}</p>
+                            <p className="text-[10px] text-muted-foreground uppercase font-semibold">Followers</p>
+                        </div>
+                        <div className="bg-muted/30 p-3 rounded-lg border text-center">
+                            <p className="text-lg font-bold">{lead.followingCount?.toLocaleString() || "0"}</p>
+                            <p className="text-[10px] text-muted-foreground uppercase font-semibold">Following</p>
+                        </div>
+                        <div className="bg-muted/30 p-3 rounded-lg border text-center">
+                            <p className="text-lg font-bold">{lead.postsCount?.toLocaleString() || "0"}</p>
+                            <p className="text-[10px] text-muted-foreground uppercase font-semibold">Posts</p>
+                        </div>
+                    </div>
+
+                    {/* Engagement & Performance */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                            <Label className="text-[10px] text-muted-foreground uppercase">Engagement Rate</Label>
+                            <div className="flex items-center gap-2">
+                                <span className="font-bold">{lead.medianEr || "N/A"}</span>
+                                {lead.quality && (
+                                    <Badge variant="outline" className={`text-[9px] h-4 ${
+                                        lead.quality.toLowerCase() === 'good' ? 'border-green-200 text-green-700 bg-green-50' : 
+                                        lead.quality.toLowerCase() === 'average' ? 'border-amber-200 text-amber-700 bg-amber-50' : 
+                                        'border-red-200 text-red-700 bg-red-50'
+                                    }`}>
+                                        {lead.quality.toUpperCase()}
+                                    </Badge>
+                                )}
+                            </div>
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-[10px] text-muted-foreground uppercase">Avg Views / Reels</Label>
+                            <p className="font-bold">{lead.medianViews?.toLocaleString() || "0"} <span className="text-[10px] font-normal text-muted-foreground">({lead.reelsCount || 0} reels)</span></p>
+                        </div>
+                    </div>
+
+                    <Separator />
+
+                    {/* Contact & Links */}
+                    <div className="space-y-4">
+                        <Label className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Contact & Links</Label>
+                        
+                        <div className="space-y-4">
+                            {/* Emails */}
+                            {(lead.email || (lead.allEmails && lead.allEmails.length > 0)) && (
+                                <div className="space-y-2">
+                                    <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground uppercase">
+                                        <div className="size-5 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                                            <IconExternalLink className="size-3" />
+                                        </div>
+                                        Emails
+                                    </div>
+                                    <div className="flex flex-col gap-1 pl-7">
+                                        {lead.email && <a href={`mailto:${lead.email}`} className="text-sm text-primary hover:underline font-medium">{lead.email} <span className="text-[10px] text-muted-foreground">(Primary)</span></a>}
+                                        {lead.allEmails?.filter(e => e !== lead.email).map((email, idx) => (
+                                            <a key={idx} href={`mailto:${email}`} className="text-sm text-primary/80 hover:underline">{email}</a>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Phones */}
+                            {(lead.phone || (lead.allPhones && lead.allPhones.length > 0)) && (
+                                <div className="space-y-2">
+                                    <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground uppercase">
+                                        <div className="size-5 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                                            <IconExternalLink className="size-3" />
+                                        </div>
+                                        Phone Numbers
+                                    </div>
+                                    <div className="flex flex-col gap-1 pl-7">
+                                        {lead.phone && <span className="text-sm font-medium">{lead.phone} <span className="text-[10px] text-muted-foreground">(Primary)</span></span>}
+                                        {lead.allPhones?.filter(p => p !== lead.phone).map((phone, idx) => (
+                                            <span key={idx} className="text-sm text-foreground/80">{phone}</span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {lead.externalUrl && (
+                                <div className="flex items-center gap-2 text-sm">
+                                    <div className="size-8 rounded bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                                        <IconExternalLink className="size-4" />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] text-muted-foreground uppercase font-bold">Main Website</span>
+                                        <a href={lead.externalUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium break-all">
+                                            {lead.externalUrl}
+                                        </a>
+                                    </div>
+                                </div>
+                            )}
+
+                            {lead.facebookId && (
+                                <div className="flex items-center gap-2 text-sm">
+                                    <div className="size-8 rounded bg-blue-100 flex items-center justify-center text-blue-600 shrink-0">
+                                        <IconBrandFacebook className="size-4" />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] text-muted-foreground uppercase font-bold">Facebook Account</span>
+                                        <a href={`https://facebook.com/${lead.facebookId}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">
+                                            View Facebook Profile
+                                        </a>
+                                        <span className="text-[9px] text-muted-foreground">ID: {lead.facebookId}</span>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Bio Links Array */}
+                        {lead.bioLinks && lead.bioLinks.length > 0 && (
+                            <div className="mt-4 space-y-2">
+                                <Label className="text-[10px] text-muted-foreground uppercase font-bold">Bio Links & External Assets ({lead.bioLinks.length})</Label>
+                                <div className="grid grid-cols-1 gap-2">
+                                    {lead.bioLinks.map((link: any, idx: number) => (
+                                        <a 
+                                            key={idx} 
+                                            href={link.url} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer"
+                                            className="flex items-center justify-between p-2 rounded border bg-muted/20 hover:bg-muted/40 transition-colors text-xs"
+                                        >
+                                            <span className="font-medium truncate mr-2">{link.title || link.url}</span>
+                                            <div className="flex items-center gap-1">
+                                                {link.linkType && <Badge variant="outline" className="text-[8px] h-3 px-1">{link.linkType}</Badge>}
+                                                <IconExternalLink className="size-3 text-muted-foreground" />
+                                            </div>
+                                        </a>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Social Media Shortcuts */}
+                    {lead.socials && Object.values(lead.socials).some(v => !!v) && (
+                        <div className="space-y-2">
+                            <Label className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Other Socials</Label>
+                            <div className="flex flex-wrap gap-2">
+                                {lead.socials.facebook && (
+                                    <Button variant="outline" size="sm" className="h-8 gap-2" asChild>
+                                        <a href={lead.socials.facebook} target="_blank" rel="noopener noreferrer">
+                                            <IconBrandFacebook className="size-4 text-blue-600" /> Facebook
+                                        </a>
+                                    </Button>
+                                )}
+                                {lead.socials.twitter && (
+                                    <Button variant="outline" size="sm" className="h-8 gap-2" asChild>
+                                        <a href={lead.socials.twitter} target="_blank" rel="noopener noreferrer">
+                                            <IconBrandX className="size-4" /> Twitter
+                                        </a>
+                                    </Button>
+                                )}
+                                {lead.socials.tiktok && (
+                                    <Button variant="outline" size="sm" className="h-8 gap-2" asChild>
+                                        <a href={lead.socials.tiktok} target="_blank" rel="noopener noreferrer">
+                                            <IconBrandTiktok className="size-4" /> TikTok
+                                        </a>
+                                    </Button>
+                                )}
+                                {lead.socials.youtube && (
+                                    <Button variant="outline" size="sm" className="h-8 gap-2" asChild>
+                                        <a href={lead.socials.youtube} target="_blank" rel="noopener noreferrer">
+                                            <IconBrandYoutube className="size-4 text-red-600" /> YouTube
+                                        </a>
+                                    </Button>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Location & Meta */}
+                    <div className="grid grid-cols-2 gap-4 pb-8">
+                        <div className="space-y-1">
+                            <Label className="text-[10px] text-muted-foreground uppercase">Location</Label>
+                            <div className="flex items-center gap-1 text-sm font-medium">
+                                <IconMapPin className="size-3 text-muted-foreground" />
+                                {lead.cityName || "Global / Unknown"}
+                            </div>
+                        </div>
+                        <div className="space-y-1 text-right">
+                            <Label className="text-[10px] text-muted-foreground uppercase">Last Scraped</Label>
+                            <p className="text-xs text-muted-foreground">
+                                {lead.updatedAt ? formatDistanceToNow(lead.updatedAt, { addSuffix: true }) : "Unknown"}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </SheetContent>
+        </Sheet>
+    );
+}
+
+function IconBrandYoutube({ className }: { className?: string }) {
+    return (
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={className}
+        >
+            <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.42a2.78 2.78 0 0 0-1.94 2C1 8.14 1 12 1 12s0 3.86.42 5.58a2.78 2.78 0 0 0 1.94 2c1.72.42 8.6.42 8.6.42s6.88 0 8.6-.42a2.78 2.78 0 0 0 1.94-2C23 15.86 23 12 23 12s0-3.86-.42-5.58z" />
+            <polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" />
+        </svg>
+    )
 }
 
 // --- Generic Table Implementation ---
