@@ -1254,10 +1254,44 @@ export default function ProfilesPage() {
             accessorKey: "biography",
             header: "Bio",
             cell: ({ row }) => (
-                <div className="max-w-[200px] truncate text-[10px] text-muted-foreground" title={row.original.biography}>
+                <div 
+                    className="max-w-[200px] truncate text-[10px] text-muted-foreground cursor-pointer hover:text-foreground transition-colors" 
+                    title="Double click to view full bio"
+                    onDoubleClick={() => setSelectedInstagramLead(row.original)}
+                >
                     {row.original.biography || "-"}
                 </div>
             )
+        },
+        {
+            id: "content_summary",
+            header: "Content",
+            cell: ({ row }) => {
+                const images = row.original.extraData?.images || [];
+                if (images.length === 0) return <span className="text-muted-foreground text-[10px]">-</span>;
+                return (
+                    <div 
+                        className="flex -space-x-2 overflow-hidden cursor-pointer hover:space-x-0.5 transition-all"
+                        onClick={() => setSelectedInstagramLead(row.original)}
+                    >
+                        {images.slice(0, 3).map((img: any, i: number) => (
+                            <div key={i} className="inline-block h-6 w-6 rounded-sm ring-1 ring-background bg-muted overflow-hidden">
+                                <img 
+                                    src={img.thumbnailSrc || img.src} 
+                                    className="h-full w-full object-cover" 
+                                    alt="" 
+                                    onError={(e: any) => e.target.src = "https://placehold.co/100x100?text=No+Image"}
+                                />
+                            </div>
+                        ))}
+                        {images.length > 3 && (
+                            <div className="inline-block h-6 w-6 rounded-sm ring-1 ring-background bg-muted flex items-center justify-center text-[8px] font-bold">
+                                +{images.length - 3}
+                            </div>
+                        )}
+                    </div>
+                );
+            }
         },
         {
             accessorKey: "category",
@@ -1318,6 +1352,48 @@ export default function ProfilesPage() {
             accessorKey: "cityName",
             header: "City",
             cell: ({ row }) => row.original.cityName || "-",
+        },
+        {
+            accessorKey: "externalUrl",
+            header: "Website",
+            cell: ({ row }) => (
+                row.original.externalUrl ? (
+                    <a 
+                        href={row.original.externalUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-blue-500 hover:underline flex items-center gap-1 text-[10px]"
+                    >
+                        <IconExternalLink size={12} />
+                        {new URL(row.original.externalUrl).hostname.replace('www.', '')}
+                    </a>
+                ) : <span className="text-muted-foreground text-[10px]">-</span>
+            ),
+        },
+        {
+            id: "bio_links",
+            header: "Bio Links",
+            cell: ({ row }) => {
+                const links = row.original.bioLinks || [];
+                if (links.length === 0) return <span className="text-muted-foreground text-[10px]">-</span>;
+                return (
+                    <div className="flex flex-wrap gap-1 max-w-[150px]">
+                        {links.map((link: any, idx: number) => (
+                            <a 
+                                key={idx} 
+                                href={link.url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                title={link.title || link.url}
+                                className="inline-flex items-center gap-0.5 bg-muted/30 px-1 py-0.5 rounded border border-border hover:bg-muted/50 text-[8px]"
+                            >
+                                <IconExternalLink size={8} className="text-muted-foreground" />
+                                {link.linkType || "Link"}
+                            </a>
+                        ))}
+                    </div>
+                );
+            }
         },
         {
             accessorKey: "tags",
@@ -1840,6 +1916,71 @@ function InstagramDetailsSheet({ lead, onClose }: { lead: InstagramLead | null, 
 
                     <Separator />
 
+                    {/* Performance Metrics Detail */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                            <Label className="text-[10px] text-muted-foreground uppercase">Highlights</Label>
+                            <p className="text-sm font-medium">{lead.highlightReelCount || 0} collections</p>
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-[10px] text-muted-foreground uppercase">Language</Label>
+                            <p className="text-sm font-medium">{lead.detectedLanguage ? lead.detectedLanguage.toUpperCase() : "N/A"}</p>
+                        </div>
+                    </div>
+
+                    {(lead.cityName || lead.facebookId) && (
+                        <div className="grid grid-cols-2 gap-4">
+                             {lead.cityName && (
+                                <div className="space-y-1">
+                                    <Label className="text-[10px] text-muted-foreground uppercase">Location</Label>
+                                    <p className="text-sm font-medium flex items-center gap-1">
+                                        <IconMapPin size={12} className="text-red-500" />
+                                        {lead.cityName}
+                                    </p>
+                                </div>
+                            )}
+                            {lead.facebookId && (
+                                <div className="space-y-1">
+                                    <Label className="text-[10px] text-muted-foreground uppercase">Facebook ID</Label>
+                                    <p className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded">{lead.facebookId}</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Media Gallery / Content */}
+                    {lead.extraData?.images && lead.extraData.images.length > 0 && (
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                                <Label className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Recent Content</Label>
+                                <Badge variant="outline" className="text-[9px] h-4">{lead.extraData.images.length} posts</Badge>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2">
+                                {lead.extraData.images.map((post: any, idx: number) => (
+                                    <div key={idx} className="group relative aspect-square rounded-md overflow-hidden bg-muted border border-border">
+                                        <img 
+                                            src={post.thumbnailSrc || post.src} 
+                                            className="h-full w-full object-cover transition-transform group-hover:scale-110" 
+                                            alt=""
+                                            onError={(e: any) => e.target.src = "https://placehold.co/200x200?text=Error"}
+                                        />
+                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-[10px] font-bold gap-1">
+                                            <div className="flex items-center gap-1">
+                                                <span>❤️ {post.likes?.toLocaleString() || 0}</span>
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                <span>💬 {post.commentsCount?.toLocaleString() || 0}</span>
+                                            </div>
+                                            {post.isVideo && <Badge className="bg-white/20 text-white text-[8px] h-3 px-1 mt-1 border-none backdrop-blur-sm">VIDEO</Badge>}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    <Separator />
+
                     {/* Contact & Links */}
                     <div className="space-y-4">
                         <Label className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Contact & Links</Label>
@@ -2219,8 +2360,10 @@ function GenericProfileTable<TData, TValue>({
                                                 "Profile Pic URL": item.profilePicUrl || "",
                                                 "Biography": (item.biography || "").replace(/\n/g, " "),
                                                 "External URL": item.externalUrl || "",
-                                                "Email": item.email || item.publicEmail || "",
-                                                "Phone": item.phone || item.publicPhoneNumber || "",
+                                                "Email": item.email || "",
+                                                "Public Email": item.publicEmail || "",
+                                                "Phone": item.phone || "",
+                                                "Public Phone": item.publicPhoneNumber || "",
                                                 "Followers": item.followersCount || 0,
                                                 "Following": item.followingCount || 0,
                                                 "Posts": item.postsCount || 0,
@@ -2229,15 +2372,21 @@ function GenericProfileTable<TData, TValue>({
                                                 "Private": item.isPrivate ? "Yes" : "No",
                                                 "Verified": item.isVerified ? "Yes" : "No",
                                                 "City": item.cityName || "",
+                                                "Address": item.addressStreet || "",
                                                 "Category": item.category || "",
+                                                "Business Category": item.businessCategory || "",
+                                                "Overall Category": item.overallCategory || "",
                                                 "Engagement Rate": item.medianEr || "",
                                                 "Quality": item.quality || "",
                                                 "Reels Count": item.reelsCount || 0,
+                                                "Highlight Reels": item.highlightReelCount || 0,
                                                 "Avg Views": item.medianViews || 0,
                                                 "Views/Followers Ratio": item.viewsFollowersRatio || "",
                                                 "Last Post (Days)": item.lastPostDays || "",
                                                 "Mutual Follow": item.mutualFollow ? "Yes" : "No",
                                                 "Detected Language": item.detectedLanguage || "",
+                                                "Facebook ID": item.facebookId || "",
+                                                "Pronouns": (item.pronouns || []).join(" / "),
                                                 "Tags": (item.tags || []).join(", "),
                                                 "Updated At": item.updatedAt ? new Date(item.updatedAt).toISOString() : ""
                                             };
@@ -2369,8 +2518,10 @@ function GenericProfileTable<TData, TValue>({
                                         "Profile Pic URL": item.profilePicUrl || "",
                                         "Biography": (item.biography || "").replace(/\n/g, " "),
                                         "External URL": item.externalUrl || "",
-                                        "Email": item.email || item.publicEmail || "",
-                                        "Phone": item.phone || item.publicPhoneNumber || "",
+                                        "Email": item.email || "",
+                                        "Public Email": item.publicEmail || "",
+                                        "Phone": item.phone || "",
+                                        "Public Phone": item.publicPhoneNumber || "",
                                         "Followers": item.followersCount || 0,
                                         "Following": item.followingCount || 0,
                                         "Posts": item.postsCount || 0,
@@ -2379,15 +2530,21 @@ function GenericProfileTable<TData, TValue>({
                                         "Private": item.isPrivate ? "Yes" : "No",
                                         "Verified": item.isVerified ? "Yes" : "No",
                                         "City": item.cityName || "",
+                                        "Address": item.addressStreet || "",
                                         "Category": item.category || "",
+                                        "Business Category": item.businessCategory || "",
+                                        "Overall Category": item.overallCategory || "",
                                         "Engagement Rate": item.medianEr || "",
                                         "Quality": item.quality || "",
                                         "Reels Count": item.reelsCount || 0,
+                                        "Highlight Reels": item.highlightReelCount || 0,
                                         "Avg Views": item.medianViews || 0,
                                         "Views/Followers Ratio": item.viewsFollowersRatio || "",
                                         "Last Post (Days)": item.lastPostDays || "",
                                         "Mutual Follow": item.mutualFollow ? "Yes" : "No",
                                         "Detected Language": item.detectedLanguage || "",
+                                        "Facebook ID": item.facebookId || "",
+                                        "Pronouns": (item.pronouns || []).join(" / "),
                                         "Tags": (item.tags || []).join(", "),
                                         "Updated At": item.updatedAt ? new Date(item.updatedAt).toISOString() : ""
                                     };

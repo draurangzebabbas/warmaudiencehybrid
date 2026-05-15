@@ -69,10 +69,12 @@ export default function InstagramResearchersPage() {
             }
 
             const extractedUsernames = lines.map(line => {
-                if (line.includes('instagram.com/')) {
-                    return line.replace(/\/$/, '').split('/').pop();
+                // Strip query parameters first
+                const cleanLine = line.split("?")[0].replace(/\/$/, "");
+                if (cleanLine.includes("instagram.com/")) {
+                    return cleanLine.split("/").pop();
                 }
-                return line;
+                return cleanLine;
             }).filter(Boolean);
 
             const tagList = tags.split(",").map(t => t.trim()).filter(Boolean);
@@ -116,7 +118,15 @@ export default function InstagramResearchersPage() {
             if (!apiData?.key) throw new Error("Authentication failed: Internal API Key could not be retrieved.");
             const key = apiData.key;
 
-            const lines = postUrls.split("\n").map(l => l.trim()).filter(Boolean);
+            const lines = postUrls.split("\n")
+                .map(l => l.trim())
+                .filter(Boolean)
+                .map(url => {
+                    // Strip query parameters (UTMs, etc.)
+                    const cleanUrl = url.split("?")[0];
+                    // Normalize reel/reels to p
+                    return cleanUrl.replace(/\/(reel|reels)\//i, "/p/");
+                });
             if (lines.length === 0) {
                 toast.error("Please enter at least one post URL");
                 setLoading(false);
@@ -175,7 +185,10 @@ export default function InstagramResearchersPage() {
             if (!apiData?.key) throw new Error("Authentication failed: Internal API Key could not be retrieved.");
             const key = apiData.key;
 
-            const lines = followerUrls.split("\n").map(l => l.trim()).filter(Boolean);
+            const lines = followerUrls.split("\n")
+                .map(l => l.trim())
+                .filter(Boolean)
+                .map(url => url.split("?")[0].replace(/\/$/, ""));
             if (lines.length === 0) {
                 toast.error("Please enter at least one URL or username");
                 setLoading(false);

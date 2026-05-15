@@ -112,17 +112,48 @@ export default function ApiKeysPage() {
         }
 
         try {
-            const { error } = await supabase
+            // Check if key already exists in the system
+            const { data: existing, error: fetchError } = await supabase
                 .from("user_api_keys")
-                .insert([{
-                    user_id: user._id,
-                    name,
-                    provider,
-                    key,
-                    status: "active"
-                }]);
+                .select("user_id, status")
+                .eq("key", key)
+                .maybeSingle();
 
-            if (error) throw error;
+            if (fetchError) throw fetchError;
+
+            if (existing) {
+                // If it's already assigned to someone else
+                if (existing.user_id && existing.user_id !== user._id) {
+                    toast.error("This API Key is already registered by another user.");
+                    return;
+                }
+                
+                // If it exists but is either ours or unassigned, update/re-claim it
+                const { error: updateError } = await supabase
+                    .from("user_api_keys")
+                    .update({
+                        user_id: user._id,
+                        name,
+                        provider,
+                        status: "active"
+                    })
+                    .eq("key", key);
+
+                if (updateError) throw updateError;
+            } else {
+                // New key, insert it
+                const { error: insertError } = await supabase
+                    .from("user_api_keys")
+                    .insert([{
+                        user_id: user._id,
+                        name,
+                        provider,
+                        key,
+                        status: "active"
+                    }]);
+
+                if (insertError) throw insertError;
+            }
 
             toast.success("API Key added successfully");
             setName("");
@@ -135,18 +166,18 @@ export default function ApiKeysPage() {
     };
 
     const handleDelete = async (id: any) => {
-        if (confirm("Are you sure you want to delete this API Key?")) {
+        if (confirm("Are you sure you want to remove this API Key from your account? It will remain in the system but will no longer be associated with you.")) {
             try {
                 const { error } = await supabase
                     .from("user_api_keys")
-                    .delete()
+                    .update({ user_id: null })
                     .eq("id", id);
 
                 if (error) throw error;
-                toast.success("API Key deleted");
+                toast.success("API Key removed");
                 fetchKeys();
             } catch (error) {
-                toast.error("Failed to delete API Key");
+                toast.error("Failed to remove API Key");
             }
         }
     };
@@ -193,20 +224,20 @@ export default function ApiKeysPage() {
         const selectedIds = table.getSelectedRowModel().rows.map(r => r.original.id);
         if (selectedIds.length === 0) return;
 
-        if (confirm(`Are you sure you want to delete ${selectedIds.length} keys?`)) {
+        if (confirm(`Are you sure you want to remove ${selectedIds.length} keys from your account?`)) {
             setIsBulkUpdating(true);
             try {
                 const { error } = await supabase
                     .from("user_api_keys")
-                    .delete()
+                    .update({ user_id: null })
                     .in("id", selectedIds);
 
                 if (error) throw error;
-                toast.success(`${selectedIds.length} keys deleted`);
+                toast.success(`${selectedIds.length} keys removed`);
                 setRowSelection({});
                 fetchKeys();
             } catch (error: any) {
-                toast.error(`Bulk delete failed: ${error.message}`);
+                toast.error(`Bulk remove failed: ${error.message}`);
             } finally {
                 setIsBulkUpdating(false);
             }
@@ -422,14 +453,38 @@ export default function ApiKeysPage() {
 
                                                         if (pName && pKey && user?._id) {
                                                             try {
-                                                                await supabase.from("user_api_keys").insert([{
-                                                                    user_id: user._id,
-                                                                    name: pName,
-                                                                    provider,
-                                                                    key: pKey,
-                                                                    status: "active"
-                                                                }]);
-                                                                count++;
+                                                                // Check if key exists
+                                                                const { data: existing } = await supabase
+                                                                    .from("user_api_keys")
+                                                                    .select("user_id")
+                                                                    .eq("key", pKey)
+                                                                    .maybeSingle();
+
+                                                                if (existing) {
+                                                                    if (!existing.user_id || existing.user_id === user._id) {
+                                                                        await supabase
+                                                                            .from("user_api_keys")
+                                                                            .update({
+                                                                                user_id: user._id,
+                                                                                name: pName,
+                                                                                provider,
+                                                                                status: "active"
+                                                                            })
+                                                                            .eq("key", pKey);
+                                                                        count++;
+                                                                    } else {
+                                                                        console.warn("Key already owned by another user:", pName);
+                                                                    }
+                                                                } else {
+                                                                    await supabase.from("user_api_keys").insert([{
+                                                                        user_id: user._id,
+                                                                        name: pName,
+                                                                        provider,
+                                                                        key: pKey,
+                                                                        status: "active"
+                                                                    }]);
+                                                                    count++;
+                                                                }
                                                             } catch (err) {
                                                                 console.error("Import failed for", pName);
                                                             }
