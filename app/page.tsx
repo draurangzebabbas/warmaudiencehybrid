@@ -4,6 +4,7 @@ import LandingVideo from "@/components/landing-video"
 import LandingHowItWorks from "@/components/landing-how-it-works"
 import LandingIntegrations from "@/components/landing-integrations"
 import LandingAutonomous from "@/components/landing-autonomous"
+import LandingHowToStart from "@/components/landing-how-to-start"
 import Pricing from "@/components/pricing"
 import FAQs from "@/components/faqs-2"
 import Footer from "@/components/footer"
@@ -35,6 +36,10 @@ export default function Home() {
 
         <div id="autonomous">
           <LandingAutonomous />
+        </div>
+
+        <div id="how-to-start">
+          <LandingHowToStart />
         </div>
 
         {/* Moved How It Works above Video as requested */}
