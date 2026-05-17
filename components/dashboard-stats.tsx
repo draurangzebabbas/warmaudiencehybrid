@@ -6,7 +6,7 @@ import { api } from "@/convex/_generated/api";
 import { supabase } from "@/src/lib/supabase";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { IconTrendingUp, IconUsers, IconBuildingCommunity, IconRadar, IconDatabase, IconBrandGoogleMaps } from "@tabler/icons-react";
+import { IconTrendingUp, IconUsers, IconBuildingCommunity, IconRadar, IconDatabase, IconBrandGoogleMaps, IconBrandLinkedin, IconBrandInstagram, IconWorldSearch } from "@tabler/icons-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function DashboardStats() {
@@ -15,8 +15,9 @@ export function DashboardStats() {
         totalPersonalProfiles: 0,
         totalCompanyProfiles: 0,
         googleMapsLeads: 0,
+        instagramLeads: 0,
+        websiteLeads: 0,
         activeTrackers: 0,
-        totalProfiles: 0,
     });
     const [loading, setLoading] = useState(true);
 
@@ -25,24 +26,22 @@ export function DashboardStats() {
 
         const fetchStats = async () => {
             try {
-                const [personal, company, gmaps, trackers] = await Promise.all([
+                const [personal, company, gmaps, instagram, website, trackers] = await Promise.all([
                     supabase.from("user_leads").select("*", { count: "exact", head: true }).eq("user_id", user._id).eq("profile_type", "personal"),
                     supabase.from("user_leads").select("*", { count: "exact", head: true }).eq("user_id", user._id).eq("profile_type", "company"),
                     supabase.from("user_leads").select("*", { count: "exact", head: true }).eq("user_id", user._id).eq("profile_type", "google_maps"),
+                    supabase.from("user_leads").select("*", { count: "exact", head: true }).eq("user_id", user._id).eq("profile_type", "instagram"),
+                    supabase.from("user_leads").select("*", { count: "exact", head: true }).eq("user_id", user._id).eq("profile_type", "website_contact"),
                     supabase.from("trackers").select("*", { count: "exact", head: true }).eq("user_id", user._id).eq("is_active", true)
                 ]);
 
-                const pCount = personal.count || 0;
-                const cCount = company.count || 0;
-                const gCount = gmaps.count || 0;
-                const tCount = trackers.count || 0;
-
                 setStats({
-                    totalPersonalProfiles: pCount,
-                    totalCompanyProfiles: cCount,
-                    googleMapsLeads: gCount,
-                    activeTrackers: tCount,
-                    totalProfiles: pCount + cCount,
+                    totalPersonalProfiles: personal.count || 0,
+                    totalCompanyProfiles: company.count || 0,
+                    googleMapsLeads: gmaps.count || 0,
+                    instagramLeads: instagram.count || 0,
+                    websiteLeads: website.count || 0,
+                    activeTrackers: trackers.count || 0,
                 });
             } catch (error) {
                 console.error("Error fetching stats:", error);
@@ -72,30 +71,30 @@ export function DashboardStats() {
     const items = [
         {
             title: "Total Leads",
-            value: (stats?.totalPersonalProfiles || 0) + (stats?.totalCompanyProfiles || 0) + (stats?.googleMapsLeads || 0),
+            value: (stats?.totalPersonalProfiles || 0) + (stats?.totalCompanyProfiles || 0) + (stats?.googleMapsLeads || 0) + (stats?.instagramLeads || 0) + (stats?.websiteLeads || 0),
             description: "Total leads across all platforms",
             icon: IconDatabase,
             color: "text-foreground",
             bg: "bg-muted"
         },
         {
-            title: "Personal Profiles",
-            value: stats?.totalPersonalProfiles || 0,
-            description: "Enriched individual profiles",
-            icon: IconUsers,
+            title: "Linkedin Lead",
+            value: (stats?.totalPersonalProfiles || 0) + (stats?.totalCompanyProfiles || 0),
+            description: `${stats?.totalPersonalProfiles || 0} Personal Profiles, ${stats?.totalCompanyProfiles || 0} Company Profiles`,
+            icon: IconBrandLinkedin,
             color: "text-foreground",
             bg: "bg-muted"
         },
         {
-            title: "Company Profiles",
-            value: stats?.totalCompanyProfiles || 0,
-            description: "Target company profiles",
-            icon: IconBuildingCommunity,
+            title: "Instagram Lead",
+            value: stats?.instagramLeads || 0,
+            description: "Target Instagram profiles",
+            icon: IconBrandInstagram,
             color: "text-foreground",
             bg: "bg-muted"
         },
         {
-            title: "Google Map Listings",
+            title: "Google Map Lead",
             value: stats?.googleMapsLeads || 0,
             description: "Local business discoveries",
             icon: IconBrandGoogleMaps,
@@ -103,10 +102,10 @@ export function DashboardStats() {
             bg: "bg-muted"
         },
         {
-            title: "Active Trackers",
-            value: stats?.activeTrackers || 0,
-            description: "Automated monitoring tasks",
-            icon: IconRadar,
+            title: "Website Lead",
+            value: stats?.websiteLeads || 0,
+            description: "Enriched website contact details",
+            icon: IconWorldSearch,
             color: "text-foreground",
             bg: "bg-muted"
         }

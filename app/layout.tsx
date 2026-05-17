@@ -75,6 +75,11 @@ export const metadata: Metadata = {
       me: ['my-contact', 'my-twitter'],
     },
   },
+  icons: {
+    icon: '/icon.svg',
+    shortcut: '/icon.svg',
+    apple: '/icon.svg',
+  },
 };
 
 import Script from "next/script";

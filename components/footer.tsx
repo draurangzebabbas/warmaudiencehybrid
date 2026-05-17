@@ -106,7 +106,7 @@ const footerSections = [
 
 const Footer = () => {
   return (
-    <footer className="border-t bg-background">
+    <footer className="border-t bg-transparent">
       <div className="max-w-(--breakpoint-xl) mx-auto">
         <div className="py-12 flex flex-col md:flex-row justify-between gap-10 px-6 xl:px-0">
           <div className="max-w-sm">

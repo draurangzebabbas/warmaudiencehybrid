@@ -799,7 +799,14 @@ export default function ProfilesPage() {
             header: "Full Name",
             cell: ({ row }) => (
                 <div className="flex flex-col">
-                    <span className="font-medium">{row.original.fullName || "Unknown"}</span>
+                    <a 
+                        href={row.original.linkedinUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="font-medium hover:underline hover:text-primary transition-colors"
+                    >
+                        {row.original.fullName || "Unknown"}
+                    </a>
                     <span className="text-xs text-muted-foreground truncate max-w-[150px]">{row.original.headline}</span>
                 </div>
             ),
@@ -1681,6 +1688,9 @@ export default function ProfilesPage() {
                                 <TabsTrigger value="google_maps">Google Map Lead</TabsTrigger>
                                 <TabsTrigger value="website_contact">Website Contacts</TabsTrigger>
                                 <TabsTrigger value="instagram">Instagram Lead</TabsTrigger>
+                                <TabsTrigger value="tiktok">TikTok Lead</TabsTrigger>
+                                <TabsTrigger value="facebook">Facebook Lead</TabsTrigger>
+                                <TabsTrigger value="x">X Lead</TabsTrigger>
                             </TabsList>
 
                             <TabsContent value="personal">
@@ -1831,6 +1841,25 @@ export default function ProfilesPage() {
                                         }
                                     }}
                                 />
+                            </TabsContent>
+                            
+                            <TabsContent value="tiktok">
+                                <div className="py-12 text-center border rounded-lg bg-muted/20">
+                                    <h3 className="text-lg font-medium">TikTok Leads Coming Soon</h3>
+                                    <p className="text-sm text-muted-foreground mt-1">This integration is under development.</p>
+                                </div>
+                            </TabsContent>
+                            <TabsContent value="facebook">
+                                <div className="py-12 text-center border rounded-lg bg-muted/20">
+                                    <h3 className="text-lg font-medium">Facebook Leads Coming Soon</h3>
+                                    <p className="text-sm text-muted-foreground mt-1">This integration is under development.</p>
+                                </div>
+                            </TabsContent>
+                            <TabsContent value="x">
+                                <div className="py-12 text-center border rounded-lg bg-muted/20">
+                                    <h3 className="text-lg font-medium">X Leads Coming Soon</h3>
+                                    <p className="text-sm text-muted-foreground mt-1">This integration is under development.</p>
+                                </div>
                             </TabsContent>
                         </Tabs>
                     </CardContent>

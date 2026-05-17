@@ -22,6 +22,7 @@
     "@tailark": "https://tailark.com/r/{name}.json",
     "@smoothui": "https://smoothui.dev/r/{name}.json",
     "@blocks": "https://blocks.so/r/{name}.json",
-    "@magicui": "https://magicui.design/r/{name}"
+    "@magicui": "https://magicui.design/r/{name}",
+    "@motion-primitives": "https://motion-primitives.com/c/{name}.json"
   }
 }

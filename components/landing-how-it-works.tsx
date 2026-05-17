@@ -108,7 +108,6 @@ export default function LandingHowItWorks() {
 
     return (
         <section ref={containerRef} className="relative overflow-hidden pt-24 pb-8 sm:pt-32 sm:pb-12">
-            <div className="absolute inset-0 -z-10 bg-[radial-gradient(45rem_50rem_at_top,theme(colors.primary.200/.1),transparent)] dark:bg-[radial-gradient(45rem_50rem_at_top,theme(colors.primary.900/.1),transparent)]" />
 
             <div className="mx-auto max-w-7xl px-6 lg:px-8">
                 <div className="mx-auto max-w-2xl text-center">

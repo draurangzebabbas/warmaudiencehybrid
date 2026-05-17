@@ -14,17 +14,15 @@ import {
   IconInnerShadowTop,
   IconKey,
   IconListDetails,
-  IconReport,
   IconSearch,
   IconUsers,
   IconWebhook,
   IconAward,
-  IconBrandLinkedin,
-  IconBrandGoogleMaps,
   IconLayoutDashboard,
   IconWorldSearch,
-  IconBrandInstagram
 } from "@tabler/icons-react"
+import { GoogleMapsIcon } from "@/components/icons/google-maps-icon"
+import { LinkedInIcon, InstagramIcon, TikTokIcon, FacebookIcon, XIcon, AgentIcon } from "@/components/icons/social-icons"
 
 import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
@@ -52,24 +50,39 @@ const data = {
       icon: IconLayoutDashboard,
     },
     {
+      title: "X Lead",
+      url: "/x-researcher",
+      icon: XIcon,
+    },
+    {
+      title: "TikTok Lead",
+      url: "/tiktok-researcher",
+      icon: TikTokIcon,
+    },
+    {
       title: "Linkedin Lead",
       url: "/researchers",
-      icon: IconBrandLinkedin,
+      icon: LinkedInIcon,
     },
     {
-      title: "Google Map Lead",
-      url: "/google-maps-researcher",
-      icon: IconBrandGoogleMaps,
-    },
-    {
-      title: "Website Contact Details",
-      url: "/website-contact-researcher",
-      icon: IconWorldSearch,
+      title: "Facebook Lead",
+      url: "/facebook-researcher",
+      icon: FacebookIcon,
     },
     {
       title: "Instagram Lead",
       url: "/instagram-researcher",
-      icon: IconBrandInstagram,
+      icon: InstagramIcon,
+    },
+    {
+      title: "Google Map Lead",
+      url: "/google-maps-researcher",
+      icon: GoogleMapsIcon,
+    },
+    {
+      title: "Website Contact Lead",
+      url: "/website-contact-researcher",
+      icon: IconWorldSearch,
     },
     {
       title: "My Leads",
@@ -77,9 +90,9 @@ const data = {
       icon: IconUsers,
     },
     {
-      title: "Trackers",
+      title: "My Agents",
       url: "/trackers",
-      icon: IconChartBar,
+      icon: AgentIcon,
     },
     {
       title: "API Keys",
@@ -102,7 +115,7 @@ const data = {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
-    <Sidebar collapsible="icon" variant="sidebar" {...props}>
+    <Sidebar collapsible="offcanvas" variant="sidebar" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
