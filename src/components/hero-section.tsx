@@ -216,7 +216,7 @@ export default function HeroSection() {
                             </span>
                             Leads In Seconds
                         </h1>
-                        <p className="text-muted-foreground mx-auto my-8 max-w-2xl text-xl">Stop cold calling. Build a high-intent B2B audience with automated scraping, intent tracking, and engagement-based prospecting.</p>
+                        <p className="text-muted-foreground mx-auto my-8 max-w-2xl text-xl">Stop chasing cold leads. Build a high-intent B2B leads with automated scraping, intent tracking, and engagement-based prospecting.</p>
 
                         <Button
                             asChild
