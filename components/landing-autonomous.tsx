@@ -75,15 +75,36 @@ export default function LandingAutonomous() {
     return (
         <section className="relative overflow-hidden py-24 sm:py-32 bg-transparent">
             <div className="mx-auto max-w-7xl px-6 lg:px-8">
-                <div className="mx-auto max-w-2xl text-center">
-                    <h2 className="text-base font-semibold leading-7 text-primary">
-                        Unmatched Autonomy
+                <div className="mx-auto max-w-4xl text-center flex flex-col items-center">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card/50 p-1 pr-3 text-xs backdrop-blur-md dark:border-zinc-800">
+                        <span className="rounded-full bg-foreground px-2.5 py-0.5 font-semibold text-background">
+                            Autonomous Scouting
+                        </span>
+                        <span className="text-muted-foreground font-medium">
+                            AI lead generation 24/7
+                        </span>
+                    </div>
+                    <h2 className="mt-6 text-3xl font-bold tracking-tight sm:text-4xl">
+                        Set Your Target, Let The Agent
+                        <span 
+                            className="relative inline-flex items-center justify-center size-10 md:size-12 lg:size-14 align-middle mx-1 animate-[agent-bob_2.2s_ease-in-out_infinite]"
+                            style={{ willChange: "transform", backfaceVisibility: "hidden", transformStyle: "preserve-3d" }}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" className="size-full text-primary relative" stroke="currentColor" fill="none">
+                                <g className="animate-[antenna-wobble_2s_ease-in-out_infinite]" style={{ transformOrigin: '50px 35px' }}>
+                                    <line x1="50" y1="35" x2="50" y2="15" strokeWidth="5" strokeLinecap="round" />
+                                    <circle cx="50" cy="15" r="6" strokeWidth="5" />
+                                </g>
+                                <circle cx="50" cy="65" r="30" strokeWidth="5" />
+                                <rect x="30" y="55" width="40" height="20" rx="10" strokeWidth="5" />
+                                <path d="M 38 65 Q 42 59 46 65" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
+                                <path d="M 54 65 Q 58 59 62 65" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                        </span>
+                        Do The Rest
                     </h2>
-                    <p className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
-                        Your AI Agents Work 24/7. Find Warm Leads While You Sleep.
-                    </p>
                     <p className="mt-6 text-lg leading-8 text-muted-foreground">
-                        Deploy intelligent agents that tirelessly scour the internet, score prospect intent, and populate your CRM—giving you a calendar full of meetings every morning.
+                        Tell your agent what industry, keywords, or competitors to track. It runs in the background 24/7 to discover, enrich, and deliver verified warm prospects while you sleep.
                     </p>
                 </div>
 
@@ -179,6 +200,10 @@ export default function LandingAutonomous() {
                     0%, 100% { transform: rotate(0deg); }
                     25% { transform: rotate(-15deg); }
                     75% { transform: rotate(15deg); }
+                }
+                @keyframes agent-bob {
+                    0%, 100% { transform: translate3d(0, -6px, 0); }
+                    50% { transform: translate3d(0, -14px, 0); }
                 }
             `}} />
         </section>

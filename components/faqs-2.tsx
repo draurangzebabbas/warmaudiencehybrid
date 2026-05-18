@@ -38,40 +38,53 @@ export default function FAQsTwo() {
     ]
 
     return (
-        <section className="py-16 md:py-24">
-            <div className="mx-auto max-w-5xl px-4 md:px-6">
-                <div className="mx-auto max-w-xl text-center">
-                    <h2 className="text-balance text-3xl font-bold md:text-4xl lg:text-5xl">Frequently Asked Questions</h2>
-                    <p className="text-muted-foreground mt-4 text-balance">Discover quick and comprehensive answers to common questions about our platform, services, and features.</p>
+        <section className="relative overflow-hidden py-24 sm:py-32 bg-transparent">
+            <div className="mx-auto max-w-5xl px-6 lg:px-8">
+                <div className="mx-auto max-w-2xl text-center flex flex-col items-center">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card/50 p-1 pr-3 text-xs backdrop-blur-md dark:border-zinc-800">
+                        <span className="rounded-full bg-foreground px-2.5 py-0.5 font-semibold text-background">
+                            FAQ
+                        </span>
+                        <span className="text-muted-foreground font-medium">
+                            Got questions? We have answers.
+                        </span>
+                    </div>
+                    <h2 className="mt-6 text-3xl font-bold tracking-tight sm:text-5xl">
+                        Frequently Asked Questions
+                    </h2>
+                    <p className="mt-6 text-lg leading-8 text-muted-foreground">
+                        Everything you need to know about our research tools, BYOK model, trackers, and data security.
+                    </p>
                 </div>
 
-                <div className="mx-auto mt-12 max-w-xl">
+                <div className="mx-auto mt-16 max-w-3xl rounded-3xl border bg-background/50 p-8 backdrop-blur-xl sm:p-10 relative">
+
                     <Accordion
                         type="single"
                         collapsible
-                        className="bg-card ring-muted w-full rounded-2xl border px-8 py-3 shadow-sm ring-4 dark:ring-0">
+                        className="w-full">
                         {faqItems.map((item) => (
                             <AccordionItem
                                 key={item.id}
                                 value={item.id}
-                                className="border-dashed">
-                                <AccordionTrigger className="cursor-pointer text-base hover:no-underline">{item.question}</AccordionTrigger>
-                                <AccordionContent>
-                                    <p className="text-base">{item.answer}</p>
+                                className="border-border">
+                                <AccordionTrigger className="cursor-pointer text-base hover:no-underline font-semibold py-4 text-left">{item.question}</AccordionTrigger>
+                                <AccordionContent className="pb-4">
+                                    <p className="text-base text-muted-foreground leading-relaxed">{item.answer}</p>
                                 </AccordionContent>
                             </AccordionItem>
                         ))}
                     </Accordion>
-
-                    <p className="text-muted-foreground mt-6 px-8">
-                        Can't find what you're looking for? Contact our{' '}
-                        <Link
-                            href="#"
-                            className="text-primary font-medium hover:underline">
-                            customer support team
-                        </Link>
-                    </p>
                 </div>
+
+                <p className="text-muted-foreground mt-8 text-center text-sm">
+                    Can't find what you're looking for? Contact our{' '}
+                    <Link
+                        href="#"
+                        className="text-primary font-medium hover:underline">
+                        customer support team
+                    </Link>
+                </p>
             </div>
         </section>
     )

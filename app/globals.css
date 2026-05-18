@@ -195,3 +195,43 @@
   mask-image: linear-gradient(to bottom, transparent, white 15%, white 85%, transparent);
   -webkit-mask-image: linear-gradient(to bottom, transparent, white 15%, white 85%, transparent);
 }
+
+/* Horizontal Social Media Marquee */
+@keyframes marquee-scroll-left {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.animate-scroll-x {
+  animation: marquee-scroll-left 15s linear infinite;
+}
+.animate-scroll-x:hover {
+  animation-play-state: paused;
+}
+
+/* Brand Flame Flicker Animation */
+@keyframes flame-flicker {
+  0%, 100% {
+    transform: scale(1) rotate(-1deg);
+    filter: drop-shadow(0 0 3px var(--border));
+  }
+  20% {
+    transform: scale(1.03) rotate(0.5deg);
+    filter: drop-shadow(0 0 5px var(--border));
+  }
+  40% {
+    transform: scale(0.99) rotate(-1deg);
+    filter: drop-shadow(0 0 4px var(--border));
+  }
+  60% {
+    transform: scale(1.05) rotate(1deg);
+    filter: drop-shadow(0 0 6px var(--border));
+  }
+  80% {
+    transform: scale(1.01) rotate(-0.5deg);
+    filter: drop-shadow(0 0 4px var(--border));
+  }
+}
+.animate-flame {
+  animation: flame-flicker 1.8s ease-in-out infinite;
+  transform-origin: bottom center;
+}

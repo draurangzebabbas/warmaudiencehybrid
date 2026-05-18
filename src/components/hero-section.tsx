@@ -178,21 +178,58 @@ export default function HeroSection() {
 
                     {/* Hero text - centered */}
                     <div className="relative z-10 mx-auto max-w-3xl px-6 text-center">
-                        <h1 className="text-balance text-4xl font-semibold md:text-5xl lg:text-6xl tracking-tight">Find Warm Leads In Seconds</h1>
+                        <h1 className="text-balance text-4xl font-semibold md:text-5xl lg:text-6xl tracking-tight select-none">
+                            Find Warm
+                            <span className="relative inline-flex items-center justify-center size-9 md:size-12 lg:size-14 mx-2 align-middle -translate-y-0.5 md:-translate-y-1">
+                                {/* Sleek subtle glow matching the theme */}
+                                <span className="absolute inset-1 rounded-full bg-foreground/10 dark:bg-foreground/5 blur-md animate-pulse"></span>
+                                <svg
+                                    className="size-full animate-flame relative z-10"
+                                    viewBox="0 0 128 128"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    aria-label="WarmAudience logo icon"
+                                >
+                                    {/* ── LIGHT MODE ── outer: dark/black | inner: white */}
+                                    <g className="dark:hidden">
+                                        <path
+                                            fill="#111111"
+                                            d="M35.56 40.73c-.57 6.08-.97 16.84 2.62 21.42c0 0-1.69-11.82 13.46-26.65c6.1-5.97 7.51-14.09 5.38-20.18c-1.21-3.45-3.42-6.3-5.34-8.29c-1.12-1.17-.26-3.1 1.37-3.03c9.86.44 25.84 3.18 32.63 20.22c2.98 7.48 3.2 15.21 1.78 23.07c-.9 5.02-4.1 16.18 3.2 17.55c5.21.98 7.73-3.16 8.86-6.14c.47-1.24 2.1-1.55 2.98-.56c8.8 10.01 9.55 21.8 7.73 31.95c-3.52 19.62-23.39 33.9-43.13 33.9c-24.66 0-44.29-14.11-49.38-39.65c-2.05-10.31-1.01-30.71 14.89-45.11c1.18-1.08 3.11-.12 2.95 1.5z"
+                                        />
+                                        <path
+                                            fill="#ffffff"
+                                            d="M76.11 77.42c-9.09-11.7-5.02-25.05-2.79-30.37c.3-.7-.5-1.36-1.13-.93c-3.91 2.66-11.92 8.92-15.65 17.73c-5.05 11.91-4.69 17.74-1.7 24.86c1.8 4.29-.29 5.2-1.34 5.36c-1.02.16-1.96-.52-2.71-1.23a16.09 16.09 0 0 1-4.44-7.6c-.16-.62-.97-.79-1.34-.28c-2.8 3.87-4.25 10.08-4.32 14.47C40.47 113 51.68 124 65.24 124c17.09 0 29.54-18.9 19.72-34.7c-2.85-4.6-5.53-7.61-8.85-11.88z"
+                                        />
+                                    </g>
+
+                                    {/* ── DARK MODE ── outer: white | inner: dark/black */}
+                                    <g className="hidden dark:block">
+                                        <path
+                                            fill="#ffffff"
+                                            d="M35.56 40.73c-.57 6.08-.97 16.84 2.62 21.42c0 0-1.69-11.82 13.46-26.65c6.1-5.97 7.51-14.09 5.38-20.18c-1.21-3.45-3.42-6.3-5.34-8.29c-1.12-1.17-.26-3.1 1.37-3.03c9.86.44 25.84 3.18 32.63 20.22c2.98 7.48 3.2 15.21 1.78 23.07c-.9 5.02-4.1 16.18 3.2 17.55c5.21.98 7.73-3.16 8.86-6.14c.47-1.24 2.1-1.55 2.98-.56c8.8 10.01 9.55 21.8 7.73 31.95c-3.52 19.62-23.39 33.9-43.13 33.9c-24.66 0-44.29-14.11-49.38-39.65c-2.05-10.31-1.01-30.71 14.89-45.11c1.18-1.08 3.11-.12 2.95 1.5z"
+                                        />
+                                        <path
+                                            fill="#09090b"
+                                            d="M76.11 77.42c-9.09-11.7-5.02-25.05-2.79-30.37c.3-.7-.5-1.36-1.13-.93c-3.91 2.66-11.92 8.92-15.65 17.73c-5.05 11.91-4.69 17.74-1.7 24.86c1.8 4.29-.29 5.2-1.34 5.36c-1.02.16-1.96-.52-2.71-1.23a16.09 16.09 0 0 1-4.44-7.6c-.16-.62-.97-.79-1.34-.28c-2.8 3.87-4.25 10.08-4.32 14.47C40.47 113 51.68 124 65.24 124c17.09 0 29.54-18.9 19.72-34.7c-2.85-4.6-5.53-7.61-8.85-11.88z"
+                                        />
+                                    </g>
+                                </svg>
+                            </span>
+                            Leads In Seconds
+                        </h1>
                         <p className="text-muted-foreground mx-auto my-8 max-w-2xl text-xl">Stop cold calling. Build a high-intent B2B audience with automated scraping, intent tracking, and engagement-based prospecting.</p>
 
                         <Button
                             asChild
                             size="lg">
                             <Link href={session ? "/dashboard" : "/signup"}>
-                                <span className="btn-label">{session ? "Go to Dashboard" : "Start Building for Free"}</span>
+                                <span className="btn-label">{session ? "Go to Dashboard" : "Get your leads for free"}</span>
                             </Link>
                         </Button>
                     </div>
                 </section>
 
                 {/* === BELOW THE FOLD: Product image preview === */}
-                <section className="bg-transparent overflow-hidden pb-16">
+                <section className="bg-transparent overflow-hidden pb-4">
                     <div className="mx-auto 2xl:max-w-7xl">
                         <div className="perspective-distant pl-8 lg:pl-44">
                             <div className="lg:h-176 rotate-x-20 mask-b-from-55% mask-b-to-100% mask-r-from-75% skew-x-12 pl-6 pt-6">

@@ -1,7 +1,6 @@
 import HeroSection from "@/src/components/hero-section"
 import LandingFeatures from "@/components/landing-features"
 import LandingVideo from "@/components/landing-video"
-import LandingHowItWorks from "@/components/landing-how-it-works"
 import LandingIntegrations from "@/components/landing-integrations"
 import LandingAutonomous from "@/components/landing-autonomous"
 import LandingHowToStart from "@/components/landing-how-to-start"
@@ -10,6 +9,7 @@ import FAQs from "@/components/faqs-2"
 import Footer from "@/components/footer"
 import LandingTestimonials from "@/components/landing-testimonials"
 import LandingOutboundIntegrations from "@/components/landing-outbound-integrations"
+import LandingSocialProof from "@/components/landing-social-proof"
 import { Metadata } from "next"
 
 export const metadata: Metadata = {
@@ -32,6 +32,8 @@ export default function Home() {
       <div className="relative z-10">
         <HeroSection />
 
+        <LandingSocialProof />
+
         <div id="integrations">
           <LandingIntegrations />
         </div>
@@ -44,10 +46,7 @@ export default function Home() {
           <LandingHowToStart />
         </div>
 
-        {/* Moved How It Works above Video as requested */}
-        <div id="how-it-works">
-          <LandingHowItWorks />
-        </div>
+
 
         <div id="video-section">
           <LandingVideo />

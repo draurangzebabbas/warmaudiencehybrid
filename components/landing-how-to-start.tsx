@@ -26,15 +26,20 @@ export default function LandingHowToStart() {
     return (
         <section className="relative overflow-hidden py-24 sm:py-32 bg-transparent">
             <div className="mx-auto max-w-7xl px-6 lg:px-8">
-                <div className="mx-auto max-w-2xl text-center">
-                    <h2 className="text-base font-semibold leading-7 text-foreground">
-                        How It Works
+                <div className="mx-auto max-w-2xl text-center flex flex-col items-center">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card/50 p-1 pr-3 text-xs backdrop-blur-md dark:border-zinc-800">
+                        <span className="rounded-full bg-foreground px-2.5 py-0.5 font-semibold text-background">
+                            Quick Start
+                        </span>
+                        <span className="text-muted-foreground font-medium">
+                            Under 3 minutes
+                        </span>
+                    </div>
+                    <h2 className="mt-6 text-3xl font-bold tracking-tight sm:text-4xl">
+                        Start Finding Warm Leads Today
                     </h2>
-                    <p className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
-                        How to Start
-                    </p>
                     <p className="mt-6 text-lg leading-8 text-muted-foreground">
-                        From signing up to getting your first high-intent lead in under three minutes. Our onboarding is seamless.
+                        No complex setups. From signing up to having high-intent prospects flow into your pipeline in under three minutes.
                     </p>
                 </div>
 
@@ -148,7 +153,7 @@ export default function LandingHowToStart() {
                                         
                                         <div className="relative w-full overflow-hidden pb-1 pt-1">
                                             <div className="flex w-max animate-scroll-x gap-10 px-4">
-                                                {[...platforms, ...platforms, ...platforms].map((p, i) => (
+                                                {[...platforms, ...platforms].map((p, i) => (
                                                     <div key={i} className="flex flex-col items-center gap-2 grayscale hover:grayscale-0 transition-all opacity-70 hover:opacity-100">
                                                         <div className="flex size-10 items-center justify-center text-foreground">
                                                             {React.cloneElement(p.icon as React.ReactElement<{ className?: string }>, { className: "size-6" })}

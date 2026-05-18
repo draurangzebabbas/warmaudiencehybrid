@@ -39,18 +39,20 @@ export default function LandingOutboundIntegrations() {
     return (
         <section className="relative overflow-hidden py-24 sm:py-32">
             <div className="mx-auto max-w-7xl px-6 lg:px-8">
-                <div className="mx-auto max-w-2xl text-center">
-                    <h2 className="text-base font-semibold leading-7 text-primary">
-                        Outbound Syndication
+                <div className="mx-auto max-w-2xl text-center flex flex-col items-center">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card/50 p-1 pr-3 text-xs backdrop-blur-md dark:border-zinc-800">
+                        <span className="rounded-full bg-foreground px-2.5 py-0.5 font-semibold text-background">
+                            Outbound Integrations
+                        </span>
+                        <span className="text-muted-foreground font-medium">
+                            Sync instantly
+                        </span>
+                    </div>
+                    <h2 className="mt-6 text-3xl font-bold tracking-tight sm:text-4xl">
+                        Push Warm Leads Straight To Your CRM
                     </h2>
-                    <p className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
-                        Zero Friction. Infinite Workflows.
-                    </p>
-                    <p className="mt-6 text-lg leading-8 font-semibold text-foreground">
-                        Don&apos;t just store warm leads — Action them instantly.
-                    </p>
-                    <p className="mt-2 text-lg leading-8 text-muted-foreground">
-                        Seamlessly stream validated corporate emails, rich social signals, and real-time intent data directly into Slack, HubSpot, Make, or custom API webhooks the millisecond they are captured.
+                    <p className="mt-6 text-lg leading-8 text-muted-foreground">
+                        No manual exports needed. Automatically stream rich lead profiles, verified corporate emails, and real-time social signals into Slack, HubSpot, Make, Zapier, n8n, or Gumloop the exact second they are extracted.
                     </p>
                 </div>
 
@@ -222,8 +224,6 @@ const Icons = {
         </svg>
     ),
     gumloop: () => (
-        <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M17 7H7a5 5 0 0 0-5 5a5 5 0 0 0 5 5h10a5 5 0 0 0 5-5a5 5 0 0 0-5-5m0 8H7a3 3 0 0 1-3-3a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3a3 3 0 0 1-3 3Z" />
-        </svg>
+        <img src="/Gumloop.svg" alt="Gumloop Logo" className="w-full h-full object-contain dark:invert" />
     )
 }

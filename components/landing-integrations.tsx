@@ -40,18 +40,20 @@ export default function LandingIntegrations() {
     return (
         <section className="relative overflow-hidden py-24 sm:py-32">
             <div className="mx-auto max-w-7xl px-6 lg:px-8">
-                <div className="mx-auto max-w-2xl text-center">
-                    <h2 className="text-base font-semibold leading-7 text-primary">
-                        Universal Extraction
+                <div className="mx-auto max-w-2xl text-center flex flex-col items-center">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card/50 p-1 pr-3 text-xs backdrop-blur-md dark:border-zinc-800">
+                        <span className="rounded-full bg-foreground px-2.5 py-0.5 font-semibold text-background">
+                            Supported Platforms
+                        </span>
+                        <span className="text-muted-foreground font-medium">
+                            Scrape anyone, anywhere
+                        </span>
+                    </div>
+                    <h2 className="mt-6 text-3xl font-bold tracking-tight sm:text-4xl">
+                        Find Leads Exactly Where They Are Active
                     </h2>
-                    <p className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl sm:whitespace-nowrap">
-                        Stop Chasing Cold Data Capture Warm Intent
-                    </p>
-                    <p className="mt-6 text-lg leading-8 font-semibold text-foreground">
-                        Don&apos;t just scrape names — Find your next buyers.
-                    </p>
-                    <p className="mt-2 text-lg leading-8 text-muted-foreground">
-                        WarmAudience autonomously extracts highly-engaged prospects across every major social platform, delivering a pipeline of high-intent, ready-to-convert leads directly to your dashboard.
+                    <p className="mt-6 text-lg leading-8 text-muted-foreground">
+                        Stop wasting time chasing static databases. WarmAudience tracks real-time activity across LinkedIn, Instagram, Facebook, Google Maps, Twitter/X, and TikTok to extract high-intent prospects who are actively engaged.
                     </p>
                 </div>
 

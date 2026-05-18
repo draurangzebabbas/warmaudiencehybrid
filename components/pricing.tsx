@@ -102,13 +102,20 @@ export default function Pricing() {
         <section className="relative overflow-hidden py-24 md:py-32">
 
             <div className="mx-auto max-w-7xl px-6 lg:px-8">
-                <div className="mx-auto max-w-4xl text-center">
-                    <h2 className="text-base font-semibold leading-7 text-primary">Pricing</h2>
-                    <p className="mt-2 text-4xl font-bold tracking-tight sm:text-5xl">
-                        Audience at Scale
-                    </p>
+                <div className="mx-auto max-w-4xl text-center flex flex-col items-center">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card/50 p-1 pr-3 text-xs backdrop-blur-md dark:border-zinc-800">
+                        <span className="rounded-full bg-foreground px-2.5 py-0.5 font-semibold text-background">
+                            Simple Pricing
+                        </span>
+                        <span className="text-muted-foreground font-medium">
+                            No hidden limits
+                        </span>
+                    </div>
+                    <h2 className="mt-6 text-3xl font-bold tracking-tight sm:text-4xl">
+                        Audience Intelligence At Scale
+                    </h2>
                     <p className="mt-6 text-lg leading-8 text-muted-foreground">
-                        Stop paying per analytics record. Pay for the research environment and build your own proprietary audience intelligence.
+                        Stop paying high markups per lead record. Pay only for your research environment and build your own proprietary database.
                     </p>
                 </div>
 

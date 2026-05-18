@@ -110,12 +110,20 @@ export default function LandingHowItWorks() {
         <section ref={containerRef} className="relative overflow-hidden pt-24 pb-8 sm:pt-32 sm:pb-12">
 
             <div className="mx-auto max-w-7xl px-6 lg:px-8">
-                <div className="mx-auto max-w-2xl text-center">
-                    <p className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
+                <div className="mx-auto max-w-2xl text-center flex flex-col items-center">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card/50 p-1 pr-3 text-xs backdrop-blur-md dark:border-zinc-800">
+                        <span className="rounded-full bg-foreground px-2.5 py-0.5 font-semibold text-background">
+                            Platform Guide
+                        </span>
+                        <span className="text-muted-foreground font-medium">
+                            4 simple steps
+                        </span>
+                    </div>
+                    <h2 className="mt-6 text-3xl font-bold tracking-tight sm:text-4xl">
                         How WarmAudience Works
-                    </p>
+                    </h2>
                     <p className="mt-6 text-lg leading-8 text-muted-foreground">
-                        Build your proprietary audience research ecosystem in 4 simple steps.
+                        Build your proprietary audience research database and start booking high-intent meetings in minutes.
                     </p>
                 </div>
 
