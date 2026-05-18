@@ -1,3 +1,23 @@
+💡 How to use this in the future
+If you add, change, or update any keys in .env.vercel, simply run:
+
+powershell
+# Sync to Vercel Production (Default)
+node scripts/sync-vercel-env.js
+# Sync to Vercel Preview
+node scripts/sync-vercel-env.js .env.vercel preview
+# Sync to Vercel Development
+node scripts/sync-vercel-env.js .env.vercel development
+
+
+
+-----------------------------
+-----------------------------
+
+
+
+
+
 # 🛠️ Scripts Documentation
 
 This folder contains utility scripts for setting up and testing the Wise affiliate payout system.
