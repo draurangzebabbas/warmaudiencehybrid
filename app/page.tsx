@@ -8,6 +8,8 @@ import LandingHowToStart from "@/components/landing-how-to-start"
 import Pricing from "@/components/pricing"
 import FAQs from "@/components/faqs-2"
 import Footer from "@/components/footer"
+import LandingTestimonials from "@/components/landing-testimonials"
+import LandingOutboundIntegrations from "@/components/landing-outbound-integrations"
 import { Metadata } from "next"
 
 export const metadata: Metadata = {
@@ -49,6 +51,14 @@ export default function Home() {
 
         <div id="video-section">
           <LandingVideo />
+        </div>
+
+        <div id="testimonials">
+          <LandingTestimonials />
+        </div>
+
+        <div id="outbound-integrations">
+          <LandingOutboundIntegrations />
         </div>
 
         <div id="pricing">

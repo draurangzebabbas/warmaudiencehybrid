@@ -25,6 +25,7 @@ export interface AnimatedBeamProps {
   startYOffset?: number
   endXOffset?: number
   endYOffset?: number
+  ease?: any
 }
 
 export const AnimatedBeam: React.FC<AnimatedBeamProps> = ({
@@ -47,6 +48,7 @@ export const AnimatedBeam: React.FC<AnimatedBeamProps> = ({
   startYOffset = 0,
   endXOffset = 0,
   endYOffset = 0,
+  ease = [0.16, 1, 0.3, 1],
 }) => {
   const id = useId()
   const [pathD, setPathD] = useState("")
@@ -169,7 +171,7 @@ export const AnimatedBeam: React.FC<AnimatedBeamProps> = ({
           transition={{
             delay,
             duration,
-            ease: [0.16, 1, 0.3, 1], // https://easings.net/#easeOutExpo
+            ease, // Use ease prop
             repeat,
             repeatDelay,
           }}

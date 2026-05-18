@@ -23,72 +23,95 @@ export default function HeroSection() {
     return (
         <>
             <header>
-                <nav
-                    data-state={menuState && 'active'}
-                    className="fixed top-0 z-50 w-full border-b border-white/5 bg-background/30 backdrop-blur-md duration-300">
-                    <div className="m-auto max-w-5xl px-6">
-                        <div className="flex flex-wrap items-center justify-between gap-6 py-3 lg:gap-0 lg:py-4">
-                            <div className="flex w-full justify-between lg:w-auto">
-                                <Link
-                                    href="/"
-                                    aria-label="home"
-                                    className="flex items-center space-x-2">
+                <nav className="fixed top-0 z-50 w-full border-b border-border/40 bg-background/40 backdrop-blur-lg duration-300">
+                    <div className="mx-auto max-w-5xl px-6">
+                        <div className="flex h-16 items-center justify-between">
+                            {/* Logo */}
+                            <div className="flex items-center">
+                                <Link href="/" aria-label="home" className="flex items-center space-x-2">
                                     <Logo />
                                 </Link>
-
-                                <button
-                                    onClick={() => setMenuState(!menuState)}
-                                    aria-label={menuState == true ? 'Close Menu' : 'Open Menu'}
-                                    className="relative z-20 -m-2.5 -mr-4 block cursor-pointer p-2.5 lg:hidden">
-                                    <Menu className="in-data-[state=active]:rotate-180 in-data-[state=active]:scale-0 in-data-[state=active]:opacity-0 m-auto size-6 duration-200" />
-                                    <X className="in-data-[state=active]:rotate-0 in-data-[state=active]:scale-100 in-data-[state=active]:opacity-100 absolute inset-0 m-auto size-6 -rotate-180 scale-0 opacity-0 duration-200" />
-                                </button>
                             </div>
 
-                            <div className="bg-background/90 backdrop-blur-xl in-data-[state=active]:block lg:in-data-[state=active]:flex mb-6 hidden w-full flex-wrap items-center justify-end space-y-8 rounded-3xl border p-6 shadow-2xl shadow-zinc-300/20 md:flex-nowrap lg:m-0 lg:flex lg:w-fit lg:gap-6 lg:space-y-0 lg:border-transparent lg:bg-transparent lg:p-0 lg:shadow-none dark:shadow-none dark:lg:bg-transparent">
-                                <div className="lg:pr-4">
-                                    <ul className="space-y-6 text-base lg:flex lg:gap-8 lg:space-y-0 lg:text-sm">
-                                        {menuItems.map((item, index) => (
-                                            <li key={index}>
-                                                <Link
-                                                    href={item.href}
-                                                    className="text-muted-foreground hover:text-accent-foreground block duration-150">
-                                                    <span>{item.name}</span>
-                                                </Link>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
+                            {/* Desktop Menu Links */}
+                            <div className="hidden items-center gap-8 md:flex">
+                                {menuItems.map((item, index) => (
+                                    <Link
+                                        key={index}
+                                        href={item.href}
+                                        className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                                    >
+                                        {item.name}
+                                    </Link>
+                                ))}
+                            </div>
 
-                                <div className="flex w-full flex-col items-center space-y-3 sm:flex-row sm:gap-3 sm:space-y-0 md:w-fit lg:border-l lg:pl-6">
-                                    <ThemeToggle />
-                                    {session ? (
+                            {/* Desktop Right side buttons */}
+                            <div className="hidden items-center gap-4 md:flex">
+                                <ThemeToggle />
+                                {session ? (
+                                    <Button asChild size="sm">
+                                        <Link href="/dashboard">Dashboard</Link>
+                                    </Button>
+                                ) : (
+                                    <>
+                                        <Button asChild variant="outline" size="sm">
+                                            <Link href="/login">Login</Link>
+                                        </Button>
                                         <Button asChild size="sm">
+                                            <Link href="/signup">Sign Up</Link>
+                                        </Button>
+                                    </>
+                                )}
+                            </div>
+
+                            {/* Mobile menu button and theme toggle */}
+                            <div className="flex items-center gap-4 md:hidden">
+                                <ThemeToggle />
+                                <button
+                                    onClick={() => setMenuState(!menuState)}
+                                    className="inline-flex items-center justify-center rounded-md p-2 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                                    aria-label="Toggle menu"
+                                >
+                                    {menuState ? <X className="size-6" /> : <Menu className="size-6" />}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Mobile Navigation Dropdown */}
+                    {menuState && (
+                        <div className="border-t bg-background/95 backdrop-blur-lg px-6 py-4 md:hidden">
+                            <div className="flex flex-col space-y-3">
+                                {menuItems.map((item, index) => (
+                                    <Link
+                                        key={index}
+                                        href={item.href}
+                                        onClick={() => setMenuState(false)}
+                                        className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                                    >
+                                        {item.name}
+                                    </Link>
+                                ))}
+                                <div className="flex flex-col gap-2 pt-4 border-t border-border">
+                                    {session ? (
+                                        <Button asChild size="sm" className="w-full">
                                             <Link href="/dashboard">Dashboard</Link>
                                         </Button>
                                     ) : (
                                         <>
-                                            <Button
-                                                asChild
-                                                variant="outline"
-                                                size="sm">
-                                                <Link href="/login">
-                                                    <span>Login</span>
-                                                </Link>
+                                            <Button asChild variant="outline" size="sm" className="w-full">
+                                                <Link href="/login">Login</Link>
                                             </Button>
-                                            <Button
-                                                asChild
-                                                size="sm">
-                                                <Link href="/signup">
-                                                    <span>Sign Up</span>
-                                                </Link>
+                                            <Button asChild size="sm" className="w-full">
+                                                <Link href="/signup">Sign Up</Link>
                                             </Button>
                                         </>
                                     )}
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    )}
                 </nav>
             </header>
 

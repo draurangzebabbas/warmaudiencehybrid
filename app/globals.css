@@ -171,3 +171,27 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Testimonial Marquee Custom Animations */
+@keyframes marquee-scroll-up {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-50%); }
+}
+@keyframes marquee-scroll-down {
+  0% { transform: translateY(-50%); }
+  100% { transform: translateY(0); }
+}
+.animate-marquee-up {
+  animation: marquee-scroll-up 35s linear infinite;
+}
+.animate-marquee-down {
+  animation: marquee-scroll-down 35s linear infinite;
+}
+.animate-marquee-up:hover,
+.animate-marquee-down:hover {
+  animation-play-state: paused;
+}
+.mask-fade-vertical {
+  mask-image: linear-gradient(to bottom, transparent, white 15%, white 85%, transparent);
+  -webkit-mask-image: linear-gradient(to bottom, transparent, white 15%, white 85%, transparent);
+}

@@ -3,13 +3,14 @@
 import React, { forwardRef, useRef } from "react"
 import { cn } from "@/lib/utils"
 import { AnimatedBeam } from "@/components/ui/animated-beam"
+import { motion } from "motion/react"
 
 import { LogoIcon } from "@/components/logo"
 
 const Circle = forwardRef<
     HTMLDivElement,
-    { className?: string; children?: React.ReactNode }
->(({ className, children }, ref) => {
+    { className?: string; children?: React.ReactNode; style?: React.CSSProperties }
+>(({ className, children, style }, ref) => {
     return (
         <div
             ref={ref}
@@ -17,6 +18,7 @@ const Circle = forwardRef<
                 "z-10 flex size-12 items-center justify-center rounded-full border-2 bg-background p-3 shadow-[0_0_20px_-12px_rgba(0,0,0,0.8)]",
                 className
             )}
+            style={style}
         >
             {children}
         </div>
@@ -55,49 +57,83 @@ export default function LandingIntegrations() {
 
                 <div className="mt-16 flex items-center justify-center">
                     <div
-                        className="relative flex h-[400px] w-full max-w-4xl items-center justify-center overflow-hidden p-10"
+                        className="relative flex h-[500px] w-full max-w-xl items-center justify-center overflow-hidden p-10"
                         ref={containerRef}
                     >
-                        <div className="flex size-full flex-col items-stretch justify-between gap-10">
-                            <div className="flex flex-row items-center justify-between">
-                                <Circle ref={div1Ref}>
+                        <div className="flex size-full max-w-md flex-row items-stretch justify-between gap-10">
+                            {/* Column 1 (Left): Outer social sources */}
+                            <div className="flex flex-col justify-center gap-4">
+                                <Circle ref={div1Ref} className="hover:scale-110 transition-transform duration-300 cursor-pointer border-muted-foreground/20">
                                     <Icons.linkedin />
                                 </Circle>
-                                <Circle ref={div5Ref}>
+                                <Circle ref={div5Ref} className="hover:scale-110 transition-transform duration-300 cursor-pointer border-muted-foreground/20">
                                     <Icons.facebook />
                                 </Circle>
-                            </div>
-                            <div className="flex flex-row items-center justify-between">
-                                <Circle ref={div2Ref}>
+                                <Circle ref={div2Ref} className="hover:scale-110 transition-transform duration-300 cursor-pointer border-muted-foreground/20">
                                     <Icons.instagram />
                                 </Circle>
-                                <Circle ref={div4Ref} className="size-20 border-4 p-4 shadow-xl">
-                                    <LogoIcon className="h-full w-full" />
-                                </Circle>
-                                <Circle ref={div6Ref}>
+                                <Circle ref={div6Ref} className="hover:scale-110 transition-transform duration-300 cursor-pointer border-muted-foreground/20">
                                     <Icons.googlemap />
                                 </Circle>
-                            </div>
-                            <div className="flex flex-row items-center justify-between">
-                                <Circle ref={div3Ref}>
+                                <Circle ref={div3Ref} className="hover:scale-110 transition-transform duration-300 cursor-pointer border-muted-foreground/20">
                                     <Icons.x />
                                 </Circle>
-                                <Circle ref={div7Ref}>
+                                <Circle ref={div7Ref} className="hover:scale-110 transition-transform duration-300 cursor-pointer border-muted-foreground/20">
                                     <Icons.tiktok />
+                                </Circle>
+                            </div>
+                            {/* Column 2 (Right): Central Hub */}
+                            <div className="flex flex-col justify-center">
+                                <Circle 
+                                    ref={div4Ref} 
+                                    className="size-20 border-4 p-4 shadow-xl"
+                                >
+                                    <motion.div 
+                                        className="h-full w-full flex items-center justify-center"
+                                        animate={{
+                                            scale: [1.15, 1, 1, 1, 1.15],
+                                            filter: [
+                                                "drop-shadow(0 0 20px hsl(var(--primary)))",
+                                                "drop-shadow(0 0 0px transparent)",
+                                                "drop-shadow(0 0 0px transparent)",
+                                                "drop-shadow(0 0 0px transparent)",
+                                                "drop-shadow(0 0 20px hsl(var(--primary)))",
+                                            ],
+                                        }}
+                                        transition={{
+                                            duration: 3,
+                                            ease: "linear",
+                                            repeat: Infinity,
+                                        }}
+                                    >
+                                        <LogoIcon className="h-full w-full" />
+                                    </motion.div>
                                 </Circle>
                             </div>
                         </div>
 
-                        {/* Beams from sources to Dashboard */}
+                        {/* Animated Beams flowing Left -> Right (monochromatic) */}
                         <AnimatedBeam
                             containerRef={containerRef}
                             fromRef={div1Ref}
                             toRef={div4Ref}
-                            curvature={-75}
-                            endYOffset={-10}
                             pathColor="var(--border)"
                             gradientStartColor="#737373"
                             gradientStopColor="#a3a3a3"
+                            duration={3}
+                            delay={0}
+                            ease="linear"
+                        />
+                        <AnimatedBeam
+                            containerRef={containerRef}
+                            fromRef={div5Ref}
+                            toRef={div4Ref}
+                            pathColor="var(--border)"
+                            gradientStartColor="#737373"
+                            gradientStopColor="#a3a3a3"
+                            duration={3}
+                            delay={0}
+                            ease="linear"
                         />
                         <AnimatedBeam
                             containerRef={containerRef}
@@ -106,53 +142,47 @@ export default function LandingIntegrations() {
                             pathColor="var(--border)"
                             gradientStartColor="#737373"
                             gradientStopColor="#a3a3a3"
-                        />
-                        <AnimatedBeam
-                            containerRef={containerRef}
-                            fromRef={div3Ref}
-                            toRef={div4Ref}
-                            curvature={75}
-                            endYOffset={10}
-                            pathColor="var(--border)"
-                            gradientStartColor="#737373"
-                            gradientStopColor="#a3a3a3"
-                        />
-
-                        {/* Beams from Right Side to Dashboard */}
-                        <AnimatedBeam
-                            containerRef={containerRef}
-                            fromRef={div5Ref}
-                            toRef={div4Ref}
-                            curvature={-75}
-                            endYOffset={-10}
-                            reverse
-                            pathColor="var(--border)"
-                            gradientStartColor="#737373"
-                            gradientStopColor="#a3a3a3"
+                            duration={3}
+                            delay={0}
+                            ease="linear"
                         />
                         <AnimatedBeam
                             containerRef={containerRef}
                             fromRef={div6Ref}
                             toRef={div4Ref}
-                            reverse
                             pathColor="var(--border)"
                             gradientStartColor="#737373"
                             gradientStopColor="#a3a3a3"
+                            duration={3}
+                            delay={0}
+                            ease="linear"
+                        />
+                        <AnimatedBeam
+                            containerRef={containerRef}
+                            fromRef={div3Ref}
+                            toRef={div4Ref}
+                            pathColor="var(--border)"
+                            gradientStartColor="#737373"
+                            gradientStopColor="#a3a3a3"
+                            duration={3}
+                            delay={0}
+                            ease="linear"
                         />
                         <AnimatedBeam
                             containerRef={containerRef}
                             fromRef={div7Ref}
                             toRef={div4Ref}
-                            curvature={75}
-                            endYOffset={10}
-                            reverse
                             pathColor="var(--border)"
                             gradientStartColor="#737373"
                             gradientStopColor="#a3a3a3"
+                            duration={3}
+                            delay={0}
+                            ease="linear"
                         />
                     </div>
                 </div>
             </div>
+
         </section>
     )
 }
