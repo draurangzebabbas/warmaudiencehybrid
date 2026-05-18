@@ -50,15 +50,15 @@ export default function HeroSection() {
                             <div className="hidden items-center gap-4 md:flex">
                                 <ThemeToggle />
                                 {session ? (
-                                    <Button asChild size="sm">
+                                    <Button asChild size="sm" className="rounded-full px-5 hover:scale-[1.03] active:scale-[0.97] transition-all duration-200">
                                         <Link href="/dashboard">Dashboard</Link>
                                     </Button>
                                 ) : (
                                     <>
-                                        <Button asChild variant="outline" size="sm">
+                                        <Button asChild variant="outline" size="sm" className="rounded-full px-5 hover:scale-[1.03] active:scale-[0.97] transition-all duration-200">
                                             <Link href="/login">Login</Link>
                                         </Button>
-                                        <Button asChild size="sm">
+                                        <Button asChild size="sm" className="rounded-full px-5 hover:scale-[1.03] active:scale-[0.97] transition-all duration-200">
                                             <Link href="/signup">Sign Up</Link>
                                         </Button>
                                     </>
@@ -95,15 +95,15 @@ export default function HeroSection() {
                                 ))}
                                 <div className="flex flex-col gap-2 pt-4 border-t border-border">
                                     {session ? (
-                                        <Button asChild size="sm" className="w-full">
+                                        <Button asChild size="sm" className="w-full rounded-full py-5 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200">
                                             <Link href="/dashboard">Dashboard</Link>
                                         </Button>
                                     ) : (
                                         <>
-                                            <Button asChild variant="outline" size="sm" className="w-full">
+                                            <Button asChild variant="outline" size="sm" className="w-full rounded-full py-5 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200">
                                                 <Link href="/login">Login</Link>
                                             </Button>
-                                            <Button asChild size="sm" className="w-full">
+                                            <Button asChild size="sm" className="w-full rounded-full py-5 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200">
                                                 <Link href="/signup">Sign Up</Link>
                                             </Button>
                                         </>
@@ -220,7 +220,9 @@ export default function HeroSection() {
 
                         <Button
                             asChild
-                            size="lg">
+                            size="lg"
+                            className="rounded-full px-8 py-6 text-sm font-semibold shadow-lg shadow-primary/10 hover:shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
+                        >
                             <Link href={session ? "/dashboard" : "/signup"}>
                                 <span className="btn-label">{session ? "Go to Dashboard" : "Get your leads for free"}</span>
                             </Link>

@@ -133,7 +133,7 @@ export default function Pricing() {
                             <Button
                                 asChild
                                 variant="outline"
-                                className="mt-6 w-full"
+                                className="mt-6 w-full rounded-full py-5 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
                             >
                                 <Link href={session ? "/dashboard" : "/signup"}>
                                     {session ? (!activeSubscription ? "Current Plan" : "Downgrade") : "Start for Free"}
@@ -172,7 +172,7 @@ export default function Pricing() {
                             <Button
                                 onClick={() => handleCheckout("pro")}
                                 disabled={loading === "pro" || activeSubscription === "pro"}
-                                className="mt-6 w-full shadow-lg shadow-primary/20"
+                                className="mt-6 w-full rounded-full py-5 shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
                             >
                                 {loading === "pro" ? "Processing..." : activeSubscription === "pro" ? "Current Plan" : activeSubscription ? "Switch to Growth" : "Get Growth Access"}
                             </Button>
@@ -208,7 +208,7 @@ export default function Pricing() {
                                 onClick={() => handleCheckout("elite")}
                                 disabled={loading === "elite" || activeSubscription === "elite"}
                                 variant="outline"
-                                className="mt-6 w-full"
+                                className="mt-6 w-full rounded-full py-5 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
                             >
                                 {loading === "elite" ? "Processing..." : activeSubscription === "elite" ? "Current Plan" : activeSubscription ? "Switch to Scale" : "Get Scale Access"}
                             </Button>

@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { ArrowRight, Sparkles } from "lucide-react"
+import { Sparkles } from "lucide-react"
 import { authClient } from "@/lib/auth-client"
 
 export default function LandingCTA() {
@@ -31,21 +31,19 @@ export default function LandingCTA() {
 
                     <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
                         {session ? (
-                            <Button size="lg" asChild className="group w-full sm:w-auto">
+                            <Button size="lg" asChild className="w-full sm:w-auto rounded-full px-8 py-6 text-sm font-semibold shadow-lg shadow-primary/10 hover:shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200">
                                 <Link href="/dashboard">
                                     Go to Dashboard
-                                    <ArrowRight className="ml-2 size-4 transition-transform group-hover:translate-x-1" />
                                 </Link>
                             </Button>
                         ) : (
                             <>
-                                <Button size="lg" asChild className="group w-full sm:w-auto">
+                                <Button size="lg" asChild className="w-full sm:w-auto rounded-full px-8 py-6 text-sm font-semibold shadow-lg shadow-primary/10 hover:shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200">
                                     <Link href="/signup">
                                         Start Free Trial
-                                        <ArrowRight className="ml-2 size-4 transition-transform group-hover:translate-x-1" />
                                     </Link>
                                 </Button>
-                                <Button size="lg" variant="outline" asChild className="w-full sm:w-auto">
+                                <Button size="lg" variant="outline" asChild className="w-full sm:w-auto rounded-full px-8 py-6 text-sm font-semibold hover:scale-[1.02] active:scale-[0.98] transition-all duration-200">
                                     <Link href="/login">
                                         Sign In
                                     </Link>

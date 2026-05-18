@@ -57,13 +57,17 @@ const SubscribeForm = () => {
       <Input
         type="email"
         placeholder="Enter your email"
-        className="grow max-w-64"
+        className="grow max-w-64 rounded-full px-4 h-10"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         required
         disabled={status === "loading"}
       />
-      <Button type="submit" disabled={status === "loading"}>
+      <Button
+        type="submit"
+        disabled={status === "loading"}
+        className="rounded-full px-5 hover:scale-[1.03] active:scale-[0.97] transition-all duration-200"
+      >
         {status === "loading" ? "..." : "Subscribe"}
       </Button>
     </form>

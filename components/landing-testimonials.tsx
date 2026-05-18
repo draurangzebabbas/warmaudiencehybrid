@@ -185,9 +185,8 @@ export default function LandingTestimonials() {
                         size="lg" 
                         className="rounded-full px-8 py-6 text-sm font-semibold shadow-lg shadow-primary/10 hover:shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
                     >
-                        <Link href="/signup" className="flex items-center gap-2">
+                        <Link href="/signup">
                             Launch your AI Agent for free
-                            <ArrowRight className="size-4" />
                         </Link>
                     </Button>
                 </div>
