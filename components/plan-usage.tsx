@@ -126,7 +126,7 @@ export function PlanUsage() {
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2 text-sm font-semibold">
                                 <IconRadar className="size-4 text-primary" />
-                                <span>Active Trackers</span>
+                                <span>Active Agents</span>
                             </div>
                             <div className="text-right">
                                 <span className="font-bold">{currentUsage.trackers}</span>
@@ -137,7 +137,7 @@ export function PlanUsage() {
                         <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                             <span>Continuous monitoring</span>
                             <span className="text-primary">
-                                {currentUsage.trackersLimit - currentUsage.trackers} Trackers Left
+                                {currentUsage.trackersLimit - currentUsage.trackers} Agents Left
                             </span>
                         </div>
                     </div>

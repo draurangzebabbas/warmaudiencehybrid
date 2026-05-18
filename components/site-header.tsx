@@ -19,7 +19,10 @@ export function SiteHeader() {
     if (path.includes("/affiliate")) return "Affiliate Dashboard"
     if (path.includes("/my-leads")) return "My Leads"
     if (path.includes("/scrapers")) return "Researcher"
-    if (path.includes("/trackers")) return "Trackers"
+    if (path.includes("/trackers")) return "My Agents"
+    if (path.includes("/x-researcher")) return "X Lead Researcher"
+    if (path.includes("/tiktok-researcher")) return "TikTok Lead Researcher"
+    if (path.includes("/facebook-researcher")) return "Facebook Lead Researcher"
     if (path.includes("/settings")) return "Settings"
     return "WarmAudience"
   }

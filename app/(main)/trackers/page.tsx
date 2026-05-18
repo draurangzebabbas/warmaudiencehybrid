@@ -129,10 +129,10 @@ export default function TrackersPage() {
 
             if (!res.ok) {
                 const err = await res.json();
-                throw new Error(err.error || "Failed to create tracker");
+                throw new Error(err.error || "Failed to launch agent");
             }
 
-            toast.success(`Tracker created successfully`);
+            toast.success(`Agent launched successfully`);
             setTargetValue("");
             setIsDialogOpen(false);
             fetchTrackers();
@@ -156,7 +156,7 @@ export default function TrackersPage() {
                 .eq("id", id);
             
             if (error) throw error;
-            toast.success(isActive ? "Tracker resumed" : "Tracker paused");
+            toast.success(isActive ? "Agent resumed" : "Agent paused");
             fetchTrackers();
         } catch (e: any) {
             toast.error("Failed to update status");
@@ -164,7 +164,7 @@ export default function TrackersPage() {
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm("Are you sure you want to delete this tracker?")) return;
+        if (!confirm("Are you sure you want to delete this agent?")) return;
         try {
             const token = await getToken();
             if (!token) throw new Error("Unauthorized");
@@ -176,17 +176,17 @@ export default function TrackersPage() {
                 .eq("id", id);
             
             if (error) throw error;
-            toast.success("Tracker deleted");
+            toast.success("Agent deleted");
             fetchTrackers();
         } catch (e: any) {
-            toast.error("Failed to delete tracker");
+            toast.error("Failed to delete agent");
         }
     };
 
     const columns: ColumnDef<Tracker>[] = [
         {
             accessorKey: "target_type",
-            header: "Tracking Type",
+            header: "Agent Type",
             cell: ({ row }) => (
                 <Badge variant="outline" className="capitalize">
                     {row.original.target_type}
@@ -268,9 +268,9 @@ export default function TrackersPage() {
         <div className="p-0 space-y-6" suppressHydrationWarning>
             <div className="px-6 pt-6 md:px-8 md:pt-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Automated Trackers</h1>
+                    <h1 className="text-3xl font-bold tracking-tight">Automated Agents</h1>
                     <p className="text-muted-foreground text-sm">
-                        Automatically monitor keywords and profiles for new activity.
+                        Automatically monitor keywords and profiles with automated agents.
                     </p>
                 </div>
                 <Dialog open={isDialogOpen} onOpenChange={(open) => {
@@ -283,19 +283,19 @@ export default function TrackersPage() {
                     <DialogTrigger asChild>
                         <Button>
                             <Plus className="mr-2 h-4 w-4" />
-                            Add New Tracker
+                            Launch New Agent
                         </Button>
                     </DialogTrigger>
                     <DialogContent>
                         <DialogHeader>
-                            <DialogTitle>Create Tracker</DialogTitle>
+                            <DialogTitle>Launch Agent</DialogTitle>
                             <DialogDescription>
                                 {isLimitReached ? (
                                     <span className="text-destructive font-medium">
-                                        You have reached your limit of {trackersLimit} tracker(s). Please upgrade to add more.
+                                        You have reached your limit of {trackersLimit} agent(s). Please upgrade to add more.
                                     </span>
                                 ) : (
-                                    "Set up automated LinkedIn monitoring."
+                                    "Set up automated LinkedIn monitoring agent."
                                 )}
                             </DialogDescription>
                         </DialogHeader>
@@ -373,7 +373,7 @@ export default function TrackersPage() {
                             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
                             <Button onClick={handleCreateTracker} disabled={actionLoading}>
                                 {actionLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Start Tracking
+                                Launch Agent
                             </Button>
                         </DialogFooter>
                     </DialogContent>
@@ -383,8 +383,8 @@ export default function TrackersPage() {
             <div className="px-6 md:px-8 pb-8">
                 <Card className="border-none shadow-none bg-transparent">
                     <CardHeader className="px-0 pt-0">
-                        <CardTitle>Active Trackers</CardTitle>
-                        <CardDescription>Your current automated monitoring tasks.</CardDescription>
+                        <CardTitle>Active Agents</CardTitle>
+                        <CardDescription>Your current automated monitoring agents.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <GenericTrackerTable
@@ -461,7 +461,7 @@ function GenericTrackerTable<TData, TValue>({
                         ) : (
                             <TableRow>
                                 <TableCell colSpan={columns.length} className="h-24 text-center text-muted-foreground">
-                                    No active trackers.
+                                    No active agents.
                                 </TableCell>
                             </TableRow>
                         )}

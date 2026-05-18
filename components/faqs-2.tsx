@@ -80,7 +80,7 @@ export default function FAQsTwo() {
                 <p className="text-muted-foreground mt-8 text-center text-sm">
                     Can't find what you're looking for? Contact our{' '}
                     <Link
-                        href="#"
+                        href="/contact"
                         className="text-primary font-medium hover:underline">
                         customer support team
                     </Link>

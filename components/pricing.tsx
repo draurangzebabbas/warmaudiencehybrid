@@ -125,7 +125,7 @@ export default function Pricing() {
                     <Card className="flex flex-col justify-between border-border bg-card/50 backdrop-blur-sm transition-all hover:border-primary/20">
                         <CardHeader>
                             <CardTitle className="text-xl font-bold">Free</CardTitle>
-                            <CardDescription>Test drive the research tools.</CardDescription>
+                            <CardDescription>Perfect for testing scrapers and setting up your initial research environment.</CardDescription>
                             <div className="mt-4 flex items-baseline gap-x-2">
                                 <span className="text-4xl font-bold tracking-tight">$0</span>
                                 <span className="text-muted-foreground">/month</span>
@@ -143,10 +143,11 @@ export default function Pricing() {
                         <CardContent>
                             <ul role="list" className="space-y-3 text-sm leading-6 text-muted-foreground">
                                 {[
-                                    '1,000 Saved Profiles',
-                                    '1 Active Tracker',
-                                    'All 6 Research Tools Included',
-                                    'Basic Audience Data'
+                                    '1,000 Total Saved Leads',
+                                    '1 Active Agent Monitor',
+                                    'Full Access to All Platforms',
+                                    'Smart Deduplication & Cache',
+                                    'Standard CSV Lead Exports'
                                 ].map((feature) => (
                                     <li key={feature} className="flex gap-x-3">
                                         <Check className="h-6 w-5 flex-none text-primary" aria-hidden="true" />
@@ -164,7 +165,7 @@ export default function Pricing() {
                         </div>
                         <CardHeader>
                             <CardTitle className="text-xl font-bold">Growth</CardTitle>
-                            <CardDescription>Perfect for professional researchers.</CardDescription>
+                            <CardDescription>Ideal for founders and sales teams who need a constant stream of high-intent leads.</CardDescription>
                             <div className="mt-4 flex items-baseline gap-x-2">
                                 <span className="text-4xl font-bold tracking-tight">$29</span>
                                 <span className="text-muted-foreground">/month</span>
@@ -180,11 +181,12 @@ export default function Pricing() {
                         <CardContent>
                             <ul role="list" className="space-y-3 text-sm leading-6 text-muted-foreground">
                                 {[
-                                    '10,000 Saved Profiles',
-                                    '50 Active Trackers',
-                                    'Automated Audience Enrichment',
-                                    'Smart Analytics (Save 80%+)',
-                                    'Advanced Intelligence Filters'
+                                    '10,000 Total Saved Leads',
+                                    '50 Active Agent Monitors',
+                                    'Extract Emails, Phones & Socials',
+                                    'Advanced Intelligence Lead Filters',
+                                    'Multi-Keyword & Bulk Scraping',
+                                    'Save 80%+ on Apify Compute Caching'
                                 ].map((feature) => (
                                     <li key={feature} className="flex gap-x-3 text-foreground">
                                         <CheckCircle2 className="h-6 w-5 flex-none text-primary" aria-hidden="true" />
@@ -199,7 +201,7 @@ export default function Pricing() {
                     <Card className="flex flex-col justify-between border-border bg-card/50 backdrop-blur-sm transition-all hover:border-primary/20">
                         <CardHeader>
                             <CardTitle className="text-xl font-bold">Scale</CardTitle>
-                            <CardDescription>High-velocity audience discovery.</CardDescription>
+                            <CardDescription>Designed for agencies, outbound campaigns, and maximum database velocity.</CardDescription>
                             <div className="mt-4 flex items-baseline gap-x-2">
                                 <span className="text-4xl font-bold tracking-tight">$59</span>
                                 <span className="text-muted-foreground">/month</span>
@@ -216,11 +218,12 @@ export default function Pricing() {
                         <CardContent>
                             <ul role="list" className="space-y-3 text-sm leading-6 text-muted-foreground">
                                 {[
-                                    'Unlimited Saved Profiles',
-                                    '500 Active Trackers',
-                                    'Unlimited Data Exports',
-                                    'Priority Research Execution',
-                                    'Early Access to Intelligence Tools'
+                                    'Unlimited Saved Leads Database',
+                                    '500 Active Agent Monitors',
+                                    'Priority Scrape Queue Execution',
+                                    'Unlimited Webhook Integrations',
+                                    'Early Access to Social Extractors',
+                                    'Priority Setup & Computes Support'
                                 ].map((feature) => (
                                     <li key={feature} className="flex gap-x-3">
                                         <Check className="h-6 w-5 flex-none text-primary" aria-hidden="true" />

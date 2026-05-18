@@ -2,7 +2,7 @@
 import { action } from "./_generated/server";
 import { v } from "convex/values";
 import { api } from "./_generated/api";
-import crypto from "crypto";
+import { validateEvent, WebhookVerificationError } from "@polar-sh/sdk/webhooks";
 
 /**
  * AUTHORITATIVE WEBHOOK HANDLER (Convex-Side)
@@ -27,36 +27,15 @@ export const handlePolarWebhook = action({
 
         // 1. Standard Webhooks (Svix) Signature Verification
         try {
-            const whId = headers["webhook-id"] || headers["polar-webhook-id"];
-            const whTimestamp = headers["webhook-timestamp"] || headers["polar-webhook-timestamp"];
-            const whSignature = headers["webhook-signature"] || headers["polar-signature"];
-
-            if (!whId || !whTimestamp || !whSignature) {
-                console.error("❌ [Webhook Trace] Missing Webhook Headers");
-                return { status: 400, message: "Missing Headers" };
-            }
-
-            const signedContent = `${whId}.${whTimestamp}.${payload}`;
-            // Polar secrets are base64 encoded
-            const secretKey = Buffer.from(secret.replace("polar_whs_", ""), "base64");
-
-            const computedSignature = crypto
-                .createHmac("sha256", secretKey)
-                .update(signedContent)
-                .digest("base64");
-
-            const signatures = whSignature.split(" ");
-            const passed = signatures.some((s: string) => {
-                const parts = s.split(",");
-                const sig = parts.length > 1 ? parts[1] : parts[0];
-                return sig === computedSignature;
-            });
-
-            if (!passed) {
-                console.error("❌ [Webhook Trace] Signature Mismatch!");
-                console.log("🔍 Expected:", computedSignature);
-                console.log("🔍 Provided:", whSignature);
-                return { status: 401, message: "Invalid Signature" };
+            try {
+                validateEvent(payload, headers, secret);
+            } catch (err) {
+                if (err instanceof WebhookVerificationError) {
+                    console.error("❌ [Webhook Trace] Signature Mismatch via Polar SDK!", err.message);
+                    return { status: 401, message: "Invalid Signature" };
+                }
+                console.error("❌ [Webhook Trace] Webhook Validation Error:", err);
+                return { status: 400, message: "Validation Failed" };
             }
 
             console.log("✅ [Webhook Trace] Signature Verified");
