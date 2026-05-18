@@ -237,14 +237,14 @@ export default function HeroSection() {
                             <div className="lg:h-176 rotate-x-20 mask-b-from-55% mask-b-to-100% mask-r-from-75% skew-x-12 pl-6 pt-6">
                                 <Image
                                     className="rounded-(--radius) border shadow-xl dark:hidden"
-                                    src="/Warmaudience-Profiles-Screenshot-Light-Version.png"
+                                    src="/Warmaudience-Profiles-Screenshot-Light-Versions.png"
                                     alt="WarmAudience dashboard preview"
                                     width={2880}
                                     height={2074}
                                 />
                                 <Image
                                     className="rounded-(--radius) hidden border shadow-xl dark:block"
-                                    src="/Warmaudience-Profiles-Screenshot-Dark-Version.png"
+                                    src="/Warmaudience-Profiles-Screenshot-Dark-Versions.png"
                                     alt="WarmAudience dashboard preview"
                                     width={2880}
                                     height={2074}
