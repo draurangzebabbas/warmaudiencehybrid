@@ -20,7 +20,7 @@ const testimonials: Testimonial[] = [
         name: "Kenny Saad",
         role: "CEO",
         company: "Vision Media",
-        avatar: "KS",
+        avatar: "/testimonials/kenny-saad.jpg",
         content: "WarmAudience is solving the hardest problem in outbound: finding high-intent leads. We booked 5 demos from our first batch of 30 leads.",
         rating: 5
     },
@@ -28,7 +28,7 @@ const testimonials: Testimonial[] = [
         name: "Maxime Le Morillon",
         role: "Head of Sales",
         company: "MarketScale Agency",
-        avatar: "MM",
+        avatar: "/testimonials/maxime-le-morillon.jpg",
         content: "We used to waste hours prospecting manually. Now, we get high-quality warm leads with clear buying intent delivered directly to our pipeline every morning.",
         rating: 5
     },
@@ -36,7 +36,7 @@ const testimonials: Testimonial[] = [
         name: "Alessandro Paladin",
         role: "Co-Founder",
         company: "KubaLabs",
-        avatar: "AP",
+        avatar: "/testimonials/alessandro-paladin.jpg",
         content: "We tracked users engaging with our competitors on Twitter and Instagram. WarmAudience captured them in minutes. The conversion rates are insane.",
         rating: 5
     },
@@ -44,7 +44,7 @@ const testimonials: Testimonial[] = [
         name: "Amin Lams",
         role: "CEO",
         company: "TheLams.io Agency",
-        avatar: "AL",
+        avatar: "/testimonials/amin-lams.jpg",
         content: "A complete game-changer for B2B. Their automated Google Maps and Instagram scraping features have filled our outbound sales pipeline within a week.",
         rating: 5
     },
@@ -52,7 +52,7 @@ const testimonials: Testimonial[] = [
         name: "Sarah Chen",
         role: "Growth Lead",
         company: "SaaSify",
-        avatar: "SC",
+        avatar: "/testimonials/sarah-chen.jpg",
         content: "The intent tracking is unmatched. Instead of sending thousands of cold emails, we now only contact prospects who are actively showing warm buying signals.",
         rating: 5
     },
@@ -60,7 +60,7 @@ const testimonials: Testimonial[] = [
         name: "Marcus Brodin",
         role: "Founder",
         company: "OutreachFlow",
-        avatar: "MB",
+        avatar: "/testimonials/marcus-brodin.jpg",
         content: "Absolutely stellar tool. It took us less than 10 minutes to set up our first researcher stream, and we have already closed two new enterprise accounts.",
         rating: 5
     },
@@ -68,7 +68,7 @@ const testimonials: Testimonial[] = [
         name: "Elena Rostova",
         role: "Operations Director",
         company: "LeadGenius",
-        avatar: "ER",
+        avatar: "/testimonials/elena-rostova.jpg",
         content: "We shifted all our outbound campaigns to WarmAudience. Our sales representatives are far happier, and our outbound meetings booked grew by 180%.",
         rating: 5
     },
@@ -76,7 +76,7 @@ const testimonials: Testimonial[] = [
         name: "David Miller",
         role: "Co-Founder",
         company: "DevScale",
-        avatar: "DM",
+        avatar: "/testimonials/david-miller.jpg",
         content: "The high-fidelity metadata enrichment is what sets it apart. Getting clean, verified business emails, social handles, and phones instantly is pure magic.",
         rating: 5
     },
@@ -84,7 +84,7 @@ const testimonials: Testimonial[] = [
         name: "Sophia Varga",
         role: "VP of Sales",
         company: "CloudFlow",
-        avatar: "SV",
+        avatar: "/testimonials/sophia-varga.jpg",
         content: "Finding warm outbound leads has never been this simple. The auto-enrichment processes raw target URLs into pristine prospects automatically.",
         rating: 5
     }
@@ -100,9 +100,11 @@ const TestimonialCard = ({ name, role, company, avatar, content }: Testimonial) 
         <div className="relative overflow-hidden rounded-3xl border border-border/50 bg-card/50 p-6 backdrop-blur-md transition-all duration-300 hover:border-border/80 dark:bg-card/40 dark:hover:bg-card/60">
             {/* User Profile Info */}
             <div className="flex items-center gap-3">
-                <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-sm font-semibold text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200">
-                    {avatar}
-                </div>
+                <img 
+                    src={avatar} 
+                    alt={name} 
+                    className="size-10 shrink-0 rounded-full object-cover border border-border/50 bg-muted" 
+                />
                 <div className="min-w-0">
                     <span className="block text-sm font-bold text-foreground truncate">{name}</span>
                     <span className="block text-xs text-muted-foreground truncate">{role} @ {company}</span>

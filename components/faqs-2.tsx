@@ -8,32 +8,37 @@ export default function FAQsTwo() {
         {
             id: 'item-1',
             question: 'What is WarmAudience?',
-            answer: 'WarmAudience is a professional research platform and audience intelligence workspace. It helps you collect, enrich, and organize professional profile data and engagement trends to build your own proprietary dataset.',
+            answer: 'WarmAudience is an advanced B2B audience intelligence and automated research workspace. It enables sales teams and founders to identify, enrich, and organize high-intent prospects based on real-time social engagement, building a proprietary database of ready-to-buy leads.',
         },
         {
             id: 'item-2',
-            question: 'How does the "Bring Your Own Key" (BYOK) model work?',
-            answer: 'Instead of charging you a massive markup for data, we provide the automation software. You simply add your own third-party API keys (like Apify). This model allows you to use free quotas or pay at-cost, saving you thousands of dollars compared to traditional agencies.',
+            question: 'How does WarmAudience discover warm leads?',
+            answer: 'WarmAudience monitors live interactions across major networks. When prospects engage with your competitors, post about specific industry keywords, or show active interest in your niche, our platform captures their profiles, verifies their contact info, and serves them to your dashboard instantly.',
         },
         {
             id: 'item-3',
-            question: 'What can I track with the Tracker system?',
-            answer: 'This tracking system if for when you add any keyword or profile to tracke and select duration it would automaticaly fetch new posts from these and add the engagers of these posts in your profiles table.',
+            question: 'What platforms and networks are supported?',
+            answer: 'You can discover and track warm prospects across six key networks: LinkedIn, Instagram, Twitter/X, TikTok, Facebook, and Google Maps. This omni-channel capability ensures you can find active leads no matter where they do business.',
         },
         {
             id: 'item-4',
-            question: 'Can I export my research to other tools?',
-            answer: 'Yes! Every profile you research can be exported to CSV. This makes it easy to move your enriched list into your CRM, email outreach tool, or even a local spreadsheet for further analysis.',
+            question: 'What contact details and intelligence are enriched?',
+            answer: 'For every prospect, WarmAudience retrieves extensive metadata including professional titles, company details, verified business emails, phone numbers, website URLs, social handles, and engagement history—giving you everything needed for highly personalized outbound campaigns.',
         },
         {
             id: 'item-5',
-            question: 'How do I maximize my free plan?',
-            answer: 'Our free plan is designed to be highly useful. You can research and save profiles up to your limit, export them to your own machine, and then clear your workspace to start a new batch. We are here to help you grow, not gate your success.',
+            question: 'How does the Agents work?',
+            answer: 'Simply enter any keyword, competitor profile, or target URL and set a duration. The Agents runs 24/7 in the background, automatically monitoring new activity, capturing everyone who engages with those posts, and importing them straight to your pipeline.',
         },
         {
             id: 'item-6',
-            question: 'Is my data secure?',
-            answer: 'Absolutely. We treat your research database as a private asset. We do not sell, rent, or trade your user-managed data to third-party brokers. Your workspace is yours alone.',
+            question: 'Can I export my database to my CRM or outbound tools?',
+            answer: 'Yes! You can export your curated lead lists at any time via structured CSV. This allows for seamless importing into HubSpot, Salesforce, outbound email sequencing tools, or your own local spreadsheets.',
+        },
+        {
+            id: 'item-7',
+            question: 'Is my target database kept private and secure?',
+            answer: 'Absolutely. We treat your research database as a private asset. Your lists, trackers, and user-managed data belong entirely to you. We do not sell, rent, or share your proprietary data with third-party brokers or competitors.',
         },
     ]
 
@@ -53,7 +58,7 @@ export default function FAQsTwo() {
                         Frequently Asked Questions
                     </h2>
                     <p className="mt-6 text-lg leading-8 text-muted-foreground">
-                        Everything you need to know about our research tools, BYOK model, trackers, and data security.
+                        Everything you need to know about our research tools, automated agents, trackers, and data security.
                     </p>
                 </div>
 
