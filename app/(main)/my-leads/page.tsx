@@ -337,6 +337,12 @@ export default function ProfilesPage() {
                                             followersCount: details.followers_count,
                                             followingCount: details.following_count,
                                             tweetsCount: details.tweets_count,
+                                            mediaCount: details.media_count,
+                                            verifiedType: details.verified_type,
+                                            isProtected: details.is_protected,
+                                            accountCreatedAt: details.account_created_at,
+                                            url: details.url,
+                                            foundFor: details.found_for,
                                             isVerified: details.is_verified,
                                             isBlueVerified: details.is_blue_verified,
                                             extraData: details.extra_data,
@@ -1647,6 +1653,20 @@ export default function ProfilesPage() {
                 } catch {
                     return <span className="text-[10px] text-muted-foreground truncate max-w-[100px]">{url}</span>;
                 }
+            },
+        },
+        {
+            accessorKey: "mediaCount",
+            header: "Media",
+            cell: ({ row }) => (row.original.mediaCount || row.original.media_count)?.toLocaleString() || "-",
+        },
+        {
+            accessorKey: "accountCreatedAt",
+            header: "Joined",
+            cell: ({ row }) => {
+                const date = row.original.accountCreatedAt || row.original.account_created_at;
+                if (!date) return "-";
+                return new Date(date).toLocaleDateString();
             },
         },
         {

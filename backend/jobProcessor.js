@@ -974,6 +974,12 @@ async function handleXProfilesScrape(userId, input, keyManager, tags = ["XProfil
             followers_count: r.followers,
             following_count: r.following,
             tweets_count: r.tweetCount,
+            media_count: r.mediaCount,
+            verified_type: r.verifiedType,
+            is_protected: r.protected,
+            account_created_at: r.createdAt,
+            url: r.url,
+            found_for: r.foundFor,
             is_verified: r.verified,
             is_blue_verified: false,
             extra_data: { 
