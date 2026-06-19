@@ -1028,10 +1028,12 @@ async function handleXFollowersScrape(userId, input, keyManager, tags = ["XFollo
     
     try {
         const maxCount = input.maxCount || 200;
+        const getFollowers = input.getFollowers !== undefined ? input.getFollowers : true;
+        const getFollowing = input.getFollowing !== undefined ? input.getFollowing : false;
         const followers = await executeWithRetry(
             keyManager,
             "X Followers Scrape",
-            (key) => scraper.scrapeXFollowers(targetUsernames, key, maxCount)
+            (key) => scraper.scrapeXFollowers(targetUsernames, key, getFollowers, getFollowing, maxCount, maxCount)
         );
         
         followers.forEach(f => {

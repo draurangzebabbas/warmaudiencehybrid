@@ -33,7 +33,8 @@ import {
     IconMapPin,
     IconBrandGoogleMaps,
     IconCopy,
-    IconClipboardCheck
+    IconClipboardCheck,
+    IconBadgeFilled
 } from "@tabler/icons-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from "@/components/ui/sheet";
 import { Label } from "@/components/ui/label";
@@ -409,7 +410,7 @@ export default function ProfilesPage() {
     const { leads: googleMaps, loading: loadingGoogleMaps } = useLeadsFromSupabase(user?._id, "google_maps");
     const { leads: websiteContacts, loading: loadingWebsiteContacts, refresh: refreshWebsiteContacts } = useLeadsFromSupabase(user?._id, "website_contact");
     const { leads: instagramLeads, loading: loadingInstagramLeads } = useLeadsFromSupabase(user?._id, "instagram");
-    const { leads: xLeads, loading: loadingXLeads } = useLeadsFromSupabase(user?._id, "x");
+    const { leads: xLeads, loading: loadingXLeads, refresh: refreshXLeads } = useLeadsFromSupabase(user?._id, "x");
 
     const getOrCreateKey = useAction(api.actions.supabase.getOrCreateWebhookKey);
 
@@ -1550,6 +1551,134 @@ export default function ProfilesPage() {
         }
     ], []);
 
+    const xColumns = useMemo<ColumnDef<any>[]>(() => [
+        {
+            id: "select",
+            header: ({ table }) => (
+                <Checkbox
+                    checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")}
+                    onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+                    aria-label="Select all"
+                />
+            ),
+            cell: ({ row }) => (
+                <Checkbox
+                    checked={row.getIsSelected()}
+                    onCheckedChange={(value) => row.toggleSelected(!!value)}
+                    aria-label="Select row"
+                />
+            ),
+            enableSorting: false,
+            enableHiding: false,
+        },
+        {
+            accessorKey: "username",
+            header: "Profile",
+            cell: ({ row }) => {
+                const isVerified = row.original.isVerified || row.original.is_verified;
+                return (
+                    <div className="flex items-center gap-3">
+                        <Avatar className="h-9 w-9">
+                            <AvatarImage src={row.original.profilePicUrl || row.original.profile_pic_url} />
+                            <AvatarFallback>{row.original.fullName?.substring(0, 2).toUpperCase() || row.original.username?.substring(0, 2).toUpperCase() || "X"}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex flex-col">
+                            <span className="font-semibold text-sm flex items-center gap-1">
+                                {row.original.fullName || row.original.full_name || row.original.username}
+                                {isVerified && <IconBadgeFilled className="text-blue-500 h-4 w-4" />}
+                            </span>
+                            <a
+                                href={`https://x.com/${row.original.username}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-muted-foreground hover:text-blue-500 transition-colors flex items-center gap-1"
+                            >
+                                @{row.original.username}
+                                <IconExternalLink size={10} />
+                            </a>
+                        </div>
+                    </div>
+                )
+            },
+        },
+        {
+            accessorKey: "followers",
+            header: "Followers",
+            cell: ({ row }) => (row.original.followersCount || row.original.followers_count)?.toLocaleString() || "-",
+        },
+        {
+            accessorKey: "following",
+            header: "Following",
+            cell: ({ row }) => (row.original.followingCount || row.original.following_count)?.toLocaleString() || "-",
+        },
+        {
+            accessorKey: "tweets",
+            header: "Tweets",
+            cell: ({ row }) => (row.original.tweetsCount || row.original.tweets_count)?.toLocaleString() || "-",
+        },
+        {
+            accessorKey: "location",
+            header: "Location",
+            cell: ({ row }) => row.original.location || "-",
+        },
+        {
+            accessorKey: "externalUrl",
+            header: "Website",
+            cell: ({ row }) => {
+                const url = row.original.externalUrl || row.original.external_url;
+                if (!url) return "-";
+                try {
+                    return (
+                        <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline flex items-center gap-1 text-[10px]">
+                            <IconExternalLink size={12} />
+                            {new URL(url).hostname.replace('www.', '')}
+                        </a>
+                    );
+                } catch {
+                    return <span className="text-[10px] text-muted-foreground truncate max-w-[100px]">{url}</span>;
+                }
+            },
+        },
+        {
+            accessorKey: "tags",
+            header: "Tags",
+            cell: ({ row }) => (
+                <div className="flex flex-wrap gap-1 max-w-[150px]">
+                    {row.original.tags?.map((tag: string, idx: number) => (
+                        <Badge key={idx} variant="outline" className="text-[9px] px-1 h-3.5 bg-muted/30">
+                            {tag}
+                        </Badge>
+                    ))}
+                    {(!row.original.tags || row.original.tags.length === 0) && <span className="text-muted-foreground text-[10px]">-</span>}
+                </div>
+            )
+        },
+        {
+            id: "actions",
+            cell: ({ row }) => (
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                            <IconDotsVertical className="h-4 w-4" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuItem asChild>
+                            <a href={`https://x.com/${row.original.username}`} target="_blank" rel="noopener noreferrer">
+                                <IconExternalLink className="mr-2 h-4 w-4" /> View on X
+                            </a>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteProfile(row.original.junctionId)}>
+                            Delete Lead
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            ),
+        }
+    ], []);
+
     const websiteContactColumns = useMemo<ColumnDef<WebsiteContact>[]>(() => [
         {
             id: "select",
@@ -1922,8 +2051,22 @@ export default function ProfilesPage() {
                                     data={filteredX}
                                     columns={xColumns}
                                     isLoading={loadingXLeads}
+                                    filterColumn="username"
+                                    type="x"
+                                    filters={xFilters}
+                                    setFilters={setXFilters}
+                                    onBulkDelete={async (ids) => {
+                                        if (confirm(`Are you sure you want to remove ${ids.length} X leads?`)) {
+                                            const { error } = await supabase.from("user_leads").delete().in("id", ids);
+                                            if (error) toast.error(error.message);
+                                            else {
+                                                toast.success("Leads removed");
+                                                window.location.reload();
+                                            }
+                                        }
+                                    }}
                                     searchPlaceholder="Filter X profiles..."
-                                    onRefresh={refresh}
+                                    onRefresh={refreshXLeads}
                                     filterContent={
                                         <div className="space-y-4 py-4">
                                             <div className="space-y-2">

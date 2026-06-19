@@ -394,12 +394,12 @@ async function scrapeXProfiles(usernames, token) {
 /**
  * Scrape X (Twitter) followers/following
  */
-async function scrapeXFollowers(usernames, token, maxFollowers = 200) {
+async function scrapeXFollowers(usernames, token, getFollowers = true, getFollowing = false, maxFollowers = 200, maxFollowings = 200) {
     return callApifyActor(ACTORS.X_FOLLOWERS, {
-        getFollowers: true,
-        getFollowing: false,
+        getFollowers: getFollowers,
+        getFollowing: getFollowing,
         maxFollowers: maxFollowers,
-        maxFollowings: 200,
+        maxFollowings: maxFollowings,
         user_names: usernames
     }, token);
 }

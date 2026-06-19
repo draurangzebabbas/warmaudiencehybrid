@@ -558,7 +558,7 @@ Saved to user's collection with tag: "Competitor: @username"
 
 ### 4. Twitter Extractor
 
-#### Twitter (X) Follower Scraper
+#### Twitter (X) Follower/Following Scraper
 
 
 **Actor ID**: `C2Wk3I6xAqC4Xi63f`

@@ -547,7 +547,7 @@ app.post("/api/scrape-x-engagement", async (req, res) => {
 // ─────────────────────────────────────────
 app.post("/api/scrape-x-followers", async (req, res) => {
     try {
-        const { usernames, maxCount = 200, tags = [] } = req.body;
+        const { usernames, maxCount = 200, getFollowers = true, getFollowing = false, tags = [] } = req.body;
 
         if (!usernames || !Array.isArray(usernames) || usernames.length === 0) {
             return res.status(400).json({ error: "usernames array is required" });
@@ -571,7 +571,7 @@ app.post("/api/scrape-x-followers", async (req, res) => {
         processJob({
             userId: req.userId,
             type: "x_followers",
-            input: { usernames, maxCount, tags },
+            input: { usernames, maxCount, getFollowers, getFollowing, tags },
         }).catch((err) => console.error("❌ X followers scrape failed:", err));
 
         res.json({
