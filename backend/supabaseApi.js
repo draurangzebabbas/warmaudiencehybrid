@@ -326,6 +326,38 @@ async function upsertInstagramLeadsBulk(leads) {
 }
 
 /**
+ * Upsert multiple X (Twitter) leads
+ */
+async function upsertXLeadsBulk(leads) {
+    const items = leads.map(l => ({
+        username: l.username,
+        full_name: l.full_name,
+        profile_pic_url: l.profile_pic_url,
+        biography: l.biography,
+        external_url: l.external_url,
+        location: l.location,
+        followers_count: l.followers_count,
+        following_count: l.following_count,
+        tweets_count: l.tweets_count,
+        is_verified: l.is_verified,
+        is_blue_verified: l.is_blue_verified,
+        extra_data: l.extra_data || {},
+        updated_at: new Date().toISOString()
+    }));
+
+    const { data, error } = await supabase
+        .from("x_leads")
+        .upsert(items, { onConflict: 'username' })
+        .select("id, username");
+
+    if (error) {
+        console.error("❌ Supabase X leads bulk upsert error:", error.message);
+        throw error;
+    }
+    return data;
+}
+
+/**
  * Get website contacts by domains
  */
 async function getWebsiteContactsByDomains(domains) {
@@ -348,6 +380,7 @@ async function linkUserToLeadsBulk(userId, leadIds, type, tags = []) {
                     type === "company" ? "company_id" : 
                     type === "website_contact" ? "website_contact_id" :
                     type === "instagram" ? "instagram_id" :
+                    type === "x" ? "x_id" :
                     "linkedin_id";
 
     // 1. Fetch existing tags for these leads for this user to allow merging
@@ -687,6 +720,7 @@ module.exports = {
     upsertGoogleMapsLeadsBulk,
     upsertWebsiteContactsBulk,
     upsertInstagramLeadsBulk,
+    upsertXLeadsBulk,
     linkUserToLeadsBulk,
     removeUserLead,
     getUserApiKeys,

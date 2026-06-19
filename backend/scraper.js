@@ -21,6 +21,9 @@ const ACTORS = {
     INSTAGRAM_LIKES: "zLHxSG7mqmCcdnX6p",
     INSTAGRAM_COMMENTS: "VCTzrlR4xt1YZP81x",
     INSTAGRAM_FOLLOWERS: "vaCTgYFLVBaaYUaBY",
+    X_PROFILE: "m0LEAhkyKSbmcbPnl",
+    X_FOLLOWERS: "C2Wk3I6xAqC4Xi63f",
+    X_COMMENTS: "r0Lto6qhNw7DH2SXr",
 };
 
 // ─────────────────────────────────────────
@@ -372,6 +375,44 @@ async function scrapeInstagramFollowers(usernames, token, extractFollowers = tru
     }, token);
 }
 
+/**
+ * Scrape X (Twitter) profiles (emails, bio, metrics)
+ */
+async function scrapeXProfiles(usernames, token) {
+    return callApifyActor(ACTORS.X_PROFILE, {
+        onlyWithContact: false,
+        profiles: usernames,
+        proxyConfiguration: {
+            useApifyProxy: true,
+            apifyProxyGroups: ["RESIDENTIAL"]
+        },
+        maxConcurrency: 5,
+        maxResults: 0
+    }, token);
+}
+
+/**
+ * Scrape X (Twitter) followers/following
+ */
+async function scrapeXFollowers(usernames, token, maxFollowers = 200) {
+    return callApifyActor(ACTORS.X_FOLLOWERS, {
+        getFollowers: true,
+        getFollowing: false,
+        maxFollowers: maxFollowers,
+        maxFollowings: 200,
+        user_names: usernames
+    }, token);
+}
+
+/**
+ * Scrape X (Twitter) post comments
+ */
+async function scrapeXComments(postUrls, token) {
+    return callApifyActor(ACTORS.X_COMMENTS, {
+        postUrls: postUrls
+    }, token);
+}
+
 module.exports = {
     ACTORS,
     callApifyActor,
@@ -389,6 +430,9 @@ module.exports = {
     scrapeInstagramLikes,
     scrapeInstagramComments,
     scrapeInstagramFollowers,
+    scrapeXProfiles,
+    scrapeXFollowers,
+    scrapeXComments,
     testKey,
     normalizeUrl,
 };

@@ -96,6 +96,18 @@ async function processJob(jobData) {
                 await handleInstagramFollowersScrape(userId, input, keyManager, input.tags || ["InstagramFollowers"], jobId);
                 break;
 
+            case "x_profiles":
+                await handleXProfilesScrape(userId, input, keyManager, input.tags || ["XProfile"], jobId, force);
+                break;
+
+            case "x_engagement":
+                await handleXEngagementScrape(userId, input, keyManager, input.tags || ["XEngagement"], jobId);
+                break;
+
+            case "x_followers":
+                await handleXFollowersScrape(userId, input, keyManager, input.tags || ["XFollowers"], jobId);
+                break;
+
             default:
                 console.warn(`Unknown job type: ${type}`);
         }
@@ -916,6 +928,120 @@ async function handleInstagramFollowersScrape(userId, input, keyManager, tags = 
             const usernames = Array.from(allUsernames);
             console.log(`✨ Enriching ${usernames.length} extracted Instagram audience members...`);
             await handleInstagramProfilesScrape(userId, { usernames, tags, metadataMap }, keyManager, tags, jobId);
+        } else {
+            if (jobId) await supabaseApi.updateJobProgress(jobId, 100);
+        }
+    } catch (err) {
+        throw err;
+    }
+}
+
+async function handleXProfilesScrape(userId, input, keyManager, tags = ["XProfile"], jobId, force = false) {
+    let usernames = input.usernames || [];
+    
+    // Add logic for URLs handling if needed
+    if (usernames.length === 0 && input.profileUrls) {
+        usernames = input.profileUrls.map(u => u.replace(/\/$/, '').split('/').pop()).filter(Boolean);
+    }
+    
+    if (!usernames.length) {
+        console.warn("No X usernames provided for profile scrape.");
+        return;
+    }
+
+    if (jobId) await supabaseApi.updateJobProgress(jobId, 10);
+    
+    console.log(`🚀 Starting X Profile scrape for ${usernames.length} usernames`);
+    
+    const results = await executeWithRetry(
+        keyManager,
+        "X Profiles Scrape",
+        (key) => scraper.scrapeXProfiles(usernames, key)
+    );
+    
+    if (jobId) await supabaseApi.updateJobProgress(jobId, 80);
+
+    if (results && results.length > 0) {
+        const mapped = results.map(r => ({
+            username: r.username,
+            full_name: r.name,
+            profile_pic_url: r.profileImage,
+            biography: r.bio,
+            location: r.location,
+            external_url: r.website,
+            followers_count: r.followers,
+            following_count: r.following,
+            tweets_count: r.tweetCount,
+            is_verified: r.verified,
+            is_blue_verified: false,
+            extra_data: { 
+                userId: r.userId,
+                likeCount: r.likeCount,
+                mediaCount: r.mediaCount,
+                createdAt: r.createdAt 
+            }
+        }));
+        
+        const upserted = await supabaseApi.upsertXLeadsBulk(mapped);
+        const leadIds = upserted.map(u => u.id);
+        
+        await supabaseApi.linkUserToLeadsBulk(userId, leadIds, "x", tags);
+    }
+}
+
+async function handleXEngagementScrape(userId, input, keyManager, tags = ["XEngagement"], jobId) {
+    const postUrls = input.postUrls || [];
+    if (!postUrls.length) return;
+
+    if (jobId) await supabaseApi.updateJobProgress(jobId, 10);
+    const allUsernames = new Set();
+    
+    try {
+        const comments = await executeWithRetry(
+            keyManager,
+            "X Comments Scrape",
+            (key) => scraper.scrapeXComments(postUrls, key)
+        );
+        
+        comments.forEach(c => {
+            if (c.author_username) allUsernames.add(c.author_username);
+        });
+
+        if (allUsernames.size > 0) {
+            const usernames = Array.from(allUsernames);
+            console.log(`✨ Enriching ${usernames.length} extracted X commenters...`);
+            await handleXProfilesScrape(userId, { usernames }, keyManager, tags, jobId);
+        } else {
+            if (jobId) await supabaseApi.updateJobProgress(jobId, 100);
+        }
+    } catch (err) {
+        throw err;
+    }
+}
+
+async function handleXFollowersScrape(userId, input, keyManager, tags = ["XFollowers"], jobId) {
+    const targetUsernames = input.usernames || [];
+    if (!targetUsernames.length) return;
+
+    if (jobId) await supabaseApi.updateJobProgress(jobId, 10);
+    const allUsernames = new Set();
+    
+    try {
+        const maxCount = input.maxCount || 200;
+        const followers = await executeWithRetry(
+            keyManager,
+            "X Followers Scrape",
+            (key) => scraper.scrapeXFollowers(targetUsernames, key, maxCount)
+        );
+        
+        followers.forEach(f => {
+            if (f.screen_name) allUsernames.add(f.screen_name);
+        });
+
+        if (allUsernames.size > 0) {
+            const usernames = Array.from(allUsernames);
+            console.log(`✨ Enriching ${usernames.length} extracted X followers...`);
+            await handleXProfilesScrape(userId, { usernames }, keyManager, tags, jobId);
         } else {
             if (jobId) await supabaseApi.updateJobProgress(jobId, 100);
         }

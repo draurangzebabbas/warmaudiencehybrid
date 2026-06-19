@@ -458,6 +458,133 @@ app.post(["/api/instagram/scrape-followers", "/api/scrape-instagram-followers"],
 });
 
 // ─────────────────────────────────────────
+// POST /api/scrape-x-profiles
+// ─────────────────────────────────────────
+app.post("/api/scrape-x-profiles", async (req, res) => {
+    try {
+        const { usernames, tags = [], force = false } = req.body;
+
+        if (!usernames || !Array.isArray(usernames) || usernames.length === 0) {
+            return res.status(400).json({ error: "usernames array is required" });
+        }
+
+        const [subscription, currentCount] = await Promise.all([
+            supabaseApi.getUserSubscription(req.userId),
+            supabaseApi.getMonthlyLeadCount(req.userId)
+        ]);
+        
+        const planLimits = { free: 1000, growth: 10000, pro: 10000, elite: 1000000, scale: 1000000 };
+        const profilesLimit = planLimits[subscription.plan_slug] || 1000;
+        
+        if (currentCount >= profilesLimit) {
+            return res.status(403).json({
+                error: `Limit Reached: You have consumed all your lead storage for this month (${profilesLimit} leads). Please upgrade your plan for more capacity.`,
+                code: "LIMIT_REACHED"
+            });
+        }
+
+        processJob({
+            userId: req.userId,
+            type: "x_profiles",
+            input: { usernames, tags },
+            force
+        }).catch((err) => console.error("❌ X profile scrape failed:", err));
+
+        res.json({
+            status: "processing",
+            message: `X profile research started for ${usernames.length} profiles`,
+        });
+    } catch (e) {
+        console.error("scrape-x-profiles error:", e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// ─────────────────────────────────────────
+// POST /api/scrape-x-engagement
+// ─────────────────────────────────────────
+app.post("/api/scrape-x-engagement", async (req, res) => {
+    try {
+        const { postUrls, tags = [] } = req.body;
+
+        if (!postUrls || !Array.isArray(postUrls) || postUrls.length === 0) {
+            return res.status(400).json({ error: "postUrls array is required" });
+        }
+
+        const [subscription, currentCount] = await Promise.all([
+            supabaseApi.getUserSubscription(req.userId),
+            supabaseApi.getMonthlyLeadCount(req.userId)
+        ]);
+        
+        const planLimits = { free: 1000, growth: 10000, pro: 10000, elite: 1000000, scale: 1000000 };
+        const profilesLimit = planLimits[subscription.plan_slug] || 1000;
+        
+        if (currentCount >= profilesLimit) {
+            return res.status(403).json({
+                error: `Limit Reached: You have consumed all your lead storage for this month (${profilesLimit} leads). Please upgrade your plan for more capacity.`,
+                code: "LIMIT_REACHED"
+            });
+        }
+
+        processJob({
+            userId: req.userId,
+            type: "x_engagement",
+            input: { postUrls, tags },
+        }).catch((err) => console.error("❌ X engagement scrape failed:", err));
+
+        res.json({
+            status: "processing",
+            message: `X engagement research started for ${postUrls.length} posts`,
+        });
+    } catch (e) {
+        console.error("scrape-x-engagement error:", e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// ─────────────────────────────────────────
+// POST /api/scrape-x-followers
+// ─────────────────────────────────────────
+app.post("/api/scrape-x-followers", async (req, res) => {
+    try {
+        const { usernames, maxCount = 200, tags = [] } = req.body;
+
+        if (!usernames || !Array.isArray(usernames) || usernames.length === 0) {
+            return res.status(400).json({ error: "usernames array is required" });
+        }
+
+        const [subscription, currentCount] = await Promise.all([
+            supabaseApi.getUserSubscription(req.userId),
+            supabaseApi.getMonthlyLeadCount(req.userId)
+        ]);
+        
+        const planLimits = { free: 1000, growth: 10000, pro: 10000, elite: 1000000, scale: 1000000 };
+        const profilesLimit = planLimits[subscription.plan_slug] || 1000;
+        
+        if (currentCount >= profilesLimit) {
+            return res.status(403).json({
+                error: `Limit Reached: You have consumed all your lead storage for this month (${profilesLimit} leads). Please upgrade your plan for more capacity.`,
+                code: "LIMIT_REACHED"
+            });
+        }
+
+        processJob({
+            userId: req.userId,
+            type: "x_followers",
+            input: { usernames, maxCount, tags },
+        }).catch((err) => console.error("❌ X followers scrape failed:", err));
+
+        res.json({
+            status: "processing",
+            message: `X follower research started for ${usernames.length} profiles`,
+        });
+    } catch (e) {
+        console.error("scrape-x-followers error:", e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// ─────────────────────────────────────────
 // Tracker Management
 // ─────────────────────────────────────────
 

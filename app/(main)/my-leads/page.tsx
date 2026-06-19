@@ -240,7 +240,8 @@ export default function ProfilesPage() {
                         company: company_profiles (*),
                         google_maps: google_maps_leads (*),
                         website_contact: website_contacts (*),
-                        instagram: instagram_leads (*)
+                        instagram: instagram_leads (*),
+                        x: x_leads (*)
                     `)
                     .eq("user_id", userId)
                     .eq("profile_type", profileType)
@@ -254,7 +255,7 @@ export default function ProfilesPage() {
                         if (data) {
                             const formatted = data
                                 .map(d => {
-                                    const detailsRaw = d.personal || d.company || d.google_maps || d.website_contact || d.instagram;
+                                    const detailsRaw = d.personal || d.company || d.google_maps || d.website_contact || d.instagram || d.x;
                                     if (!detailsRaw) return null;
                                     const details = Array.isArray(detailsRaw) ? detailsRaw[0] : detailsRaw;
                                     if (!details) return null;
@@ -326,6 +327,23 @@ export default function ProfilesPage() {
                                             junctionId: d.id,
                                             _id: d.id
                                         };
+                                    } else if (profileType === "x") {
+                                        return {
+                                            ...details,
+                                            fullName: details.full_name,
+                                            profilePicUrl: details.profile_pic_url,
+                                            externalUrl: details.external_url,
+                                            followersCount: details.followers_count,
+                                            followingCount: details.following_count,
+                                            tweetsCount: details.tweets_count,
+                                            isVerified: details.is_verified,
+                                            isBlueVerified: details.is_blue_verified,
+                                            extraData: details.extra_data,
+                                            updatedAt: new Date(details.updated_at || d.created_at).getTime(),
+                                            tags: d.tags,
+                                            junctionId: d.id,
+                                            _id: d.id
+                                        };
                                     } else { // instagram
                                         let socials = details.socials;
                                         if (typeof socials === 'string') {
@@ -391,6 +409,7 @@ export default function ProfilesPage() {
     const { leads: googleMaps, loading: loadingGoogleMaps } = useLeadsFromSupabase(user?._id, "google_maps");
     const { leads: websiteContacts, loading: loadingWebsiteContacts, refresh: refreshWebsiteContacts } = useLeadsFromSupabase(user?._id, "website_contact");
     const { leads: instagramLeads, loading: loadingInstagramLeads } = useLeadsFromSupabase(user?._id, "instagram");
+    const { leads: xLeads, loading: loadingXLeads } = useLeadsFromSupabase(user?._id, "x");
 
     const getOrCreateKey = useAction(api.actions.supabase.getOrCreateWebhookKey);
 
@@ -474,6 +493,17 @@ export default function ProfilesPage() {
         minER: 0,
         minViews: 0,
         maxLastPostDays: 0,
+        location: "",
+        tags: "",
+    });
+
+    const [xFilters, setXFilters] = useState({
+        hasWebsite: "all" as "all" | "yes" | "no",
+        minFollowers: 0,
+        maxFollowers: 10000000,
+        minFollowing: 0,
+        maxFollowing: 10000000,
+        isVerified: "all" as "all" | "yes" | "no",
         location: "",
         tags: "",
     });
@@ -762,6 +792,38 @@ export default function ProfilesPage() {
             return true;
         });
     }, [instagramLeads, instagramFilters]);
+
+    const filteredX = useMemo(() => {
+        return xLeads.filter((xProfile) => {
+            const followers = xProfile.followersCount || 0;
+            if (followers < xFilters.minFollowers) return false;
+            if (xFilters.maxFollowers > 0 && followers > xFilters.maxFollowers) return false;
+
+            const following = xProfile.followingCount || 0;
+            if (following < xFilters.minFollowing) return false;
+            if (xFilters.maxFollowing > 0 && following > xFilters.maxFollowing) return false;
+
+            if (xFilters.isVerified === "yes" && !xProfile.isVerified) return false;
+            if (xFilters.isVerified === "no" && xProfile.isVerified) return false;
+            
+            if (xFilters.hasWebsite === "yes" && !xProfile.externalUrl) return false;
+            if (xFilters.hasWebsite === "no" && xProfile.externalUrl) return false;
+
+            if (xFilters.location) {
+                const loc = (xProfile.location || "").toLowerCase();
+                const q = xFilters.location.toLowerCase();
+                if (!loc.includes(q)) return false;
+            }
+
+            if (xFilters.tags) {
+                const q = xFilters.tags.toLowerCase();
+                const hasMatch = (xProfile.tags || []).some((t: string) => t.toLowerCase().includes(q));
+                if (!hasMatch) return false;
+            }
+
+            return true;
+        });
+    }, [xLeads, xFilters]);
 
     // --- Column Definitions ---
     const personalColumns = useMemo<ColumnDef<PersonalProfile>[]>(() => [
@@ -1856,10 +1918,64 @@ export default function ProfilesPage() {
                                 </div>
                             </TabsContent>
                             <TabsContent value="x">
-                                <div className="py-12 text-center border rounded-lg bg-muted/20">
-                                    <h3 className="text-lg font-medium">X Leads Coming Soon</h3>
-                                    <p className="text-sm text-muted-foreground mt-1">This integration is under development.</p>
-                                </div>
+                                <GenericProfileTable
+                                    data={filteredX}
+                                    columns={xColumns}
+                                    isLoading={loadingXLeads}
+                                    searchPlaceholder="Filter X profiles..."
+                                    onRefresh={refresh}
+                                    filterContent={
+                                        <div className="space-y-4 py-4">
+                                            <div className="space-y-2">
+                                                <Label className="text-xs font-semibold uppercase text-muted-foreground">Location</Label>
+                                                <Input
+                                                    placeholder="e.g. New York"
+                                                    value={xFilters.location}
+                                                    onChange={e => setXFilters(prev => ({ ...prev, location: e.target.value }))}
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-xs font-semibold uppercase text-muted-foreground">Tags</Label>
+                                                <Input
+                                                    placeholder="Search tags..."
+                                                    value={xFilters.tags}
+                                                    onChange={e => setXFilters(prev => ({ ...prev, tags: e.target.value }))}
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-xs font-semibold uppercase text-muted-foreground">Followers</Label>
+                                                <div className="flex gap-2">
+                                                    <Input type="number" placeholder="Min" value={xFilters.minFollowers || ''} onChange={e => setXFilters(prev => ({ ...prev, minFollowers: Number(e.target.value) }))} />
+                                                    <Input type="number" placeholder="Max" value={xFilters.maxFollowers || ''} onChange={e => setXFilters(prev => ({ ...prev, maxFollowers: Number(e.target.value) }))} />
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-xs font-semibold uppercase text-muted-foreground">Following</Label>
+                                                <div className="flex gap-2">
+                                                    <Input type="number" placeholder="Min" value={xFilters.minFollowing || ''} onChange={e => setXFilters(prev => ({ ...prev, minFollowing: Number(e.target.value) }))} />
+                                                    <Input type="number" placeholder="Max" value={xFilters.maxFollowing || ''} onChange={e => setXFilters(prev => ({ ...prev, maxFollowing: Number(e.target.value) }))} />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                    bulkActions={{
+                                        show: true,
+                                        actions: [
+                                            {
+                                                label: "Export Selected",
+                                                onClick: (rows) => {
+                                                    const csv = rows.map(r => `${r.username},${r.fullName || ''},${r.followersCount || ''},${r.externalUrl || ''}`).join("\n");
+                                                    const blob = new Blob([csv], { type: 'text/csv' });
+                                                    const url = window.URL.createObjectURL(blob);
+                                                    const a = document.createElement('a');
+                                                    a.href = url;
+                                                    a.download = 'x_leads.csv';
+                                                    a.click();
+                                                }
+                                            }
+                                        ]
+                                    }}
+                                />
                             </TabsContent>
                         </Tabs>
                     </CardContent>

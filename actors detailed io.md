@@ -826,6 +826,135 @@ Saved to user's collection with tag: "Competitor: @username"
 ]
 ```
 
+#### Twitter Email Scraper - X Profile & Lead Extracto
+
+
+**Actor ID**: `m0LEAhkyKSbmcbPnl`
+
+**Input**:
+```json
+{
+  "onlyWithContact": false,
+  "profiles": [
+    "Guronnimo",
+    "Draurangzebabas",
+    "DanielSmidstrup",
+    "theaadedewe"
+  ],
+  "proxyConfiguration": {
+    "useApifyProxy": true,
+    "apifyProxyGroups": [
+      "RESIDENTIAL"
+    ]
+  },
+  "maxConcurrency": 5,
+  "maxResults": 0
+}
+```
+
+**Output Structure**:
+```json
+[
+  {
+    "userId": "99704137",
+    "username": "Guronnimo",
+    "name": "Jeroen van Welsenes",
+    "bio": "Building towards financial independence.\nDocumenting my journey\n\nRoad to 10k total revenue\n🟩⬜️⬜️⬜️⬜️ 15%\n\n🚀 https://t.co/iaiMM4dLbh",
+    "location": "Amsterdam",
+    "website": "https://www.jeroenvanwelsenes.com/",
+    "email": null,
+    "phone": null,
+    "followers": 1354,
+    "following": 804,
+    "tweetCount": 3653,
+    "likeCount": 3414,
+    "mediaCount": 261,
+    "listedCount": 2,
+    "verified": true,
+    "verifiedType": null,
+    "protected": false,
+    "createdAt": "Sun Dec 27 13:02:33 +0000 2009",
+    "profileImage": "https://pbs.twimg.com/profile_images/2053062352241590275/PHpKkfkh_normal.jpg",
+    "url": "https://x.com/Guronnimo",
+    "foundFor": "Guronnimo",
+    "scrapedAt": "2026-06-19T12:37:47.828Z"
+  },
+  {
+    "userId": "1420038824",
+    "username": "DanielSmidstrup",
+    "name": "Daniel Smidstrup",
+    "bio": "Solo dev. Ex-CTO ($700k ARR).\n\nGrow on X https://t.co/DgZItQ6Z5B ($696 MRR)\nhttps://t.co/9zALrQHvEi\nhttps://t.co/9iKp9dW5wc\n\nCA - GKiWPpqJDweATtxztxfx4Nq4YaDGfTQq8o8okHR83ory",
+    "location": null,
+    "website": "https://ClimbX.so",
+    "email": null,
+    "phone": null,
+    "followers": 6608,
+    "following": 2229,
+    "tweetCount": 23429,
+    "likeCount": 33419,
+    "mediaCount": 573,
+    "listedCount": 18,
+    "verified": true,
+    "verifiedType": null,
+    "protected": false,
+    "createdAt": "Sat May 11 07:35:53 +0000 2013",
+    "profileImage": "https://pbs.twimg.com/profile_images/2039256958260400128/dy7LAvLn_normal.jpg",
+    "url": "https://x.com/DanielSmidstrup",
+    "foundFor": "DanielSmidstrup",
+    "scrapedAt": "2026-06-19T12:37:47.959Z"
+  },
+  {
+    "userId": "1098821895565258752",
+    "username": "theaadedewe",
+    "name": "ade",
+    "bio": "Founder & CEO of @kredete",
+    "location": "Download the Kredete App →",
+    "website": "https://onelink.to/kredete",
+    "email": null,
+    "phone": null,
+    "followers": 12640,
+    "following": 323,
+    "tweetCount": 2370,
+    "likeCount": 2237,
+    "mediaCount": 224,
+    "listedCount": 23,
+    "verified": true,
+    "verifiedType": null,
+    "protected": false,
+    "createdAt": "Fri Feb 22 05:48:49 +0000 2019",
+    "profileImage": "https://pbs.twimg.com/profile_images/2052268638506242048/VHfom2bV_normal.jpg",
+    "url": "https://x.com/theaadedewe",
+    "foundFor": "theaadedewe",
+    "scrapedAt": "2026-06-19T12:37:47.964Z"
+  },
+  {
+    "userId": "1817817506569945088",
+    "username": "Draurangzebabas",
+    "name": "Aurangzeb Abbas",
+    "bio": "Build solutions for researchers, developers & marketers — to cut costs, save time, grow with AI automation/agents & keep things affordable. DM me for discussion",
+    "location": "Pakistan",
+    "website": null,
+    "email": null,
+    "phone": null,
+    "followers": 5,
+    "following": 39,
+    "tweetCount": 128,
+    "likeCount": 14,
+    "mediaCount": 36,
+    "listedCount": 0,
+    "verified": false,
+    "verifiedType": null,
+    "protected": false,
+    "createdAt": "Mon Jul 29 07:00:56 +0000 2024",
+    "profileImage": "https://pbs.twimg.com/profile_images/2052948400417693696/ehWr9h1D_normal.jpg",
+    "url": "https://x.com/Draurangzebabas",
+    "foundFor": "Draurangzebabas",
+    "scrapedAt": "2026-06-19T12:37:48.340Z"
+  }
+]
+```
+
+
 ### 5. Instagram Extractor
 
 #### Instagram Followers Scraper
