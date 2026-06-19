@@ -1617,6 +1617,16 @@ export default function ProfilesPage() {
             cell: ({ row }) => (row.original.tweetsCount || row.original.tweets_count)?.toLocaleString() || "-",
         },
         {
+            accessorKey: "email",
+            header: "Email",
+            cell: ({ row }) => row.original.email || <span className="text-muted-foreground text-xs">N/A</span>,
+        },
+        {
+            accessorKey: "phone",
+            header: "Phone",
+            cell: ({ row }) => row.original.phone || <span className="text-muted-foreground text-xs">N/A</span>,
+        },
+        {
             accessorKey: "location",
             header: "Location",
             cell: ({ row }) => row.original.location || "-",

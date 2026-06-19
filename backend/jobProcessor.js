@@ -969,6 +969,8 @@ async function handleXProfilesScrape(userId, input, keyManager, tags = ["XProfil
             biography: r.bio,
             location: r.location,
             external_url: r.website,
+            email: r.email,
+            phone: r.phone,
             followers_count: r.followers,
             following_count: r.following,
             tweets_count: r.tweetCount,

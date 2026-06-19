@@ -338,8 +338,10 @@ async function upsertXLeadsBulk(leads) {
         location: l.location,
         followers_count: l.followers_count,
         following_count: l.following_count,
-        tweets_count: l.tweets_count,
-        is_verified: l.is_verified,
+        tweets_count: l.tweets_count || l.tweetCount,
+        email: l.email,
+        phone: l.phone,
+        is_verified: l.is_verified || l.verified,
         is_blue_verified: l.is_blue_verified,
         extra_data: l.extra_data || {},
         updated_at: new Date().toISOString()
