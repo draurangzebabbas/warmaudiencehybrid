@@ -2506,11 +2506,15 @@ interface DataTableProps<TData, TValue> {
     data: TData[]
     isLoading?: boolean
     filterColumn: string
-    type: "personal" | "company" | "google_maps" | "website_contact" | "instagram"
+    type: "personal" | "company" | "google_maps" | "website_contact" | "instagram" | "x"
     filters: any
     setFilters: (filters: any) => void
     onBulkDelete?: (ids: any[]) => Promise<void>
     onBulkUpdate?: (urls: string[]) => Promise<void>
+    searchPlaceholder?: string
+    onRefresh?: () => void
+    filterContent?: React.ReactNode
+    bulkActions?: { show: boolean; actions: { label: string; onClick: (rows: any[]) => void }[] }
 }
 
 function GenericProfileTable<TData, TValue>({
@@ -2522,7 +2526,11 @@ function GenericProfileTable<TData, TValue>({
     filters,
     setFilters,
     onBulkDelete,
-    onBulkUpdate
+    onBulkUpdate,
+    searchPlaceholder: _searchPlaceholder,
+    onRefresh: _onRefresh,
+    filterContent: _filterContent,
+    bulkActions: _bulkActions,
 }: DataTableProps<TData, TValue>) {
     const [sorting, setSorting] = useState<SortingState>([])
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
@@ -3060,7 +3068,7 @@ function GenericProfileTable<TData, TValue>({
     )
 }
 
-function FilterSheet({ type, filters, setFilters }: { type: "personal" | "company" | "google_maps" | "website_contact" | "instagram", filters: any, setFilters: (f: any) => void }) {
+function FilterSheet({ type, filters, setFilters }: { type: "personal" | "company" | "google_maps" | "website_contact" | "instagram" | "x", filters: any, setFilters: (f: any) => void }) {
     return (
         <Sheet>
             <SheetTrigger asChild>
