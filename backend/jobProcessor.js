@@ -1101,7 +1101,7 @@ async function handleXFollowersScrape(userId, input, keyManager, tags = ["XFollo
                 full_name: f.name,
                 profile_pic_url: f.profile_image_url_https,
                 biography: f.description,
-                external_url: f.url,
+                external_url: f.entities?.url?.urls?.[0]?.expanded_url || f.url,
                 location: f.location,
                 followers_count: f.followers_count,
                 following_count: f.friends_count,

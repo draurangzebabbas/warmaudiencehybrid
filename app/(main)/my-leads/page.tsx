@@ -1685,7 +1685,7 @@ export default function ProfilesPage() {
         },
         {
             accessorKey: "foundFor",
-            header: "Founder For",
+            header: "Found For",
             cell: ({ row }) => (
                 <div className="text-xs max-w-[150px] truncate" title={row.original.foundFor}>
                     {row.original.foundFor || "-"}
