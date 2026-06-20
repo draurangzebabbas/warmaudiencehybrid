@@ -1157,6 +1157,19 @@ export default function ProfilesPage() {
             ),
         },
         {
+            accessorKey: "updatedAt",
+            header: "Last Updated",
+            cell: ({ row }) => {
+                if (!row.original.updatedAt) return "-";
+                return (
+                    <div className="flex items-center text-xs text-muted-foreground" title={new Date(row.original.updatedAt).toLocaleString()}>
+                        <IconClock className="mr-1 size-3" />
+                        {formatDistanceToNow(row.original.updatedAt, { addSuffix: true })}
+                    </div>
+                )
+            }
+        },
+        {
             accessorKey: "tags",
             header: "Tags",
             cell: ({ row }) => (
@@ -1606,6 +1619,19 @@ export default function ProfilesPage() {
             }
         },
         {
+            accessorKey: "updatedAt",
+            header: "Last Updated",
+            cell: ({ row }) => {
+                if (!row.original.updatedAt) return "-";
+                return (
+                    <div className="flex items-center text-xs text-muted-foreground" title={new Date(row.original.updatedAt).toLocaleString()}>
+                        <IconClock className="mr-1 size-3" />
+                        {formatDistanceToNow(row.original.updatedAt, { addSuffix: true })}
+                    </div>
+                )
+            }
+        },
+        {
             accessorKey: "tags",
             header: "Tags",
             cell: ({ row }) => (
@@ -1783,6 +1809,19 @@ export default function ProfilesPage() {
                 if (!date) return "-";
                 return new Date(date).toLocaleDateString();
             },
+        },
+        {
+            accessorKey: "updatedAt",
+            header: "Last Updated",
+            cell: ({ row }) => {
+                if (!row.original.updatedAt) return "-";
+                return (
+                    <div className="flex items-center text-xs text-muted-foreground" title={new Date(row.original.updatedAt).toLocaleString()}>
+                        <IconClock className="mr-1 size-3" />
+                        {formatDistanceToNow(row.original.updatedAt, { addSuffix: true })}
+                    </div>
+                )
+            }
         },
         {
             accessorKey: "tags",
