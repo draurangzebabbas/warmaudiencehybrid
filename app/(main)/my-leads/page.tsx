@@ -514,6 +514,12 @@ export default function ProfilesPage() {
         maxFollowers: 10000000,
         minFollowing: 0,
         maxFollowing: 10000000,
+        minTweets: 0,
+        maxTweets: 10000000,
+        minMedia: 0,
+        maxMedia: 10000000,
+        joinedBefore: "",
+        joinedAfter: "",
         location: "",
         tags: "",
     });
@@ -586,6 +592,31 @@ export default function ProfilesPage() {
                 throw new Error(err.error || "Update failed");
             }
             toast.success("Profile update queued");
+        } catch (e: any) {
+            toast.error(e.message);
+        }
+    };
+
+    const handleUpdateXProfile = async (username: string) => {
+        try {
+            toast.info("Queueing update...");
+            const apiData = await getOrCreateKey();
+            if (!apiData?.key) throw new Error("Could not retrieve API Key");
+
+            const res = await fetch(`${process.env.NEXT_PUBLIC_RENDER_BACKEND_URL || "http://localhost:8000"}/api/scrape-x-profiles`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${apiData.key}`
+                },
+                body: JSON.stringify({ usernames: [username] })
+            });
+
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.error || "Update failed");
+            }
+            toast.success("X profile update queued");
         } catch (e: any) {
             toast.error(e.message);
         }
@@ -812,6 +843,29 @@ export default function ProfilesPage() {
             const following = xProfile.followingCount || 0;
             if (following < xFilters.minFollowing) return false;
             if (xFilters.maxFollowing > 0 && following > xFilters.maxFollowing) return false;
+
+            const tweets = xProfile.tweetsCount || 0;
+            if (tweets < xFilters.minTweets) return false;
+            if (xFilters.maxTweets > 0 && tweets > xFilters.maxTweets) return false;
+
+            const media = xProfile.mediaCount || 0;
+            if (media < xFilters.minMedia) return false;
+            if (xFilters.maxMedia > 0 && media > xFilters.maxMedia) return false;
+
+            if (xFilters.joinedBefore || xFilters.joinedAfter) {
+                const createdAtStr = xProfile.accountCreatedAt || xProfile.createdAt;
+                if (createdAtStr) {
+                    const createdDate = new Date(createdAtStr).getTime();
+                    if (xFilters.joinedAfter) {
+                        const afterDate = new Date(xFilters.joinedAfter).getTime();
+                        if (createdDate < afterDate) return false;
+                    }
+                    if (xFilters.joinedBefore) {
+                        const beforeDate = new Date(xFilters.joinedBefore).getTime();
+                        if (createdDate > beforeDate) return false;
+                    }
+                }
+            }
 
             if (xFilters.isVerified === "yes" && !xProfile.isVerified) return false;
             if (xFilters.isVerified === "no" && xProfile.isVerified) return false;
@@ -1630,6 +1684,27 @@ export default function ProfilesPage() {
             cell: ({ row }) => (row.original.followingCount || row.original.following_count)?.toLocaleString() || "-",
         },
         {
+            accessorKey: "foundFor",
+            header: "Founder For",
+            cell: ({ row }) => (
+                <div className="text-xs max-w-[150px] truncate" title={row.original.foundFor}>
+                    {row.original.foundFor || "-"}
+                </div>
+            )
+        },
+        {
+            accessorKey: "bio",
+            header: "Bio",
+            cell: ({ row }) => {
+                const bio = row.original.extraData?.biography || row.original.extraData?.description || row.original.description || row.original.biography || row.original.extraData?.bio || row.original.bio;
+                return (
+                    <div className="text-xs text-muted-foreground max-w-[200px] truncate" title={bio}>
+                        {bio || "-"}
+                    </div>
+                )
+            }
+        },
+        {
             accessorKey: "tweets",
             header: "Tweets",
             cell: ({ row }) => (row.original.tweetsCount || row.original.tweets_count)?.toLocaleString() || "-",
@@ -1710,6 +1785,9 @@ export default function ProfilesPage() {
                             <a href={`https://x.com/${row.original.username}`} target="_blank" rel="noopener noreferrer">
                                 <IconExternalLink className="mr-2 h-4 w-4" /> View on X
                             </a>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleUpdateXProfile(row.original.username)}>
+                            <IconRefresh className="mr-2 h-4 w-4" /> Update Profile
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteProfile(row.original.junctionId)}>
@@ -2107,82 +2185,32 @@ export default function ProfilesPage() {
                                             }
                                         }
                                     }}
+                                    onBulkUpdate={async (urls) => {
+                                        toast.info(`Queueing update for ${urls.length} X profiles...`);
+                                        try {
+                                            const apiData = await getOrCreateKey();
+                                            if (!apiData?.key) throw new Error("Could not retrieve API Key");
+
+                                            const res = await fetch(`${process.env.NEXT_PUBLIC_RENDER_BACKEND_URL || "http://localhost:8000"}/api/scrape-x-profiles`, {
+                                                method: "POST",
+                                                headers: {
+                                                    "Content-Type": "application/json",
+                                                    "Authorization": `Bearer ${apiData.key}`
+                                                },
+                                                body: JSON.stringify({ usernames: urls })
+                                            });
+
+                                            if (!res.ok) {
+                                                const err = await res.json();
+                                                throw new Error(err.error || "Bulk update failed");
+                                            }
+                                            toast.success("X profile updates queued");
+                                        } catch (e: any) {
+                                            toast.error(e.message);
+                                        }
+                                    }}
                                     searchPlaceholder="Filter X profiles..."
                                     onRefresh={refreshXLeads}
-                                    filterContent={
-                                        <div className="space-y-4 py-4">
-                                            <div className="space-y-2">
-                                                <Label className="text-xs font-semibold uppercase text-muted-foreground">Has Email</Label>
-                                                <select className="w-full border rounded-md px-3 py-2 text-sm bg-background" value={xFilters.hasEmail} onChange={e => setXFilters(prev => ({ ...prev, hasEmail: e.target.value as any }))}>
-                                                    <option value="all">All</option>
-                                                    <option value="yes">Yes</option>
-                                                    <option value="no">No</option>
-                                                </select>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label className="text-xs font-semibold uppercase text-muted-foreground">Has Phone</Label>
-                                                <select className="w-full border rounded-md px-3 py-2 text-sm bg-background" value={xFilters.hasPhone} onChange={e => setXFilters(prev => ({ ...prev, hasPhone: e.target.value as any }))}>
-                                                    <option value="all">All</option>
-                                                    <option value="yes">Yes</option>
-                                                    <option value="no">No</option>
-                                                </select>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label className="text-xs font-semibold uppercase text-muted-foreground">Has Website</Label>
-                                                <select className="w-full border rounded-md px-3 py-2 text-sm bg-background" value={xFilters.hasWebsite} onChange={e => setXFilters(prev => ({ ...prev, hasWebsite: e.target.value as any }))}>
-                                                    <option value="all">All</option>
-                                                    <option value="yes">Yes</option>
-                                                    <option value="no">No</option>
-                                                </select>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label className="text-xs font-semibold uppercase text-muted-foreground">Verified</Label>
-                                                <select className="w-full border rounded-md px-3 py-2 text-sm bg-background" value={xFilters.isVerified} onChange={e => setXFilters(prev => ({ ...prev, isVerified: e.target.value as any }))}>
-                                                    <option value="all">All</option>
-                                                    <option value="yes">Yes</option>
-                                                    <option value="no">No</option>
-                                                </select>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label className="text-xs font-semibold uppercase text-muted-foreground">Protected Account</Label>
-                                                <select className="w-full border rounded-md px-3 py-2 text-sm bg-background" value={xFilters.isProtected} onChange={e => setXFilters(prev => ({ ...prev, isProtected: e.target.value as any }))}>
-                                                    <option value="all">All</option>
-                                                    <option value="yes">Yes</option>
-                                                    <option value="no">No</option>
-                                                </select>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label className="text-xs font-semibold uppercase text-muted-foreground">Followers</Label>
-                                                <div className="flex gap-2">
-                                                    <Input type="number" placeholder="Min" value={xFilters.minFollowers || ''} onChange={e => setXFilters(prev => ({ ...prev, minFollowers: Number(e.target.value) }))} />
-                                                    <Input type="number" placeholder="Max" value={xFilters.maxFollowers || ''} onChange={e => setXFilters(prev => ({ ...prev, maxFollowers: Number(e.target.value) }))} />
-                                                </div>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label className="text-xs font-semibold uppercase text-muted-foreground">Following</Label>
-                                                <div className="flex gap-2">
-                                                    <Input type="number" placeholder="Min" value={xFilters.minFollowing || ''} onChange={e => setXFilters(prev => ({ ...prev, minFollowing: Number(e.target.value) }))} />
-                                                    <Input type="number" placeholder="Max" value={xFilters.maxFollowing || ''} onChange={e => setXFilters(prev => ({ ...prev, maxFollowing: Number(e.target.value) }))} />
-                                                </div>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label className="text-xs font-semibold uppercase text-muted-foreground">Location</Label>
-                                                <Input
-                                                    placeholder="e.g. New York"
-                                                    value={xFilters.location}
-                                                    onChange={e => setXFilters(prev => ({ ...prev, location: e.target.value }))}
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label className="text-xs font-semibold uppercase text-muted-foreground">Tags</Label>
-                                                <Input
-                                                    placeholder="Search tags..."
-                                                    value={xFilters.tags}
-                                                    onChange={e => setXFilters(prev => ({ ...prev, tags: e.target.value }))}
-                                                />
-                                            </div>
-                                        </div>
-                                    }
                                     bulkActions={{
                                         show: true,
                                         actions: [
@@ -2664,7 +2692,10 @@ function GenericProfileTable<TData, TValue>({
                                 size="sm"
                                 className="h-8 text-xs gap-1.5"
                                 onClick={() => {
-                                    const urls = table.getSelectedRowModel().rows.map(r => (r.original as any).linkedinUrl);
+                                    const urls = table.getSelectedRowModel().rows.map(r => {
+                                        const orig = r.original as any;
+                                        return orig.linkedinUrl || orig.url || orig.domain || orig.username;
+                                    }).filter(Boolean);
                                     onBulkUpdate?.(urls);
                                 }}
                             >
@@ -3192,6 +3223,17 @@ function FilterSheet({ type, filters, setFilters }: { type: "personal" | "compan
                                     minPosts: 0, minReels: 0, minER: 0, minViews: 0, maxLastPostDays: 0,
                                     location: "", tags: ""
                                 });
+                            } else if (type === "x") {
+                                setFilters({
+                                    hasEmail: "all", hasPhone: "all", hasWebsite: "all",
+                                    isVerified: "all", isProtected: "all",
+                                    minFollowers: 0, maxFollowers: 10000000,
+                                    minFollowing: 0, maxFollowing: 10000000,
+                                    minTweets: 0, maxTweets: 10000000,
+                                    minMedia: 0, maxMedia: 10000000,
+                                    joinedBefore: "", joinedAfter: "",
+                                    location: "", tags: ""
+                                });
                             } else {
                                 setFilters({
                                     hasEmail: "all", hasPhone: "all",
@@ -3254,6 +3296,11 @@ function FilterSheet({ type, filters, setFilters }: { type: "personal" | "compan
                                     <ThreeStateFilter label="Mutual Follow" value={filters.mutualFollow} onChange={(v) => setFilters({ ...filters, mutualFollow: v })} />
                                     <ThreeStateFilter label="Has Channel" value={filters.hasChannel} onChange={(v) => setFilters({ ...filters, hasChannel: v })} />
                                 </>
+                            ) : type === "x" ? (
+                                <>
+                                    <ThreeStateFilter label="Verified Account" value={filters.isVerified} onChange={(v) => setFilters({ ...filters, isVerified: v })} />
+                                    <ThreeStateFilter label="Protected Account" value={filters.isProtected} onChange={(v) => setFilters({ ...filters, isProtected: v })} />
+                                </>
                             ) : null}
                         </div>
                     </div>
@@ -3308,6 +3355,12 @@ function FilterSheet({ type, filters, setFilters }: { type: "personal" | "compan
                                             />
                                         </div>
                                     </div>
+                                </>
+                            ) : type === "x" ? (
+                                <>
+                                    <ThreeStateFilter label="Has Email" value={filters.hasEmail} onChange={(v) => setFilters({ ...filters, hasEmail: v })} />
+                                    <ThreeStateFilter label="Has Phone" value={filters.hasPhone} onChange={(v) => setFilters({ ...filters, hasPhone: v })} />
+                                    <ThreeStateFilter label="Has Website" value={filters.hasWebsite} onChange={(v) => setFilters({ ...filters, hasWebsite: v })} />
                                 </>
                             ) : (
                                 <>
@@ -3430,7 +3483,7 @@ function FilterSheet({ type, filters, setFilters }: { type: "personal" | "compan
                         </div>
                     )}
 
-                    {(type === "personal" || type === "company" || type === "instagram") && (
+                    {(type === "personal" || type === "company" || type === "instagram" || type === "x") && (
                         <div className="space-y-4">
                             <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                                 {type === "personal" ? "Followers" : type === "company" ? "Followers" : "Followers"}
@@ -3455,7 +3508,7 @@ function FilterSheet({ type, filters, setFilters }: { type: "personal" | "compan
                         </div>
                     )}
 
-                    {type === "instagram" && (
+                    {(type === "instagram" || type === "x") && (
                         <div className="space-y-4">
                             <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Following</Label>
                             <div className="flex items-center gap-2">
@@ -3474,6 +3527,79 @@ function FilterSheet({ type, filters, setFilters }: { type: "personal" | "compan
                                     onChange={(e) => setFilters({ ...filters, maxFollowing: e.target.value === "" ? 0 : parseInt(e.target.value) })}
                                     className="h-8 text-xs"
                                 />
+                            </div>
+                        </div>
+                    )}
+
+                    {type === "x" && (
+                        <div className="space-y-4">
+                            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Tweets</Label>
+                            <div className="flex items-center gap-2">
+                                <Input
+                                    type="number"
+                                    placeholder="Min"
+                                    value={filters.minTweets || ""}
+                                    onChange={(e) => setFilters({ ...filters, minTweets: e.target.value === "" ? 0 : parseInt(e.target.value) })}
+                                    className="h-8 text-xs"
+                                />
+                                <span className="text-muted-foreground">to</span>
+                                <Input
+                                    type="number"
+                                    placeholder="Max"
+                                    value={(filters.maxTweets === 10000000 ? "" : filters.maxTweets) || ""}
+                                    onChange={(e) => setFilters({ ...filters, maxTweets: e.target.value === "" ? 0 : parseInt(e.target.value) })}
+                                    className="h-8 text-xs"
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {type === "x" && (
+                        <div className="space-y-4">
+                            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Media</Label>
+                            <div className="flex items-center gap-2">
+                                <Input
+                                    type="number"
+                                    placeholder="Min"
+                                    value={filters.minMedia || ""}
+                                    onChange={(e) => setFilters({ ...filters, minMedia: e.target.value === "" ? 0 : parseInt(e.target.value) })}
+                                    className="h-8 text-xs"
+                                />
+                                <span className="text-muted-foreground">to</span>
+                                <Input
+                                    type="number"
+                                    placeholder="Max"
+                                    value={(filters.maxMedia === 10000000 ? "" : filters.maxMedia) || ""}
+                                    onChange={(e) => setFilters({ ...filters, maxMedia: e.target.value === "" ? 0 : parseInt(e.target.value) })}
+                                    className="h-8 text-xs"
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {type === "x" && (
+                        <div className="space-y-4">
+                            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Joined Date</Label>
+                            <div className="flex items-center gap-2">
+                                <div className="w-full">
+                                    <Label className="text-[10px] text-muted-foreground mb-1 block">After</Label>
+                                    <Input
+                                        type="date"
+                                        value={filters.joinedAfter || ""}
+                                        onChange={(e) => setFilters({ ...filters, joinedAfter: e.target.value })}
+                                        className="h-8 text-xs w-full"
+                                    />
+                                </div>
+                                <span className="text-muted-foreground self-end mb-2">-</span>
+                                <div className="w-full">
+                                    <Label className="text-[10px] text-muted-foreground mb-1 block">Before</Label>
+                                    <Input
+                                        type="date"
+                                        value={filters.joinedBefore || ""}
+                                        onChange={(e) => setFilters({ ...filters, joinedBefore: e.target.value })}
+                                        className="h-8 text-xs w-full"
+                                    />
+                                </div>
                             </div>
                         </div>
                     )}

@@ -1094,15 +1094,40 @@ async function handleXFollowersScrape(userId, input, keyManager, tags = ["XFollo
             (key) => scraper.scrapeXFollowers(targetUsernames, key, getFollowers, getFollowing, maxCount, maxCount)
         );
         
-        followers.forEach(f => {
-            if (f.screen_name) allUsernames.add(f.screen_name);
-        });
+        if (followers && followers.length > 0) {
+            console.log(`✨ Found ${followers.length} X followers/following. Mapping directly to database to save costs...`);
+            const formattedFollowers = followers.map(f => ({
+                username: f.screen_name,
+                full_name: f.name,
+                profile_pic_url: f.profile_image_url_https,
+                biography: f.description,
+                external_url: f.url,
+                location: f.location,
+                followers_count: f.followers_count,
+                following_count: f.friends_count,
+                tweets_count: f.statuses_count,
+                email: f.email || null,
+                phone: null,
+                media_count: f.media_count,
+                is_protected: f.protected,
+                account_created_at: f.created_at,
+                url: f.screen_name ? `https://x.com/${f.screen_name}` : null,
+                found_for: f.target_username,
+                is_verified: f.verified,
+                extra_data: f
+            })).filter(f => f.username);
 
-        if (allUsernames.size > 0) {
-            const usernames = Array.from(allUsernames);
-            console.log(`✨ Enriching ${usernames.length} extracted X followers...`);
-            await handleXProfilesScrape(userId, { usernames }, keyManager, tags, jobId);
+            if (formattedFollowers.length > 0) {
+                const saved = await supabaseApi.upsertXLeadsBulk(formattedFollowers);
+                if (saved && saved.length > 0) {
+                    const sids = saved.map(s => s.id);
+                    await supabaseApi.linkUserToLeadsBulk(userId, sids, "x", tags);
+                    console.log(`✅ Successfully saved and linked ${saved.length} X followers/following in Supabase`);
+                }
+            }
+            if (jobId) await supabaseApi.updateJobProgress(jobId, 100);
         } else {
+            console.warn("⚠️ No followers found.");
             if (jobId) await supabaseApi.updateJobProgress(jobId, 100);
         }
     } catch (err) {

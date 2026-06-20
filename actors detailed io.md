@@ -826,7 +826,7 @@ Saved to user's collection with tag: "Competitor: @username"
 ]
 ```
 
-#### Twitter Email Scraper - X Profile & Lead Extracto
+#### Twitter Email Scraper - X Profile & Lead Extractor
 
 
 **Actor ID**: `m0LEAhkyKSbmcbPnl`
