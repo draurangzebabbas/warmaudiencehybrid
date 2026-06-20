@@ -661,6 +661,7 @@ async function scrapeBatch(userId, urls, type, keyManager, tags) {
                             country: r.locations?.headquarters?.country || b.country || r.country,
                             postalCode: r.locations?.headquarters?.postal_code || b.postalCode || r.postalCode,
                             isVerified: b.is_verified ?? b.isVerified ?? r.isVerified,
+                            isBlueVerified: b.is_blue_verified ?? b.isBlueVerified ?? r.isBlueVerified,
                             extraData: r
                         };
                     }
@@ -1113,7 +1114,7 @@ async function handleXFollowersScrape(userId, input, keyManager, tags = ["XFollo
                 account_created_at: f.created_at,
                 url: f.screen_name ? `https://x.com/${f.screen_name}` : null,
                 found_for: null,  // Only populated by Profile Scraper (m0LEAhkyKSbmcbPnl), not follower scraper
-                is_verified: f.verified,
+                is_verified: f.verified || f.is_blue_verified || f.ext_is_blue_verified || false,
                 extra_data: f
             })).filter(f => f.username);
 

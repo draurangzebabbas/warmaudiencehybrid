@@ -1675,7 +1675,7 @@ export default function ProfilesPage() {
             accessorKey: "username",
             header: "Profile",
             cell: ({ row }) => {
-                const isVerified = row.original.isVerified || row.original.is_verified;
+                const isVerified = row.original.isVerified || row.original.is_verified || row.original.isBlueVerified || row.original.is_blue_verified;
                 return (
                     <div className="flex items-center gap-3">
                         <Avatar className="h-9 w-9">
