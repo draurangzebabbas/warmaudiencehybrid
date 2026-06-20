@@ -13,6 +13,17 @@ if (!supabaseUrl || !supabaseKey) {
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 /**
+ * Normalize a LinkedIn URL so both linkedin.com and www.linkedin.com
+ * are stored identically (always without www.) to prevent duplicate rows.
+ */
+function normalizeLinkedInUrl(url) {
+    if (!url) return url;
+    return url.trim()
+        .replace(/^https?:\/\/(www\.)?/i, 'https://')
+        .replace(/\/+$/, '');
+}
+
+/**
  * Check if a profile exists in cache
  * Returns { isFresh, profile } or null
  */
@@ -87,7 +98,7 @@ async function upsertPersonalProfile(profileData) {
     const { data, error } = await supabase
         .from("linkedin_profiles")
         .upsert({
-            linkedin_url: profileData.linkedinUrl,
+            linkedin_url: normalizeLinkedInUrl(profileData.linkedinUrl),
             public_identifier: profileData.publicIdentifier,
             first_name: profileData.firstName,
             last_name: profileData.lastName,
@@ -125,7 +136,7 @@ async function upsertPersonalProfile(profileData) {
  */
 async function upsertPersonalProfilesBulk(profiles) {
     const items = profiles.map(p => ({
-        linkedin_url: p.linkedinUrl,
+        linkedin_url: normalizeLinkedInUrl(p.linkedinUrl),
         public_identifier: p.publicIdentifier,
         first_name: p.firstName,
         last_name: p.lastName,
@@ -425,6 +436,7 @@ async function linkUserToLeadsBulk(userId, leadIds, type, tags = []) {
         });
     }
 
+    const now = new Date().toISOString();
     const items = leadIds.map(id => {
         const existingTags = existingMap.get(id) || [];
         // Merge tags and remove duplicates
@@ -434,7 +446,8 @@ async function linkUserToLeadsBulk(userId, leadIds, type, tags = []) {
             user_id: userId,
             profile_type: type,
             tags: mergedTags,
-            created_at: new Date().toISOString()
+            created_at: now,
+            updated_at: now  // Always update so re-scrapes refresh the user's "Last Updated" timestamp
         };
         item[idField] = id;
         return item;

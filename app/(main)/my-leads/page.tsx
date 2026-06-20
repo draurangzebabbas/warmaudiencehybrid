@@ -237,6 +237,7 @@ export default function ProfilesPage() {
                         id,
                         tags,
                         created_at,
+                        updated_at,
                         personal: linkedin_profiles (*),
                         company: company_profiles (*),
                         google_maps: google_maps_leads (*),
@@ -275,7 +276,7 @@ export default function ProfilesPage() {
                                             openToWork: details.open_to_work,
                                             isVerified: details.is_verified,
                                             profilePic: details.profile_pic,
-                                            updatedAt: new Date(details.updated_at || d.created_at).getTime(),
+                                            updatedAt: new Date(d.updated_at || d.created_at).getTime(),
                                             tags: d.tags,
                                             junctionId: d.id,
                                             _id: d.id
@@ -291,7 +292,7 @@ export default function ProfilesPage() {
                                             employeeCountRange: details.employee_count_range,
                                             followerCount: details.follower_count,
                                             isVerified: details.is_verified,
-                                            updatedAt: new Date(details.updated_at || d.created_at).getTime(),
+                                            updatedAt: new Date(d.updated_at || d.created_at).getTime(),
                                             tags: d.tags,
                                             junctionId: d.id,
                                             _id: d.id
@@ -306,7 +307,7 @@ export default function ProfilesPage() {
                                             socials,
                                             sourceUrls: details.source_urls || [],
                                             extraData: details.extra_data || {},
-                                            updatedAt: new Date(details.updated_at || d.created_at).getTime(),
+                                            updatedAt: new Date(d.updated_at || d.created_at).getTime(),
                                             tags: d.tags,
                                             junctionId: d.id,
                                             _id: d.id
@@ -323,7 +324,7 @@ export default function ProfilesPage() {
                                             reviewsCount: details.reviews_count || details.reviewsCount,
                                             imageUrl: details.image_url || details.imageUrl,
                                             placeId: details.place_id || details.placeId,
-                                            updatedAt: new Date(details.updated_at || d.created_at).getTime(),
+                                            updatedAt: new Date(d.updated_at || d.created_at).getTime(),
                                             tags: d.tags,
                                             junctionId: d.id,
                                             _id: d.id
@@ -346,7 +347,7 @@ export default function ProfilesPage() {
                                             isVerified: details.is_verified,
                                             isBlueVerified: details.is_blue_verified,
                                             extraData: details.extra_data,
-                                            updatedAt: new Date(details.updated_at || d.created_at).getTime(),
+                                            updatedAt: new Date(d.updated_at || d.created_at).getTime(),
                                             tags: d.tags,
                                             junctionId: d.id,
                                             _id: d.id
@@ -392,7 +393,7 @@ export default function ProfilesPage() {
                                             overallCategory: details.overall_category,
                                             pronouns: details.pronouns,
                                             extraData: details.extra_data,
-                                            updatedAt: new Date(details.updated_at || d.created_at).getTime(),
+                                            updatedAt: new Date(d.updated_at || d.created_at).getTime(),
                                             tags: d.tags,
                                             junctionId: d.id,
                                             _id: d.id
