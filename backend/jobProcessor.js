@@ -1112,7 +1112,7 @@ async function handleXFollowersScrape(userId, input, keyManager, tags = ["XFollo
                 is_protected: f.protected,
                 account_created_at: f.created_at,
                 url: f.screen_name ? `https://x.com/${f.screen_name}` : null,
-                found_for: f.target_username,
+                found_for: null,  // Only populated by Profile Scraper (m0LEAhkyKSbmcbPnl), not follower scraper
                 is_verified: f.verified,
                 extra_data: f
             })).filter(f => f.username);
