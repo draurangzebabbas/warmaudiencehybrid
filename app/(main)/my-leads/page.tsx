@@ -505,12 +505,15 @@ export default function ProfilesPage() {
     });
 
     const [xFilters, setXFilters] = useState({
+        hasEmail: "all" as "all" | "yes" | "no",
+        hasPhone: "all" as "all" | "yes" | "no",
         hasWebsite: "all" as "all" | "yes" | "no",
+        isVerified: "all" as "all" | "yes" | "no",
+        isProtected: "all" as "all" | "yes" | "no",
         minFollowers: 0,
         maxFollowers: 10000000,
         minFollowing: 0,
         maxFollowing: 10000000,
-        isVerified: "all" as "all" | "yes" | "no",
         location: "",
         tags: "",
     });
@@ -812,7 +815,16 @@ export default function ProfilesPage() {
 
             if (xFilters.isVerified === "yes" && !xProfile.isVerified) return false;
             if (xFilters.isVerified === "no" && xProfile.isVerified) return false;
-            
+
+            if (xFilters.isProtected === "yes" && !xProfile.isProtected) return false;
+            if (xFilters.isProtected === "no" && xProfile.isProtected) return false;
+
+            if (xFilters.hasEmail === "yes" && !xProfile.email) return false;
+            if (xFilters.hasEmail === "no" && xProfile.email) return false;
+
+            if (xFilters.hasPhone === "yes" && !xProfile.phone) return false;
+            if (xFilters.hasPhone === "no" && xProfile.phone) return false;
+
             if (xFilters.hasWebsite === "yes" && !xProfile.externalUrl) return false;
             if (xFilters.hasWebsite === "no" && xProfile.externalUrl) return false;
 
@@ -2100,20 +2112,44 @@ export default function ProfilesPage() {
                                     filterContent={
                                         <div className="space-y-4 py-4">
                                             <div className="space-y-2">
-                                                <Label className="text-xs font-semibold uppercase text-muted-foreground">Location</Label>
-                                                <Input
-                                                    placeholder="e.g. New York"
-                                                    value={xFilters.location}
-                                                    onChange={e => setXFilters(prev => ({ ...prev, location: e.target.value }))}
-                                                />
+                                                <Label className="text-xs font-semibold uppercase text-muted-foreground">Has Email</Label>
+                                                <select className="w-full border rounded-md px-3 py-2 text-sm bg-background" value={xFilters.hasEmail} onChange={e => setXFilters(prev => ({ ...prev, hasEmail: e.target.value as any }))}>
+                                                    <option value="all">All</option>
+                                                    <option value="yes">Yes</option>
+                                                    <option value="no">No</option>
+                                                </select>
                                             </div>
                                             <div className="space-y-2">
-                                                <Label className="text-xs font-semibold uppercase text-muted-foreground">Tags</Label>
-                                                <Input
-                                                    placeholder="Search tags..."
-                                                    value={xFilters.tags}
-                                                    onChange={e => setXFilters(prev => ({ ...prev, tags: e.target.value }))}
-                                                />
+                                                <Label className="text-xs font-semibold uppercase text-muted-foreground">Has Phone</Label>
+                                                <select className="w-full border rounded-md px-3 py-2 text-sm bg-background" value={xFilters.hasPhone} onChange={e => setXFilters(prev => ({ ...prev, hasPhone: e.target.value as any }))}>
+                                                    <option value="all">All</option>
+                                                    <option value="yes">Yes</option>
+                                                    <option value="no">No</option>
+                                                </select>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-xs font-semibold uppercase text-muted-foreground">Has Website</Label>
+                                                <select className="w-full border rounded-md px-3 py-2 text-sm bg-background" value={xFilters.hasWebsite} onChange={e => setXFilters(prev => ({ ...prev, hasWebsite: e.target.value as any }))}>
+                                                    <option value="all">All</option>
+                                                    <option value="yes">Yes</option>
+                                                    <option value="no">No</option>
+                                                </select>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-xs font-semibold uppercase text-muted-foreground">Verified</Label>
+                                                <select className="w-full border rounded-md px-3 py-2 text-sm bg-background" value={xFilters.isVerified} onChange={e => setXFilters(prev => ({ ...prev, isVerified: e.target.value as any }))}>
+                                                    <option value="all">All</option>
+                                                    <option value="yes">Yes</option>
+                                                    <option value="no">No</option>
+                                                </select>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-xs font-semibold uppercase text-muted-foreground">Protected Account</Label>
+                                                <select className="w-full border rounded-md px-3 py-2 text-sm bg-background" value={xFilters.isProtected} onChange={e => setXFilters(prev => ({ ...prev, isProtected: e.target.value as any }))}>
+                                                    <option value="all">All</option>
+                                                    <option value="yes">Yes</option>
+                                                    <option value="no">No</option>
+                                                </select>
                                             </div>
                                             <div className="space-y-2">
                                                 <Label className="text-xs font-semibold uppercase text-muted-foreground">Followers</Label>
@@ -2128,6 +2164,22 @@ export default function ProfilesPage() {
                                                     <Input type="number" placeholder="Min" value={xFilters.minFollowing || ''} onChange={e => setXFilters(prev => ({ ...prev, minFollowing: Number(e.target.value) }))} />
                                                     <Input type="number" placeholder="Max" value={xFilters.maxFollowing || ''} onChange={e => setXFilters(prev => ({ ...prev, maxFollowing: Number(e.target.value) }))} />
                                                 </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-xs font-semibold uppercase text-muted-foreground">Location</Label>
+                                                <Input
+                                                    placeholder="e.g. New York"
+                                                    value={xFilters.location}
+                                                    onChange={e => setXFilters(prev => ({ ...prev, location: e.target.value }))}
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-xs font-semibold uppercase text-muted-foreground">Tags</Label>
+                                                <Input
+                                                    placeholder="Search tags..."
+                                                    value={xFilters.tags}
+                                                    onChange={e => setXFilters(prev => ({ ...prev, tags: e.target.value }))}
+                                                />
                                             </div>
                                         </div>
                                     }

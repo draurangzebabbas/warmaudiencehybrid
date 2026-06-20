@@ -61,6 +61,26 @@ async function getCachedInstagramProfile(username) {
 }
 
 /**
+ * Check if an X profile exists in cache
+ */
+async function getCachedXProfile(username) {
+    const { data, error } = await supabase
+        .from("x_leads")
+        .select("*")
+        .eq("username", username)
+        .order('updated_at', { ascending: false })
+        .limit(1);
+
+    if (error || !data || data.length === 0) return null;
+    const profile = data[0];
+
+    return { 
+        isFresh: true, 
+        profile
+    };
+}
+
+/**
  * Upsert a personal LinkedIn profile
  */
 async function upsertPersonalProfile(profileData) {
@@ -719,6 +739,7 @@ async function cleanupStuckJobs() {
 module.exports = {
     getCachedProfile,
     getCachedInstagramProfile,
+    getCachedXProfile,
     getWebsiteContactsByDomains,
     cleanupStuckJobs,
     upsertPersonalProfile,

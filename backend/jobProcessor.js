@@ -949,53 +949,103 @@ async function handleXProfilesScrape(userId, input, keyManager, tags = ["XProfil
         return;
     }
 
+    const uniqueUsernames = Array.from(new Set(usernames.map(u => u.trim()).filter(Boolean)));
+    const toScrape = [];
+
+    // 1. Initial Cache Check
+    for (const username of uniqueUsernames) {
+        try {
+            const cached = !force ? await supabaseApi.getCachedXProfile(username) : null;
+            if (cached && cached.isFresh) {
+                const sid = cached.profile.id;
+                console.log(`📦 Cache Hit [x] (Supabase): ${username}`);
+                await supabaseApi.linkUserToLeadsBulk(userId, [sid], "x", tags);
+            } else {
+                toScrape.push(username);
+            }
+        } catch (e) {
+            toScrape.push(username);
+        }
+    }
+
+    if (toScrape.length === 0) {
+        if (jobId) await supabaseApi.updateJobProgress(jobId, 100);
+        return;
+    }
+
     if (jobId) await supabaseApi.updateJobProgress(jobId, 10);
     
-    console.log(`🚀 Starting X Profile scrape for ${usernames.length} usernames`);
+    console.log(`🚀 Starting X Profile scrape for ${toScrape.length} usernames`);
     
-    const results = await executeWithRetry(
-        keyManager,
-        "X Profiles Scrape",
-        (key) => scraper.scrapeXProfiles(usernames, key)
-    );
-    
-    if (jobId) await supabaseApi.updateJobProgress(jobId, 80);
-
-    if (results && results.length > 0) {
-        const mapped = results.map(r => ({
-            username: r.username,
-            full_name: r.name,
-            profile_pic_url: r.profileImage,
-            biography: r.bio,
-            location: r.location,
-            external_url: r.website,
-            email: r.email,
-            phone: r.phone,
-            followers_count: r.followers,
-            following_count: r.following,
-            tweets_count: r.tweetCount,
-            media_count: r.mediaCount,
-            verified_type: r.verifiedType,
-            is_protected: r.protected,
-            account_created_at: r.createdAt,
-            url: r.url,
-            found_for: r.foundFor,
-            is_verified: r.verified,
-            is_blue_verified: false,
-            extra_data: { 
-                userId: r.userId,
-                likeCount: r.likeCount,
-                mediaCount: r.mediaCount,
-                createdAt: r.createdAt 
-            }
-        }));
-        
-        const upserted = await supabaseApi.upsertXLeadsBulk(mapped);
-        const leadIds = upserted.map(u => u.id);
-        
-        await supabaseApi.linkUserToLeadsBulk(userId, leadIds, "x", tags);
+    // Batch the scraping in groups of 50 to avoid timeouts/overload
+    const BATCH_SIZE = 50;
+    const batches = [];
+    for (let i = 0; i < toScrape.length; i += BATCH_SIZE) {
+        batches.push(toScrape.slice(i, i + BATCH_SIZE));
     }
+
+    let completedBatches = 0;
+
+    await Promise.all(batches.map((batch, index) => {
+        return (async () => {
+            // Staggered start
+            await new Promise(r => setTimeout(r, index * 200));
+            
+            await keyManager.refreshIfLow();
+            
+            const results = await executeWithRetry(
+                keyManager,
+                "X Profiles Scrape",
+                (key) => scraper.scrapeXProfiles(batch, key)
+            );
+            
+            if (results && results.length > 0) {
+                const mapped = results.map(r => ({
+                    username: r.username,
+                    full_name: r.name,
+                    profile_pic_url: r.profileImage,
+                    biography: r.bio,
+                    location: r.location,
+                    external_url: r.website,
+                    email: r.email,
+                    phone: r.phone,
+                    followers_count: r.followers,
+                    following_count: r.following,
+                    tweets_count: r.tweetCount,
+                    media_count: r.mediaCount,
+                    verified_type: r.verifiedType,
+                    is_protected: r.protected,
+                    account_created_at: r.createdAt,
+                    url: r.url,
+                    found_for: r.foundFor,
+                    is_verified: r.verified,
+                    is_blue_verified: false,
+                    extra_data: { 
+                        userId: r.userId,
+                        likeCount: r.likeCount,
+                        mediaCount: r.mediaCount,
+                        createdAt: r.createdAt 
+                    }
+                }));
+                
+                const upserted = await supabaseApi.upsertXLeadsBulk(mapped);
+                const leadIds = upserted.map(u => u.id);
+                
+                await supabaseApi.linkUserToLeadsBulk(userId, leadIds, "x", tags);
+            }
+
+            completedBatches++;
+            if (jobId) {
+                const progress = 10 + Math.floor((completedBatches / batches.length) * 89);
+                await supabaseApi.updateJobProgress(jobId, Math.min(progress, 99));
+            }
+        })();
+    }));
+
+    if (jobId) await supabaseApi.updateJobProgress(jobId, 100);
 }
+
+
 
 async function handleXEngagementScrape(userId, input, keyManager, tags = ["XEngagement"], jobId) {
     const postUrls = input.postUrls || [];
