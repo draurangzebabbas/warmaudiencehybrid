@@ -1117,8 +1117,17 @@ async function handleXFollowersScrape(userId, input, keyManager, tags = ["XFollo
                 extra_data: f
             })).filter(f => f.username);
 
-            if (formattedFollowers.length > 0) {
-                const saved = await supabaseApi.upsertXLeadsBulk(formattedFollowers);
+            // Deduplicate by username to prevent "ON CONFLICT DO UPDATE command cannot affect row a second time" error
+            const uniqueFollowersMap = new Map();
+            for (const f of formattedFollowers) {
+                if (!uniqueFollowersMap.has(f.username)) {
+                    uniqueFollowersMap.set(f.username, f);
+                }
+            }
+            const uniqueFollowers = Array.from(uniqueFollowersMap.values());
+
+            if (uniqueFollowers.length > 0) {
+                const saved = await supabaseApi.upsertXLeadsBulk(uniqueFollowers);
                 if (saved && saved.length > 0) {
                     const sids = saved.map(s => s.id);
                     await supabaseApi.linkUserToLeadsBulk(userId, sids, "x", tags);
