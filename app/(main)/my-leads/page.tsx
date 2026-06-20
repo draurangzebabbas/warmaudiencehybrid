@@ -584,7 +584,7 @@ export default function ProfilesPage() {
                     "Content-Type": "application/json",
                     "Authorization": `Bearer ${apiData.key}`
                 },
-                body: JSON.stringify({ profileUrls: [url] })
+                body: JSON.stringify({ profileUrls: [url], force: true })
             });
 
             if (!res.ok) {
@@ -592,6 +592,31 @@ export default function ProfilesPage() {
                 throw new Error(err.error || "Update failed");
             }
             toast.success("Profile update queued");
+        } catch (e: any) {
+            toast.error(e.message);
+        }
+    };
+
+    const handleUpdateInstagramProfile = async (username: string) => {
+        try {
+            toast.info("Queueing update...");
+            const apiData = await getOrCreateKey();
+            if (!apiData?.key) throw new Error("Could not retrieve API Key");
+
+            const res = await fetch(`${process.env.NEXT_PUBLIC_RENDER_BACKEND_URL || "http://localhost:8000"}/api/scrape-instagram-profiles`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${apiData.key}`
+                },
+                body: JSON.stringify({ usernames: [username], force: true })
+            });
+
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.error || "Update failed");
+            }
+            toast.success("Instagram profile update queued");
         } catch (e: any) {
             toast.error(e.message);
         }
@@ -609,7 +634,7 @@ export default function ProfilesPage() {
                     "Content-Type": "application/json",
                     "Authorization": `Bearer ${apiData.key}`
                 },
-                body: JSON.stringify({ usernames: [username] })
+                body: JSON.stringify({ usernames: [username], force: true })
             });
 
             if (!res.ok) {
@@ -1613,6 +1638,9 @@ export default function ProfilesPage() {
                                 <IconExternalLink className="mr-2 h-4 w-4" /> View on Instagram
                             </a>
                         </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleUpdateInstagramProfile(row.original.username)}>
+                            <IconRefresh className="mr-2 h-4 w-4" /> Update Profile
+                        </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteProfile(row.original.junctionId)}>
                             Delete Lead
@@ -2130,6 +2158,16 @@ export default function ProfilesPage() {
                                             }
                                         }
                                     }}
+                                    onBulkUpdate={async (domains) => {
+                                        toast.info(`Queueing update for ${domains.length} website contacts...`);
+                                        try {
+                                            for (const domain of domains) {
+                                                await handleUpdateWebsiteContact(domain);
+                                            }
+                                        } catch (e: any) {
+                                            toast.error(e.message);
+                                        }
+                                    }}
                                 />
                             </TabsContent>
                             <TabsContent value="instagram">
@@ -2149,6 +2187,25 @@ export default function ProfilesPage() {
                                                 toast.success("Leads removed");
                                                 window.location.reload();
                                             }
+                                        }
+                                    }}
+                                    onBulkUpdate={async (urls) => {
+                                        toast.info(`Queueing update for ${urls.length} Instagram profiles...`);
+                                        try {
+                                            const apiData = await getOrCreateKey();
+                                            if (!apiData?.key) throw new Error("Could not retrieve API Key");
+                                            const res = await fetch(`${process.env.NEXT_PUBLIC_RENDER_BACKEND_URL || "http://localhost:8000"}/api/scrape-instagram-profiles`, {
+                                                method: "POST",
+                                                headers: {
+                                                    "Content-Type": "application/json",
+                                                    "Authorization": `Bearer ${apiData.key}`
+                                                },
+                                                body: JSON.stringify({ usernames: urls, force: true })
+                                            });
+                                            if (!res.ok) throw new Error("Bulk update failed");
+                                            toast.success("Instagram profile updates queued");
+                                        } catch (e: any) {
+                                            toast.error(e.message);
                                         }
                                     }}
                                 />
@@ -2197,7 +2254,7 @@ export default function ProfilesPage() {
                                                     "Content-Type": "application/json",
                                                     "Authorization": `Bearer ${apiData.key}`
                                                 },
-                                                body: JSON.stringify({ usernames: urls })
+                                                body: JSON.stringify({ usernames: urls, force: true })
                                             });
 
                                             if (!res.ok) {
