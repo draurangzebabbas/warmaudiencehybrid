@@ -1712,7 +1712,7 @@ export default function ProfilesPage() {
                         <div className="flex flex-col">
                             <span className="font-semibold text-sm flex items-center gap-1">
                                 {row.original.fullName || row.original.full_name || row.original.username}
-                                {isVerified && <IconBadgeFilled className="text-blue-500 h-4 w-4" />}
+                                {isVerified && <IconTwitterVerified className="text-[#1D9BF0] h-4 w-4" />}
                             </span>
                             <a
                                 href={`https://x.com/${row.original.username}`}
@@ -2690,6 +2690,17 @@ function IconBrandYoutube({ className }: { className?: string }) {
         >
             <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.42a2.78 2.78 0 0 0-1.94 2C1 8.14 1 12 1 12s0 3.86.42 5.58a2.78 2.78 0 0 0 1.94 2c1.72.42 8.6.42 8.6.42s6.88 0 8.6-.42a2.78 2.78 0 0 0 1.94-2C23 15.86 23 12 23 12s0-3.86-.42-5.58z" />
             <polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" />
+        </svg>
+    )
+}
+
+function IconTwitterVerified({ className }: { className?: string }) {
+    return (
+        <svg viewBox="0 0 24 24" aria-label="Verified account" role="img" className={className} xmlns="http://www.w3.org/2000/svg">
+            <g>
+                <path fill="currentColor" d="M22.5 12.5c0-1.58-.875-2.95-2.148-3.6.154-.435.238-.905.238-1.4 0-2.21-1.71-3.998-3.918-3.998-.47 0-.92.084-1.336.25C14.818 2.415 13.51 1.5 12 1.5s-2.816.917-3.337 2.25c-.416-.165-.866-.25-1.336-.25-2.21 0-3.918 1.79-3.918 4 0 .495.084.965.238 1.4-1.273.65-2.148 2.02-2.148 3.6 0 1.46.733 2.73 1.833 3.398-.052.288-.078.58-.078.878 0 2.21 1.71 4 3.918 4 .512 0 1.01-.097 1.477-.282.52 1.333 1.826 2.25 3.337 2.25s2.816-.917 3.337-2.25c.467.185.965.282 1.477.282 2.21 0 3.918-1.79 3.918-4 0-.298-.026-.59-.078-.878 1.1-.668 1.833-1.938 1.833-3.398z" />
+                <path fill="white" d="M10.204 17.5L5.704 13l1.414-1.414 3.086 3.086 7.086-7.086 1.414 1.414-8.5 8.5z" />
+            </g>
         </svg>
     )
 }
