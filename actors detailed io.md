@@ -711,8 +711,9 @@ Saved to user's collection with tag: "Competitor: @username"
 **Input**:
 ```json
 {
+    "maxCommentsPerPost": 10000,
     "postUrls": [
-        "https://x.com/romanbuildsaas/status/2050282939897074158?s=20"
+        "https://x.com/mikefutia/status/2067766615962489258?s=20"
     ]
 }
 ```
@@ -1374,6 +1375,91 @@ Saved to user's collection with tag: "Competitor: @username"
 
 ]
 ```
+
+
+
+### 7. TikTok Extractor
+
+#### Tiktok Comments Scraper
+
+
+**Actor ID**: `BDec00yAmCm1QbMEI`
+
+**Input**:
+```json
+{
+  "commentsPerPost": 10000000,
+  "excludePinnedPosts": false,
+  "maxRepliesPerComment": 0,
+  "postURLs": [
+    "https://www.tiktok.com/@veggietoonworld0/video/7653680493375835414?is_from_webapp=1&sender_device=pc"
+  ],
+  "resultsPerPage": 10000,
+  "topLevelCommentsPerPost": 100000000,
+  "profileScrapeSections": [
+    "videos"
+  ],
+  "profileSorting": "latest"
+}
+```
+
+**Output Structure**:
+```json
+[
+  {
+    "text": "@dthjbffukhv",
+    "diggCount": 0,
+    "replyCommentTotal": 0,
+    "createTimeISO": "2026-06-24T06:37:15.000Z",
+    "uniqueId": "user199192597380",
+    "videoWebUrl": "https://www.tiktok.com/@veggietoonworld0/video/7654820094102555926",
+    "uid": "7627049162249028629",
+    "cid": "7654845839777350420",
+    "avatarThumbnail": "https://p16-common-sign.tiktokcdn-eu.com/tos-alisg-avt-0068/7eba15cf6f6a088342d09499a80cecd6~tplv-tiktokx-cropcenter:100:100.jpg?dr=10399&refresh_token=cfcbcbd2&x-expires=1782370800&x-signature=14695t5I5oDeby2UALsrUGjV%2F%2FU%3D&t=4d5b0474&ps=13740610&shp=30310797&shcp=ff37627b&idc=no1a"
+  },
+  {
+    "text": "💔💔💔",
+    "diggCount": 0,
+    "replyCommentTotal": 0,
+    "createTimeISO": "2026-06-24T07:43:39.000Z",
+    "uniqueId": "mazari.mazari26",
+    "videoWebUrl": "https://www.tiktok.com/@veggietoonworld0/video/7654820094102555926",
+    "uid": "7487644486614385719",
+    "cid": "7654864375484367636",
+    "avatarThumbnail": "https://p16-common-sign.tiktokcdn-eu.com/tos-alisg-avt-0068/2780b260e5a23e8446810ac0071c1b9b~tplv-tiktokx-cropcenter:100:100.jpg?dr=10399&refresh_token=9c10dccd&x-expires=1782370800&x-signature=XIxBAVX0zgIU7gsgJiO26R1Dx5c%3D&t=4d5b0474&ps=13740610&shp=30310797&shcp=ff37627b&idc=no1a"
+  },
+  {
+    "text": "🥰🥰🥰",
+    "diggCount": 0,
+    "replyCommentTotal": 0,
+    "createTimeISO": "2026-06-24T07:16:11.000Z",
+    "uniqueId": "bilal.nahra16",
+    "videoWebUrl": "https://www.tiktok.com/@veggietoonworld0/video/7654820094102555926",
+    "uid": "7610031464129905671",
+    "cid": "7654857321449030421",
+    "avatarThumbnail": "https://p16-common-sign.tiktokcdn-eu.com/tos-alisg-avt-0068/96538b323a71cf6b25d6382974fbd3bd~tplv-tiktokx-cropcenter:100:100.jpg?dr=10399&refresh_token=2521f771&x-expires=1782370800&x-signature=hcwE2FfcBE5QEdpmJC6nUI5ECO0%3D&t=4d5b0474&ps=13740610&shp=30310797&shcp=ff37627b&idc=no1a"
+  }
+]
+```
+
+#### Name Here
+
+
+**Actor ID**: ``
+
+**Input**:
+```json
+{
+}
+```
+
+**Output Structure**:
+```json
+[
+
+]
+```
+
 
 
 ### Name Here

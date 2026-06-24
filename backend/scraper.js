@@ -407,9 +407,10 @@ async function scrapeXFollowers(usernames, token, getFollowers = true, getFollow
 /**
  * Scrape X (Twitter) post comments
  */
-async function scrapeXComments(postUrls, token) {
+async function scrapeXComments(postUrls, token, maxCommentsPerPost = 30) {
     return callApifyActor(ACTORS.X_COMMENTS, {
-        postUrls: postUrls
+        postUrls: postUrls,
+        maxCommentsPerPost: maxCommentsPerPost
     }, token);
 }
 

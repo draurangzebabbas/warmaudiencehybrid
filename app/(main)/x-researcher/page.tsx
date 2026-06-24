@@ -21,6 +21,7 @@ export default function XResearchersPage() {
     const [postUrls, setPostUrls] = useState("");
     const [followerUrls, setFollowerUrls] = useState("");
     const [maxFollowerCount, setMaxFollowerCount] = useState(200);
+    const [maxCommentsPerPost, setMaxCommentsPerPost] = useState(30);
     const [loading, setLoading] = useState(false);
     const [tags, setTags] = useState("");
     const [getFollowers, setGetFollowers] = useState(true);
@@ -103,7 +104,7 @@ export default function XResearchersPage() {
             const res = await fetch(`${process.env.NEXT_PUBLIC_RENDER_BACKEND_URL || "http://localhost:8000"}/api/scrape-x-engagement`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json", "Authorization": `Bearer ${key}` },
-                body: JSON.stringify({ postUrls: lines, tags: tagList })
+                body: JSON.stringify({ postUrls: lines, tags: tagList, maxCommentsPerPost })
             });
             if (!res.ok) { const err = await res.json(); throw new Error(err.error || "Research task failed"); }
             toast.success("X engagement extraction started. Commenters will appear in My Leads shortly.");
@@ -298,18 +299,36 @@ export default function XResearchersPage() {
                                         className="font-mono text-sm bg-muted/20"
                                     />
                                 </div>
-                                <div className="space-y-2">
-                                    <Label className="flex items-center gap-2">
-                                        <Tag className="size-3.5 text-muted-foreground" />
-                                        Custom Tags (Optional)
-                                    </Label>
-                                    <Input
-                                        placeholder="e.g. High Engagement, Post Commenters"
-                                        value={tags}
-                                        onChange={(e) => setTags(e.target.value)}
-                                        className="bg-muted/20"
-                                    />
-                                    <p className="text-[10px] text-muted-foreground">Separate multiple tags with commas.</p>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label>Max Comments per Post</Label>
+                                        <Input
+                                            type="number"
+                                            min={1}
+                                            max={10000}
+                                            value={maxCommentsPerPost}
+                                            onChange={(e) => {
+                                                let val = Number(e.target.value);
+                                                if (val > 10000) val = 10000;
+                                                setMaxCommentsPerPost(val);
+                                            }}
+                                            className="bg-muted/20"
+                                        />
+                                        <p className="text-[10px] text-muted-foreground">Default 30. Max 10,000.</p>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label className="flex items-center gap-2">
+                                            <Tag className="size-3.5 text-muted-foreground" />
+                                            Custom Tags (Optional)
+                                        </Label>
+                                        <Input
+                                            placeholder="e.g. High Engagement, Post Commenters"
+                                            value={tags}
+                                            onChange={(e) => setTags(e.target.value)}
+                                            className="bg-muted/20"
+                                        />
+                                        <p className="text-[10px] text-muted-foreground">Separate multiple tags with commas.</p>
+                                    </div>
                                 </div>
                                 <Button onClick={handleScrapeEngagers} disabled={loading} className="w-full">
                                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
