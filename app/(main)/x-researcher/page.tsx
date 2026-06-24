@@ -21,7 +21,7 @@ export default function XResearchersPage() {
     const [postUrls, setPostUrls] = useState("");
     const [followerUrls, setFollowerUrls] = useState("");
     const [maxFollowerCount, setMaxFollowerCount] = useState(200);
-    const [maxCommentsPerPost, setMaxCommentsPerPost] = useState(30);
+    const [maxCommentsPerPost, setMaxCommentsPerPost] = useState(1000);
     const [loading, setLoading] = useState(false);
     const [tags, setTags] = useState("");
     const [getFollowers, setGetFollowers] = useState(true);
@@ -308,13 +308,13 @@ export default function XResearchersPage() {
                                             max={10000}
                                             value={maxCommentsPerPost}
                                             onChange={(e) => {
-                                                let val = Number(e.target.value);
+                                                let val = Number(e.target.value) || 1000;
                                                 if (val > 10000) val = 10000;
                                                 setMaxCommentsPerPost(val);
                                             }}
                                             className="bg-muted/20"
                                         />
-                                        <p className="text-[10px] text-muted-foreground">Default 30. Max 10,000.</p>
+                                        <p className="text-[10px] text-muted-foreground">Default 1000. Max 10,000.</p>
                                     </div>
                                     <div className="space-y-2">
                                         <Label className="flex items-center gap-2">

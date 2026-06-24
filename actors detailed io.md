@@ -711,10 +711,16 @@ Saved to user's collection with tag: "Competitor: @username"
 **Input**:
 ```json
 {
-    "maxCommentsPerPost": 10000,
-    "postUrls": [
-        "https://x.com/mikefutia/status/2067766615962489258?s=20"
+  "maxCommentsPerPost": 1000,
+  "postUrls": [
+    "https://x.com/mikefutia/status/2067766615962489258?s=20"
+  ],
+  "proxyConfiguration": {
+    "useApifyProxy": true,
+    "apifyProxyGroups": [
+      "RESIDENTIAL"
     ]
+  }
 }
 ```
 

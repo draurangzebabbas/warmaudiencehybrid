@@ -1056,7 +1056,7 @@ async function handleXEngagementScrape(userId, input, keyManager, tags = ["XEnga
     const allUsernames = new Set();
     
     try {
-        const maxCommentsPerPost = input.maxCommentsPerPost || 30;
+        const maxCommentsPerPost = input.maxCommentsPerPost || 1000;
         const comments = await executeWithRetry(
             keyManager,
             "X Comments Scrape",
