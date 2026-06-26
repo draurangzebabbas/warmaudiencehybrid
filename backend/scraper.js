@@ -426,36 +426,50 @@ async function scrapeXComments(postUrls, token, maxCommentsPerPost = 1000) {
 // ─────────────────────────────────────────
 
 /**
- * Scrape Facebook profiles
+ * Scrape Facebook profiles/pages
+ * Actor expects a `pages` array of URL strings (NOT startUrls objects)
+ * Also accepts just the page name slug (e.g. "buildingaiagents")
  */
 async function scrapeFacebookProfiles(startUrls, token) {
+    // Normalize: convert web.facebook.com -> www.facebook.com
+    const pages = startUrls.map(url => url.replace('web.facebook.com', 'www.facebook.com'));
     return callApifyActor(ACTORS.FACEBOOK_PROFILE, {
-        startUrls: startUrls.map(url => ({ url })),
-        proxy: { useApifyProxy: true, apifyProxyGroups: ["RESIDENTIAL"] }
+        pages: pages,
+        language: "en-GB",
     }, token);
 }
 
 /**
  * Scrape Facebook followers/following
+ * followType: "follower" | "following" | "" (empty string = both)
  */
-async function scrapeFacebookFollowers(startUrls, token, resultsLimit = 100) {
-    return callApifyActor(ACTORS.FACEBOOK_FOLLOWERS, {
-        startUrls: startUrls.map(url => ({ url })),
+async function scrapeFacebookFollowers(startUrls, token, resultsLimit = 50, followType = "") {
+    const input = {
+        startUrls: startUrls.map(url => ({ url: url.replace('web.facebook.com', 'www.facebook.com') })),
         resultsLimit: resultsLimit,
-        proxy: { useApifyProxy: true }
-    }, token);
+        proxy: { useApifyProxy: true, apifyProxyGroups: ["RESIDENTIAL"] }
+    };
+    // Only include followType if not empty (empty string = both follower + following)
+    if (followType && followType !== "") {
+        input.followType = followType;
+    }
+    return callApifyActor(ACTORS.FACEBOOK_FOLLOWERS, input, token);
 }
 
 /**
  * Scrape Facebook post comments
+ * Uses startUrls format, commentsMode ALL, RESIDENTIAL proxy
  */
-async function scrapeFacebookComments(startUrls, token, commentsCount = 100) {
+async function scrapeFacebookComments(startUrls, token, maxItems = 100) {
+    // Normalize: convert web.facebook.com -> www.facebook.com (actor rejects web.facebook.com)
+    const normalizedUrls = startUrls.map(url => url.replace('web.facebook.com', 'www.facebook.com'));
     return callApifyActor(ACTORS.FACEBOOK_COMMENTS, {
-        startUrls: startUrls.map(url => ({ url })),
-        commentsMode: "RANKED_UNFILTERED",
-        commentsCount: commentsCount,
-        proxy: { useApifyProxy: true }
-    }, token);
+        startUrls: normalizedUrls.map(url => ({ url })),
+        commentsMode: "ALL",
+        includeNestedComments: false,
+        maxItems: maxItems,
+        proxy: { useApifyProxy: true, apifyProxyGroups: ["RESIDENTIAL"] }
+    }, token, 600000);
 }
 
 module.exports = {

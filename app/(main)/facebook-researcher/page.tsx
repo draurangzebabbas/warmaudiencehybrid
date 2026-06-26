@@ -21,10 +21,20 @@ export default function FacebookResearchersPage() {
     const [followerUrls, setFollowerUrls] = useState("");
     const [maxFollowerCount, setMaxFollowerCount] = useState(200);
     const [maxCommentsPerPost, setMaxCommentsPerPost] = useState(100);
+    const [extractFollowers, setExtractFollowers] = useState(true);
+    const [extractFollowing, setExtractFollowing] = useState(false);
     const [loading, setLoading] = useState(false);
     const [tags, setTags] = useState("");
     const [isLimitDialogOpen, setIsLimitDialogOpen] = useState(false);
     const [profilesCount, setProfilesCount] = useState(0);
+
+    // Derive followType: if only one is checked, pass it; if both, pass "" (both); if neither default to follower
+    const getFollowType = () => {
+        if (extractFollowers && extractFollowing) return "";  // empty = both
+        if (extractFollowers) return "follower";
+        if (extractFollowing) return "following";
+        return "follower"; // fallback
+    };
 
     const usage = useQuery(api.usage.getUsage);
     const user = useQuery(api.auth.getCurrentUser);
@@ -121,7 +131,7 @@ export default function FacebookResearchersPage() {
             const res = await fetch(`${process.env.NEXT_PUBLIC_RENDER_BACKEND_URL || "http://localhost:8000"}/api/scrape-facebook-followers`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json", "Authorization": `Bearer ${key}` },
-                body: JSON.stringify({ urls, maxCount: maxFollowerCount, tags: tagList })
+                body: JSON.stringify({ urls, maxCount: maxFollowerCount, followType: getFollowType(), tags: tagList })
             });
             if (!res.ok) { const err = await res.json(); throw new Error(err.error || "Research task failed"); }
             toast.success(`Facebook follower extraction started for ${urls.length} profiles. Check My Leads shortly.`);
@@ -210,7 +220,31 @@ export default function FacebookResearchersPage() {
                                         className="font-mono text-sm bg-muted/20"
                                     />
                                 </div>
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 gap-4">
+                                    <div className="space-y-2">
+                                        <Label>Extract Type</Label>
+                                        <div className="flex items-center gap-6 pt-1">
+                                            <label className="flex items-center gap-2 cursor-pointer select-none">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={extractFollowers}
+                                                    onChange={(e) => setExtractFollowers(e.target.checked)}
+                                                    className="accent-primary w-4 h-4"
+                                                />
+                                                <span className="text-sm">Followers</span>
+                                            </label>
+                                            <label className="flex items-center gap-2 cursor-pointer select-none">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={extractFollowing}
+                                                    onChange={(e) => setExtractFollowing(e.target.checked)}
+                                                    className="accent-primary w-4 h-4"
+                                                />
+                                                <span className="text-sm">Following</span>
+                                            </label>
+                                        </div>
+                                        <p className="text-[10px] text-muted-foreground">Select one or both. If both are checked, all followers AND following will be extracted.</p>
+                                    </div>
                                     <div className="space-y-2">
                                         <Label>Max Results to Extract</Label>
                                         <Input

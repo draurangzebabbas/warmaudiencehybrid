@@ -674,7 +674,7 @@ app.post("/api/scrape-facebook-engagement", async (req, res) => {
 // ─────────────────────────────────────────
 app.post("/api/scrape-facebook-followers", async (req, res) => {
     try {
-        const { urls, maxCount = 100, tags = [] } = req.body;
+        const { urls, maxCount = 50, followType = "", tags = [] } = req.body;
 
         if (!urls || !Array.isArray(urls) || urls.length === 0) {
             return res.status(400).json({ error: "urls array is required" });
@@ -698,7 +698,7 @@ app.post("/api/scrape-facebook-followers", async (req, res) => {
         processJob({
             userId: req.userId,
             type: "facebook_followers",
-            input: { urls, maxCount, tags },
+            input: { urls, maxCount, followType, tags },
         }).catch((err) => console.error("❌ Facebook followers scrape failed:", err));
 
         res.json({

@@ -1623,23 +1623,47 @@ Saved to user's collection with tag: "Competitor: @username"
 **Input**:
 ```json
 {
-  "commentsMode": "ALL",
-  "includeNestedComments": false,
-  "maxItems": 10,
-  "proxy": {
-    "useApifyProxy": true,
-    "apifyProxyGroups": [
-      "RESIDENTIAL"
+    "commentsMode": "ALL",
+    "includeNestedComments": false,
+    "maxItems": 10000,
+    "proxy": {
+        "useApifyProxy": true,
+        "apifyProxyGroups": [
+            "RESIDENTIAL"
+        ]
+    },
+    "startUrls": [
+        {
+            "url": "https://www.facebook.com/reel/813381761171953"
+        },
+        {
+            "url": "https://www.facebook.com/photo?fbid=1465799148444403"
+        },
+        {
+            "url": "https://www.facebook.com/reel/4364570517119853"
+        },
+        {
+            "url": "https://www.facebook.com/watch?v=1312736054237897"
+        },
+        {
+            "url": "https://www.facebook.com/photo?fbid=1485098743181110"
+        },
+        {
+            "url": "https://www.facebook.com/photo/?fbid=1489500156068574&set=a.800788574939739"
+        },
+        {
+            "url": "https://www.facebook.com/humansofnewyork/posts/pfbid0BbKbkisExKGSKuhee9a7i86RwRuMKFC8NSkKStB7CsM3uXJuAAfZLrkcJMXxhH4Yl"
+        },
+        {
+            "url": "https://www.facebook.com/groups/183774529022936/permalink/2090871251646578/?rdid=ofrIy5Dr5XISD6GH"
+        },
+        {
+            "url": "https://www.facebook.com/photo.php?fbid=1423151982709120"
+        },
+        {
+            "url": "https://www.facebook.com/share/p/1CfaPmdZLU"
+        }
     ]
-  },
-  "startUrls": [
-    {
-      "url": "https://www.facebook.com/groups/183774529022936/permalink/2090871251646578/?rdid=ofrIy5Dr5XISD6GH"
-    }
-  ],
-  "maxConcurrency": 10,
-  "minConcurrency": 1,
-  "maxRequestRetries": 2
 }
 ```
 

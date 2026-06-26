@@ -1267,11 +1267,11 @@ async function handleFacebookEngagementScrape(userId, input, keyManager, tags = 
     const allUrls = new Set();
     
     try {
-        const commentsCount = input.maxCommentsPerPost || 100;
+        const maxItems = input.maxCount || input.maxCommentsPerPost || 100;
         const comments = await executeWithRetry(
             keyManager,
             "Facebook Comments Scrape",
-            (key) => scraper.scrapeFacebookComments(postUrls, key, commentsCount)
+            (key) => scraper.scrapeFacebookComments(postUrls, key, maxItems)
         );
         
         comments.forEach(c => {
@@ -1300,12 +1300,13 @@ async function handleFacebookFollowersScrape(userId, input, keyManager, tags = [
     const metadataMap = {};
     
     try {
-        const resultsLimit = input.maxCount || 100;
+        const resultsLimit = input.maxCount || 50;
+        const followType = input.followType !== undefined ? input.followType : ""; // "follower" | "following" | "" (both)
         
         const followers = await executeWithRetry(
             keyManager,
             "Facebook Followers Scrape",
-            (key) => scraper.scrapeFacebookFollowers(targetUrls, key, resultsLimit)
+            (key) => scraper.scrapeFacebookFollowers(targetUrls, key, resultsLimit, followType)
         );
         
         if (followers && followers.length > 0) {
