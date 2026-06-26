@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Loader2, Tag } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { formatError } from "@/lib/utils";
 import { LimitReachedDialog } from "@/components/limit-reached-dialog";
 import { supabase } from "@/src/lib/supabase";
@@ -167,7 +168,7 @@ export default function FacebookResearchersPage() {
                         <Tabs defaultValue="profiles" className="space-y-6">
                             <TabsList className="grid w-full grid-cols-3">
                                 <TabsTrigger value="profiles">Direct Profile / Page</TabsTrigger>
-                                <TabsTrigger value="followers">Followers</TabsTrigger>
+                                <TabsTrigger value="followers">Followers/Following</TabsTrigger>
                                 <TabsTrigger value="engagers">Post Commenters</TabsTrigger>
                             </TabsList>
 
@@ -220,31 +221,7 @@ export default function FacebookResearchersPage() {
                                         className="font-mono text-sm bg-muted/20"
                                     />
                                 </div>
-                                <div className="grid grid-cols-1 gap-4">
-                                    <div className="space-y-2">
-                                        <Label>Extract Type</Label>
-                                        <div className="flex items-center gap-6 pt-1">
-                                            <label className="flex items-center gap-2 cursor-pointer select-none">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={extractFollowers}
-                                                    onChange={(e) => setExtractFollowers(e.target.checked)}
-                                                    className="accent-primary w-4 h-4"
-                                                />
-                                                <span className="text-sm">Followers</span>
-                                            </label>
-                                            <label className="flex items-center gap-2 cursor-pointer select-none">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={extractFollowing}
-                                                    onChange={(e) => setExtractFollowing(e.target.checked)}
-                                                    className="accent-primary w-4 h-4"
-                                                />
-                                                <span className="text-sm">Following</span>
-                                            </label>
-                                        </div>
-                                        <p className="text-[10px] text-muted-foreground">Select one or both. If both are checked, all followers AND following will be extracted.</p>
-                                    </div>
+                                <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <Label>Max Results to Extract</Label>
                                         <Input
@@ -269,10 +246,31 @@ export default function FacebookResearchersPage() {
                                             className="bg-muted/20"
                                         />
                                     </div>
+                                    <div className="space-y-3 pt-2 col-span-2">
+                                        <Label className="text-sm font-semibold">Targets to Extract</Label>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="flex items-center space-x-2 border rounded-lg p-3 hover:bg-muted/50 transition-colors">
+                                                <Checkbox
+                                                    id="fb-followers"
+                                                    checked={extractFollowers}
+                                                    onCheckedChange={(checked) => setExtractFollowers(checked as boolean)}
+                                                />
+                                                <Label htmlFor="fb-followers" className="text-sm font-medium cursor-pointer">Followers</Label>
+                                            </div>
+                                            <div className="flex items-center space-x-2 border rounded-lg p-3 hover:bg-muted/50 transition-colors">
+                                                <Checkbox
+                                                    id="fb-following"
+                                                    checked={extractFollowing}
+                                                    onCheckedChange={(checked) => setExtractFollowing(checked as boolean)}
+                                                />
+                                                <Label htmlFor="fb-following" className="text-sm font-medium cursor-pointer">Following</Label>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                                 <Button onClick={handleScrapeFollowers} disabled={loading} className="w-full">
                                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                    {isLimitReached ? "Lead Limit Reached – Upgrade Plan" : loading ? "Processing..." : "Extract Followers"}
+                                    {isLimitReached ? "Lead Limit Reached – Upgrade Plan" : loading ? "Processing..." : "Extract Audience"}
                                 </Button>
                             </TabsContent>
 
