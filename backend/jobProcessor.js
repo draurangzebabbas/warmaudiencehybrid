@@ -1236,9 +1236,7 @@ async function handleFacebookProfilesScrape(userId, input, keyManager, tags = ["
                     address: r.address,
                     messenger: r.messenger,
                     business_hours: r.business_hours,
-                    creation_date: r.creation_date,
-                    ad_status: r.ad_status,
-                    rating: r.rating || r.ratings
+                    creation_date: r.creation_date
                 })).filter(r => r.facebook_url);
                 
                 if (mapped.length > 0) {

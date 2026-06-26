@@ -224,7 +224,7 @@ async function searchKeywords(keywords, token, maxPosts = 50, dateFilter = "past
 async function scrapePostEngagement(postUrls, token) {
     return callApifyActor(ACTORS.POST_COMMENTS, {
         posts: postUrls,
-    }, token);
+    }, token, 1800000);
 }
 
 /**
@@ -267,7 +267,7 @@ async function scrapeProfileComments(profileUrls, token, maxItems = 20) {
         profiles: profileUrls,
         maxItems,
         postedLimit: "month"
-    }, token);
+    }, token, 1800000);
 }
 
 /**
@@ -418,7 +418,7 @@ async function scrapeXComments(postUrls, token, maxCommentsPerPost = 1000) {
             useApifyProxy: true,
             apifyProxyGroups: ["RESIDENTIAL"]
         }
-    }, token);
+    }, token, 1800000);
 }
 
 // ─────────────────────────────────────────
@@ -469,7 +469,7 @@ async function scrapeFacebookComments(startUrls, token, maxItems = 100) {
         includeNestedComments: false,
         maxItems: maxItems,
         proxy: { useApifyProxy: true, apifyProxyGroups: ["RESIDENTIAL"] }
-    }, token, 600000);
+    }, token, 1800000);
 }
 
 module.exports = {

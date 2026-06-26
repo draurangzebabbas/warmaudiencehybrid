@@ -440,8 +440,6 @@ async function upsertFacebookLeadsBulk(leads) {
         messenger: l.messenger,
         business_hours: l.business_hours,
         creation_date: l.creation_date,
-        ad_status: l.ad_status,
-        rating: l.rating,
         updated_at: new Date().toISOString()
     }));
 

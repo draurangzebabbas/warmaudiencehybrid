@@ -225,8 +225,6 @@ type FacebookLead = {
     address?: string;
     messenger?: string;
     creation_date?: string;
-    ad_status?: string;
-    rating?: number;
     updatedAt: number;
     tags?: string[];
 };
@@ -565,12 +563,10 @@ export default function ProfilesPage() {
         hasEmail: "all" as "all" | "yes" | "no",
         hasPhone: "all" as "all" | "yes" | "no",
         hasWebsite: "all" as "all" | "yes" | "no",
-        hasRating: "all" as "all" | "yes" | "no",
         minFollowers: 0,
         maxFollowers: 10000000,
         minLikes: 0,
         category: "",
-        adStatus: "all" as "all" | "ACTIVE" | "INACTIVE" | "none",
         tags: "",
     });
     
@@ -981,8 +977,6 @@ export default function ProfilesPage() {
             if (facebookFilters.hasPhone === "no" && fb.phone) return false;
             if (facebookFilters.hasWebsite === "yes" && !fb.website) return false;
             if (facebookFilters.hasWebsite === "no" && fb.website) return false;
-            if (facebookFilters.hasRating === "yes" && !fb.rating) return false;
-            if (facebookFilters.hasRating === "no" && fb.rating) return false;
             const followers = fb.followers_count || 0;
             if (followers < facebookFilters.minFollowers) return false;
             if (facebookFilters.maxFollowers > 0 && followers > facebookFilters.maxFollowers) return false;
@@ -994,10 +988,6 @@ export default function ProfilesPage() {
                 const q = facebookFilters.category.toLowerCase();
                 if (!cat.includes(q) && !cats.includes(q)) return false;
             }
-            if (facebookFilters.adStatus !== "all") {
-                if (facebookFilters.adStatus === "none" && fb.ad_status) return false;
-                if (facebookFilters.adStatus === "ACTIVE" && fb.ad_status !== "ACTIVE") return false;
-                if (facebookFilters.adStatus === "INACTIVE" && fb.ad_status !== "INACTIVE") return false;
             }
             if (facebookFilters.tags) {
                 const q = facebookFilters.tags.toLowerCase();
@@ -2053,21 +2043,6 @@ export default function ProfilesPage() {
                     {row.original.address || "-"}
                 </div>
             ),
-        },
-        {
-            accessorKey: "rating",
-            header: "Rating",
-            cell: ({ row }) => row.original.rating ? `⭐ ${row.original.rating}` : "-",
-        },
-        {
-            accessorKey: "ad_status",
-            header: "Ads",
-            cell: ({ row }) => {
-                const s = row.original.ad_status;
-                if (!s) return <span className="text-muted-foreground text-[10px]">-</span>;
-                const color = s === "ACTIVE" ? "text-green-600" : "text-slate-500";
-                return <span className={`text-[10px] font-medium ${color}`}>{s}</span>;
-            },
         },
         {
             accessorKey: "updatedAt",
@@ -3210,8 +3185,6 @@ function GenericProfileTable<TData, TValue>({
                                                 "Address": item.address || "",
                                                 "Category": item.category || "",
                                                 "Categories": (item.categories || []).join(", "),
-                                                "Rating": item.rating || "",
-                                                "Ad Status": item.ad_status || "",
                                                 "Tags": (item.tags || []).join(", "),
                                                 "Updated At": item.updatedAt ? new Date(item.updatedAt).toISOString() : ""
                                             };
@@ -3646,9 +3619,9 @@ function FilterSheet({ type, filters, setFilters }: { type: "personal" | "compan
                                 });
                             } else if (type === "facebook") {
                                 setFilters({
-                                    hasEmail: "all", hasPhone: "all", hasWebsite: "all", hasRating: "all",
+                                    hasEmail: "all", hasPhone: "all", hasWebsite: "all",
                                     minFollowers: 0, maxFollowers: 10000000,
-                                    minLikes: 0, category: "", adStatus: "all", tags: ""
+                                    minLikes: 0, category: "", tags: ""
                                 });
                             } else {
                                 setFilters({
@@ -3713,23 +3686,7 @@ function FilterSheet({ type, filters, setFilters }: { type: "personal" | "compan
                                     <ThreeStateFilter label="Has Channel" value={filters.hasChannel} onChange={(v) => setFilters({ ...filters, hasChannel: v })} />
                                 </>
                             ) : type === "facebook" ? (
-                                <>
-                                    <ThreeStateFilter label="Has Rating" value={filters.hasRating} onChange={(v) => setFilters({ ...filters, hasRating: v })} />
-                                    <div className="space-y-1 mt-2">
-                                        <Label className="text-[10px]">Ad Status</Label>
-                                        <Select value={filters.adStatus} onValueChange={(v) => setFilters({ ...filters, adStatus: v })}>
-                                            <SelectTrigger className="h-8 text-xs bg-muted/20">
-                                                <SelectValue placeholder="Any Ad Status" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="all">Any Status</SelectItem>
-                                                <SelectItem value="ACTIVE">Active Ads</SelectItem>
-                                                <SelectItem value="INACTIVE">Inactive Ads</SelectItem>
-                                                <SelectItem value="none">No Ads Data</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                </>
+                                <></>
                             ) : type === "x" ? (
                                 <>
                                     <ThreeStateFilter label="Verified Account" value={filters.isVerified} onChange={(v) => setFilters({ ...filters, isVerified: v })} />
