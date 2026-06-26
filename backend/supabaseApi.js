@@ -92,6 +92,26 @@ async function getCachedXProfile(username) {
 }
 
 /**
+ * Check if a Facebook profile exists in cache
+ */
+async function getCachedFacebookProfile(url) {
+    const { data, error } = await supabase
+        .from("facebook_leads")
+        .select("*")
+        .eq("facebook_url", url)
+        .order('updated_at', { ascending: false })
+        .limit(1);
+
+    if (error || !data || data.length === 0) return null;
+    const profile = data[0];
+
+    return { 
+        isFresh: true, 
+        profile
+    };
+}
+
+/**
  * Upsert a personal LinkedIn profile
  */
 async function upsertPersonalProfile(profileData) {
@@ -397,6 +417,47 @@ async function upsertXLeadsBulk(leads) {
 }
 
 /**
+ * Upsert multiple Facebook leads
+ * Fields match the oJ48ceKNY7ueGPGL0 actor output exactly
+ */
+async function upsertFacebookLeadsBulk(leads) {
+    const items = leads.map(l => ({
+        facebook_url: l.facebook_url,
+        facebook_id: l.facebook_id,
+        page_name: l.page_name,
+        title: l.title,
+        profile_pic_url: l.profile_pic_url,
+        category: l.category,
+        categories: l.categories || [],
+        intro: l.intro,
+        likes_count: l.likes_count,
+        followers_count: l.followers_count,
+        following_count: l.following_count,
+        phone: l.phone,
+        email: l.email,
+        website: l.website,
+        address: l.address,
+        messenger: l.messenger,
+        business_hours: l.business_hours,
+        creation_date: l.creation_date,
+        ad_status: l.ad_status,
+        rating: l.rating,
+        updated_at: new Date().toISOString()
+    }));
+
+    const { data, error } = await supabase
+        .from("facebook_leads")
+        .upsert(items, { onConflict: 'facebook_url' })
+        .select("id, facebook_url");
+
+    if (error) {
+        console.error("❌ Supabase Facebook leads bulk upsert error:", error.message);
+        throw error;
+    }
+    return data;
+}
+
+/**
  * Get website contacts by domains
  */
 async function getWebsiteContactsByDomains(domains) {
@@ -420,6 +481,7 @@ async function linkUserToLeadsBulk(userId, leadIds, type, tags = []) {
                     type === "website_contact" ? "website_contact_id" :
                     type === "instagram" ? "instagram_id" :
                     type === "x" ? "x_id" :
+                    type === "facebook" ? "facebook_id" :
                     "linkedin_id";
 
     // 1. Fetch existing tags for these leads for this user to allow merging
@@ -763,6 +825,8 @@ module.exports = {
     upsertWebsiteContactsBulk,
     upsertInstagramLeadsBulk,
     upsertXLeadsBulk,
+    upsertFacebookLeadsBulk,
+    getCachedFacebookProfile,
     linkUserToLeadsBulk,
     removeUserLead,
     getUserApiKeys,

@@ -585,6 +585,133 @@ app.post("/api/scrape-x-followers", async (req, res) => {
 });
 
 // ─────────────────────────────────────────
+// POST /api/scrape-facebook-profiles
+// ─────────────────────────────────────────
+app.post("/api/scrape-facebook-profiles", async (req, res) => {
+    try {
+        const { urls, tags = [], force = false } = req.body;
+
+        if (!urls || !Array.isArray(urls) || urls.length === 0) {
+            return res.status(400).json({ error: "urls array is required" });
+        }
+
+        const [subscription, currentCount] = await Promise.all([
+            supabaseApi.getUserSubscription(req.userId),
+            supabaseApi.getMonthlyLeadCount(req.userId)
+        ]);
+        
+        const planLimits = { free: 1000, growth: 10000, pro: 10000, elite: 1000000, scale: 1000000 };
+        const profilesLimit = planLimits[subscription.plan_slug] || 1000;
+        
+        if (currentCount >= profilesLimit) {
+            return res.status(403).json({
+                error: `Limit Reached: You have consumed all your lead storage for this month (${profilesLimit} leads). Please upgrade your plan for more capacity.`,
+                code: "LIMIT_REACHED"
+            });
+        }
+
+        processJob({
+            userId: req.userId,
+            type: "facebook_profiles",
+            input: { urls, tags },
+            force
+        }).catch((err) => console.error("❌ Facebook profile scrape failed:", err));
+
+        res.json({
+            status: "processing",
+            message: `Facebook profile research started for ${urls.length} profiles`,
+        });
+    } catch (e) {
+        console.error("scrape-facebook-profiles error:", e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// ─────────────────────────────────────────
+// POST /api/scrape-facebook-engagement
+// ─────────────────────────────────────────
+app.post("/api/scrape-facebook-engagement", async (req, res) => {
+    try {
+        const { postUrls, maxCommentsPerPost = 100, tags = [] } = req.body;
+
+        if (!postUrls || !Array.isArray(postUrls) || postUrls.length === 0) {
+            return res.status(400).json({ error: "postUrls array is required" });
+        }
+
+        const [subscription, currentCount] = await Promise.all([
+            supabaseApi.getUserSubscription(req.userId),
+            supabaseApi.getMonthlyLeadCount(req.userId)
+        ]);
+        
+        const planLimits = { free: 1000, growth: 10000, pro: 10000, elite: 1000000, scale: 1000000 };
+        const profilesLimit = planLimits[subscription.plan_slug] || 1000;
+        
+        if (currentCount >= profilesLimit) {
+            return res.status(403).json({
+                error: `Limit Reached: You have consumed all your lead storage for this month (${profilesLimit} leads). Please upgrade your plan for more capacity.`,
+                code: "LIMIT_REACHED"
+            });
+        }
+
+        processJob({
+            userId: req.userId,
+            type: "facebook_engagement",
+            input: { postUrls, maxCommentsPerPost, tags },
+        }).catch((err) => console.error("❌ Facebook engagement scrape failed:", err));
+
+        res.json({
+            status: "processing",
+            message: `Facebook engagement research started for ${postUrls.length} posts`,
+        });
+    } catch (e) {
+        console.error("scrape-facebook-engagement error:", e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// ─────────────────────────────────────────
+// POST /api/scrape-facebook-followers
+// ─────────────────────────────────────────
+app.post("/api/scrape-facebook-followers", async (req, res) => {
+    try {
+        const { urls, maxCount = 100, tags = [] } = req.body;
+
+        if (!urls || !Array.isArray(urls) || urls.length === 0) {
+            return res.status(400).json({ error: "urls array is required" });
+        }
+
+        const [subscription, currentCount] = await Promise.all([
+            supabaseApi.getUserSubscription(req.userId),
+            supabaseApi.getMonthlyLeadCount(req.userId)
+        ]);
+        
+        const planLimits = { free: 1000, growth: 10000, pro: 10000, elite: 1000000, scale: 1000000 };
+        const profilesLimit = planLimits[subscription.plan_slug] || 1000;
+        
+        if (currentCount >= profilesLimit) {
+            return res.status(403).json({
+                error: `Limit Reached: You have consumed all your lead storage for this month (${profilesLimit} leads). Please upgrade your plan for more capacity.`,
+                code: "LIMIT_REACHED"
+            });
+        }
+
+        processJob({
+            userId: req.userId,
+            type: "facebook_followers",
+            input: { urls, maxCount, tags },
+        }).catch((err) => console.error("❌ Facebook followers scrape failed:", err));
+
+        res.json({
+            status: "processing",
+            message: `Facebook follower research started for ${urls.length} profiles`,
+        });
+    } catch (e) {
+        console.error("scrape-facebook-followers error:", e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// ─────────────────────────────────────────
 // Tracker Management
 // ─────────────────────────────────────────
 

@@ -108,6 +108,18 @@ async function processJob(jobData) {
                 await handleXFollowersScrape(userId, input, keyManager, input.tags || ["XFollowers"], jobId);
                 break;
 
+            case "facebook_profiles":
+                await handleFacebookProfilesScrape(userId, input, keyManager, input.tags || ["FacebookProfile"], jobId, force);
+                break;
+
+            case "facebook_engagement":
+                await handleFacebookEngagementScrape(userId, input, keyManager, input.tags || ["FacebookEngagement"], jobId);
+                break;
+
+            case "facebook_followers":
+                await handleFacebookFollowersScrape(userId, input, keyManager, input.tags || ["FacebookFollowers"], jobId);
+                break;
+
             default:
                 console.warn(`Unknown job type: ${type}`);
         }
@@ -1137,6 +1149,183 @@ async function handleXFollowersScrape(userId, input, keyManager, tags = ["XFollo
                 }
             }
             if (jobId) await supabaseApi.updateJobProgress(jobId, 100);
+        } else {
+            console.warn("⚠️ No followers found.");
+            if (jobId) await supabaseApi.updateJobProgress(jobId, 100);
+        }
+    } catch (err) {
+        throw err;
+    }
+}
+
+// ─────────────────────────────────────────
+// Facebook Handlers
+// ─────────────────────────────────────────
+
+async function handleFacebookProfilesScrape(userId, input, keyManager, tags = ["FacebookProfile"], jobId, force = false) {
+    let urls = input.urls || input.profileUrls || [];
+    
+    if (!urls.length) {
+        console.warn("No Facebook URLs provided for profile scrape.");
+        return;
+    }
+
+    const uniqueUrls = Array.from(new Set(urls.map(u => u.trim()).filter(Boolean)));
+    const toScrape = [];
+
+    for (const url of uniqueUrls) {
+        try {
+            const cached = !force ? await supabaseApi.getCachedFacebookProfile(url) : null;
+            if (cached && cached.isFresh) {
+                const sid = cached.profile.id;
+                console.log(`📦 Cache Hit [facebook] (Supabase): ${url}`);
+                await supabaseApi.linkUserToLeadsBulk(userId, [sid], "facebook", tags);
+            } else {
+                toScrape.push(url);
+            }
+        } catch (e) {
+            toScrape.push(url);
+        }
+    }
+
+    if (toScrape.length === 0) {
+        if (jobId) await supabaseApi.updateJobProgress(jobId, 100);
+        return;
+    }
+
+    if (jobId) await supabaseApi.updateJobProgress(jobId, 10);
+    
+    console.log(`🚀 Starting Facebook Profile scrape for ${toScrape.length} URLs`);
+    
+    const BATCH_SIZE = 50;
+    const batches = [];
+    for (let i = 0; i < toScrape.length; i += BATCH_SIZE) {
+        batches.push(toScrape.slice(i, i + BATCH_SIZE));
+    }
+
+    let completedBatches = 0;
+
+    await Promise.all(batches.map((batch, index) => {
+        return (async () => {
+            await new Promise(r => setTimeout(r, index * 200));
+            await keyManager.refreshIfLow();
+            
+            const results = await executeWithRetry(
+                keyManager,
+                "Facebook Profiles Scrape",
+                (key) => scraper.scrapeFacebookProfiles(batch, key)
+            );
+            
+            if (results && results.length > 0) {
+                const mapped = results.map(r => ({
+                    // Primary identifier — facebookUrl or pageUrl from actor output
+                    facebook_url: r.facebookUrl || r.pageUrl,
+                    facebook_id: r.facebookId || r.pageId,
+                    page_name: r.pageName,
+                    title: r.title,
+                    profile_pic_url: r.profilePictureUrl || r.personalProfile?.profilePicLarge || r.personalProfile?.profilePicMedium,
+                    category: r.category,
+                    categories: Array.isArray(r.categories) ? r.categories : [],
+                    intro: r.intro,
+                    likes_count: r.likes,
+                    followers_count: r.followers,
+                    following_count: r.followings,
+                    phone: r.phone,
+                    email: r.email,
+                    website: r.website,
+                    address: r.address,
+                    messenger: r.messenger,
+                    business_hours: r.business_hours,
+                    creation_date: r.creation_date,
+                    ad_status: r.ad_status,
+                    rating: r.rating || r.ratings
+                })).filter(r => r.facebook_url);
+                
+                if (mapped.length > 0) {
+                    const upserted = await supabaseApi.upsertFacebookLeadsBulk(mapped);
+                    const leadIds = upserted.map(u => u.id);
+                    await supabaseApi.linkUserToLeadsBulk(userId, leadIds, "facebook", tags);
+                }
+            }
+
+            completedBatches++;
+            if (jobId) {
+                const progress = 10 + Math.floor((completedBatches / batches.length) * 89);
+                await supabaseApi.updateJobProgress(jobId, Math.min(progress, 99));
+            }
+        })();
+    }));
+
+    if (jobId) await supabaseApi.updateJobProgress(jobId, 100);
+}
+
+async function handleFacebookEngagementScrape(userId, input, keyManager, tags = ["FacebookEngagement"], jobId) {
+    const postUrls = input.postUrls || [];
+    if (!postUrls.length) return;
+
+    if (jobId) await supabaseApi.updateJobProgress(jobId, 10);
+    const allUrls = new Set();
+    
+    try {
+        const commentsCount = input.maxCommentsPerPost || 100;
+        const comments = await executeWithRetry(
+            keyManager,
+            "Facebook Comments Scrape",
+            (key) => scraper.scrapeFacebookComments(postUrls, key, commentsCount)
+        );
+        
+        comments.forEach(c => {
+            if (c.profileUrl) allUrls.add(c.profileUrl);
+            else if (c.author && c.author.url) allUrls.add(c.author.url);
+        });
+
+        if (allUrls.size > 0) {
+            const urls = Array.from(allUrls);
+            console.log(`✨ Enriching ${urls.length} extracted Facebook commenters...`);
+            await handleFacebookProfilesScrape(userId, { urls }, keyManager, tags, jobId);
+        } else {
+            if (jobId) await supabaseApi.updateJobProgress(jobId, 100);
+        }
+    } catch (err) {
+        throw err;
+    }
+}
+
+async function handleFacebookFollowersScrape(userId, input, keyManager, tags = ["FacebookFollowers"], jobId) {
+    const targetUrls = input.urls || input.profileUrls || [];
+    if (!targetUrls.length) return;
+
+    if (jobId) await supabaseApi.updateJobProgress(jobId, 10);
+    const allUrls = new Set();
+    const metadataMap = {};
+    
+    try {
+        const resultsLimit = input.maxCount || 100;
+        
+        const followers = await executeWithRetry(
+            keyManager,
+            "Facebook Followers Scrape",
+            (key) => scraper.scrapeFacebookFollowers(targetUrls, key, resultsLimit)
+        );
+        
+        if (followers && followers.length > 0) {
+            followers.forEach(f => {
+                const url = f.url || f.profileUrl;
+                if (url) {
+                    allUrls.add(url);
+                    metadataMap[url] = f;
+                }
+            });
+        }
+
+        if (allUrls.size > 0) {
+            const urls = Array.from(allUrls);
+            console.log(`✨ Enriching ${urls.length} extracted Facebook followers...`);
+            // The Facebook followers scraper returns mostly basic data, we should enrich it using the profile scraper if we need full emails/phones, 
+            // but we can just map it directly if that's what's preferred. The pattern in X is direct mapping.
+            // But since the actor is different, let's map directly what we can, and if not, enrich.
+            // For now, let's just pass them to profile scraper to ensure we get email/phone.
+            await handleFacebookProfilesScrape(userId, { urls }, keyManager, tags, jobId);
         } else {
             console.warn("⚠️ No followers found.");
             if (jobId) await supabaseApi.updateJobProgress(jobId, 100);

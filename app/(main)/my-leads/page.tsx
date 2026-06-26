@@ -205,6 +205,32 @@ type InstagramLead = {
     extraData?: any;
 };
 
+type FacebookLead = {
+    _id: string;
+    junctionId: any;
+    facebook_url: string;
+    facebook_id?: string;
+    page_name?: string;
+    title?: string;
+    profile_pic_url?: string;
+    category?: string;
+    categories?: string[];
+    intro?: string;
+    likes_count?: number;
+    followers_count?: number;
+    following_count?: number;
+    phone?: string;
+    email?: string;
+    website?: string;
+    address?: string;
+    messenger?: string;
+    creation_date?: string;
+    ad_status?: string;
+    rating?: number;
+    updatedAt: number;
+    tags?: string[];
+};
+
 // --- Page Component ---
 
 export default function ProfilesPage() {
@@ -243,7 +269,8 @@ export default function ProfilesPage() {
                         google_maps: google_maps_leads (*),
                         website_contact: website_contacts (*),
                         instagram: instagram_leads (*),
-                        x: x_leads (*)
+                        x: x_leads (*),
+                        facebook: facebook_leads (*)
                     `)
                     .eq("user_id", userId)
                     .eq("profile_type", profileType)
@@ -257,7 +284,7 @@ export default function ProfilesPage() {
                         if (data) {
                             const formatted = data
                                 .map(d => {
-                                    const detailsRaw = d.personal || d.company || d.google_maps || d.website_contact || d.instagram || d.x;
+                                    const detailsRaw = d.personal || d.company || d.google_maps || d.website_contact || d.instagram || d.x || d.facebook;
                                     if (!detailsRaw) return null;
                                     const details = Array.isArray(detailsRaw) ? detailsRaw[0] : detailsRaw;
                                     if (!details) return null;
@@ -352,6 +379,14 @@ export default function ProfilesPage() {
                                             junctionId: d.id,
                                             _id: d.id
                                         };
+                                    } else if (profileType === "facebook") {
+                                        return {
+                                            ...details,
+                                            updatedAt: new Date(d.updated_at || d.created_at).getTime(),
+                                            tags: d.tags,
+                                            junctionId: d.id,
+                                            _id: d.id
+                                        };
                                     } else { // instagram
                                         let socials = details.socials;
                                         if (typeof socials === 'string') {
@@ -418,6 +453,7 @@ export default function ProfilesPage() {
     const { leads: websiteContacts, loading: loadingWebsiteContacts, refresh: refreshWebsiteContacts } = useLeadsFromSupabase(user?._id, "website_contact");
     const { leads: instagramLeads, loading: loadingInstagramLeads } = useLeadsFromSupabase(user?._id, "instagram");
     const { leads: xLeads, loading: loadingXLeads, refresh: refreshXLeads } = useLeadsFromSupabase(user?._id, "x");
+    const { leads: facebookLeads, loading: loadingFacebookLeads, refresh: refreshFacebookLeads } = useLeadsFromSupabase(user?._id, "facebook");
 
     const getOrCreateKey = useAction(api.actions.supabase.getOrCreateWebhookKey);
 
@@ -522,6 +558,19 @@ export default function ProfilesPage() {
         joinedBefore: "",
         joinedAfter: "",
         location: "",
+        tags: "",
+    });
+
+    const [facebookFilters, setFacebookFilters] = useState({
+        hasEmail: "all" as "all" | "yes" | "no",
+        hasPhone: "all" as "all" | "yes" | "no",
+        hasWebsite: "all" as "all" | "yes" | "no",
+        hasRating: "all" as "all" | "yes" | "no",
+        minFollowers: 0,
+        maxFollowers: 10000000,
+        minLikes: 0,
+        category: "",
+        adStatus: "all" as "all" | "ACTIVE" | "INACTIVE" | "none",
         tags: "",
     });
     
@@ -923,6 +972,41 @@ export default function ProfilesPage() {
             return true;
         });
     }, [xLeads, xFilters]);
+
+    const filteredFacebook = useMemo(() => {
+        return facebookLeads.filter((fb) => {
+            if (facebookFilters.hasEmail === "yes" && !fb.email) return false;
+            if (facebookFilters.hasEmail === "no" && fb.email) return false;
+            if (facebookFilters.hasPhone === "yes" && !fb.phone) return false;
+            if (facebookFilters.hasPhone === "no" && fb.phone) return false;
+            if (facebookFilters.hasWebsite === "yes" && !fb.website) return false;
+            if (facebookFilters.hasWebsite === "no" && fb.website) return false;
+            if (facebookFilters.hasRating === "yes" && !fb.rating) return false;
+            if (facebookFilters.hasRating === "no" && fb.rating) return false;
+            const followers = fb.followers_count || 0;
+            if (followers < facebookFilters.minFollowers) return false;
+            if (facebookFilters.maxFollowers > 0 && followers > facebookFilters.maxFollowers) return false;
+            const likes = fb.likes_count || 0;
+            if (likes < facebookFilters.minLikes) return false;
+            if (facebookFilters.category) {
+                const cat = (fb.category || "").toLowerCase();
+                const cats = (fb.categories || []).join(" ").toLowerCase();
+                const q = facebookFilters.category.toLowerCase();
+                if (!cat.includes(q) && !cats.includes(q)) return false;
+            }
+            if (facebookFilters.adStatus !== "all") {
+                if (facebookFilters.adStatus === "none" && fb.ad_status) return false;
+                if (facebookFilters.adStatus === "ACTIVE" && fb.ad_status !== "ACTIVE") return false;
+                if (facebookFilters.adStatus === "INACTIVE" && fb.ad_status !== "INACTIVE") return false;
+            }
+            if (facebookFilters.tags) {
+                const q = facebookFilters.tags.toLowerCase();
+                const hasMatch = (fb.tags || []).some((t: string) => t.toLowerCase().includes(q));
+                if (!hasMatch) return false;
+            }
+            return true;
+        });
+    }, [facebookLeads, facebookFilters]);
 
     // --- Column Definitions ---
     const personalColumns = useMemo<ColumnDef<PersonalProfile>[]>(() => [
@@ -1867,6 +1951,173 @@ export default function ProfilesPage() {
         }
     ], []);
 
+    const facebookColumns = useMemo<ColumnDef<FacebookLead>[]>(() => [
+        {
+            id: "select",
+            header: ({ table }) => (
+                <Checkbox
+                    checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")}
+                    onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+                    aria-label="Select all"
+                />
+            ),
+            cell: ({ row }) => (
+                <Checkbox
+                    checked={row.getIsSelected()}
+                    onCheckedChange={(value) => row.toggleSelected(!!value)}
+                    aria-label="Select row"
+                />
+            ),
+            enableSorting: false,
+            enableHiding: false,
+        },
+        {
+            accessorKey: "page_name",
+            header: "Page / Profile",
+            cell: ({ row }) => (
+                <div className="flex items-center gap-3">
+                    <Avatar className="h-9 w-9">
+                        <AvatarImage src={row.original.profile_pic_url} />
+                        <AvatarFallback><IconBrandFacebook className="size-4 text-blue-600" /></AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col">
+                        <a
+                            href={row.original.facebook_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-medium text-sm hover:text-blue-600 transition-colors flex items-center gap-1 group"
+                        >
+                            {row.original.page_name || row.original.title || row.original.facebook_url}
+                            <IconExternalLink className="size-3 opacity-0 group-hover:opacity-100 transition-opacity text-blue-600" />
+                        </a>
+                        {row.original.category && <span className="text-[10px] text-muted-foreground">{row.original.category}</span>}
+                    </div>
+                </div>
+            ),
+        },
+        {
+            accessorKey: "followers_count",
+            header: "Followers",
+            cell: ({ row }) => row.original.followers_count?.toLocaleString() || "-",
+        },
+        {
+            accessorKey: "likes_count",
+            header: "Likes",
+            cell: ({ row }) => row.original.likes_count?.toLocaleString() || "-",
+        },
+        {
+            accessorKey: "following_count",
+            header: "Following",
+            cell: ({ row }) => row.original.following_count?.toLocaleString() || "-",
+        },
+        {
+            accessorKey: "intro",
+            header: "Intro",
+            cell: ({ row }) => (
+                <div className="text-xs text-muted-foreground max-w-[200px] truncate" title={row.original.intro}>
+                    {row.original.intro || "-"}
+                </div>
+            ),
+        },
+        {
+            accessorKey: "email",
+            header: "Email",
+            cell: ({ row }) => row.original.email || <span className="text-muted-foreground text-xs">N/A</span>,
+        },
+        {
+            accessorKey: "phone",
+            header: "Phone",
+            cell: ({ row }) => row.original.phone || <span className="text-muted-foreground text-xs">N/A</span>,
+        },
+        {
+            accessorKey: "website",
+            header: "Website",
+            cell: ({ row }) => {
+                const url = row.original.website;
+                if (!url) return <span className="text-muted-foreground text-[10px]">-</span>;
+                try {
+                    return (
+                        <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline flex items-center gap-1 text-[10px]">
+                            <IconExternalLink size={12} />
+                            {new URL(url).hostname.replace('www.', '')}
+                        </a>
+                    );
+                } catch { return <span className="text-[10px] text-muted-foreground truncate max-w-[100px]">{url}</span>; }
+            },
+        },
+        {
+            accessorKey: "address",
+            header: "Address",
+            cell: ({ row }) => (
+                <div className="text-xs max-w-[160px] truncate" title={row.original.address}>
+                    {row.original.address || "-"}
+                </div>
+            ),
+        },
+        {
+            accessorKey: "rating",
+            header: "Rating",
+            cell: ({ row }) => row.original.rating ? `⭐ ${row.original.rating}` : "-",
+        },
+        {
+            accessorKey: "ad_status",
+            header: "Ads",
+            cell: ({ row }) => {
+                const s = row.original.ad_status;
+                if (!s) return <span className="text-muted-foreground text-[10px]">-</span>;
+                const color = s === "ACTIVE" ? "text-green-600" : "text-slate-500";
+                return <span className={`text-[10px] font-medium ${color}`}>{s}</span>;
+            },
+        },
+        {
+            accessorKey: "updatedAt",
+            header: "Last Updated",
+            cell: ({ row }) => {
+                if (!row.original.updatedAt) return "-";
+                return (
+                    <div className="flex items-center text-xs text-muted-foreground" title={new Date(row.original.updatedAt).toLocaleString()}>
+                        <IconClock className="mr-1 size-3" />
+                        {formatDistanceToNow(row.original.updatedAt, { addSuffix: true })}
+                    </div>
+                );
+            }
+        },
+        {
+            accessorKey: "tags",
+            header: "Tags",
+            cell: ({ row }) => (
+                <div className="flex flex-wrap gap-1 max-w-[150px]">
+                    {row.original.tags?.map((tag: string, idx: number) => (
+                        <Badge key={idx} variant="outline" className="text-[9px] px-1 h-3.5 bg-muted/30">{tag}</Badge>
+                    ))}
+                    {(!row.original.tags || row.original.tags.length === 0) && <span className="text-muted-foreground text-[10px]">-</span>}
+                </div>
+            )
+        },
+        {
+            id: "actions",
+            cell: ({ row }) => (
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0"><IconDotsVertical className="h-4 w-4" /></Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuItem asChild>
+                            <a href={row.original.facebook_url} target="_blank" rel="noopener noreferrer">
+                                <IconExternalLink className="mr-2 h-4 w-4" /> View on Facebook
+                            </a>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteProfile(row.original.junctionId)}>
+                            Delete Lead
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            ),
+        }
+    ], []);
+
     const websiteContactColumns = useMemo<ColumnDef<WebsiteContact>[]>(() => [
         {
             id: "select",
@@ -2258,10 +2509,42 @@ export default function ProfilesPage() {
                                 </div>
                             </TabsContent>
                             <TabsContent value="facebook">
-                                <div className="py-12 text-center border rounded-lg bg-muted/20">
-                                    <h3 className="text-lg font-medium">Facebook Leads Coming Soon</h3>
-                                    <p className="text-sm text-muted-foreground mt-1">This integration is under development.</p>
-                                </div>
+                                <GenericProfileTable
+                                    data={filteredFacebook}
+                                    columns={facebookColumns}
+                                    isLoading={loadingFacebookLeads}
+                                    filterColumn="page_name"
+                                    type="facebook"
+                                    filters={facebookFilters}
+                                    setFilters={setFacebookFilters}
+                                    onBulkDelete={async (ids) => {
+                                        if (confirm(`Are you sure you want to remove ${ids.length} Facebook leads?`)) {
+                                            const { error } = await supabase.from("user_leads").delete().in("id", ids);
+                                            if (error) toast.error(error.message);
+                                            else { toast.success("Leads removed"); window.location.reload(); }
+                                        }
+                                    }}
+                                    onBulkUpdate={async () => { toast.info("Facebook profile re-scrape not available from bulk update."); }}
+                                    searchPlaceholder="Filter Facebook pages..."
+                                    onRefresh={refreshFacebookLeads}
+                                    bulkActions={{
+                                        show: true,
+                                        actions: [
+                                            {
+                                                label: "Export Selected",
+                                                onClick: (rows) => {
+                                                    const csv = rows.map((r: any) => `${r.facebook_url},${r.page_name || ''},${r.followers_count || ''},${r.email || ''},${r.phone || ''}`).join("\n");
+                                                    const blob = new Blob([csv], { type: 'text/csv' });
+                                                    const url = window.URL.createObjectURL(blob);
+                                                    const a = document.createElement('a');
+                                                    a.href = url;
+                                                    a.download = 'facebook_leads.csv';
+                                                    a.click();
+                                                }
+                                            }
+                                        ]
+                                    }}
+                                />
                             </TabsContent>
                             <TabsContent value="x">
                                 <GenericProfileTable
@@ -2714,7 +2997,7 @@ interface DataTableProps<TData, TValue> {
     data: TData[]
     isLoading?: boolean
     filterColumn: string
-    type: "personal" | "company" | "google_maps" | "website_contact" | "instagram" | "x"
+    type: "personal" | "company" | "google_maps" | "website_contact" | "instagram" | "x" | "facebook"
     filters: any
     setFilters: (filters: any) => void
     onBulkDelete?: (ids: any[]) => Promise<void>
@@ -2910,6 +3193,25 @@ function GenericProfileTable<TData, TValue>({
                                                 "Youtube": item.youtube || item.socials?.youtube || "",
                                                 "Pinterest": item.pinterest || item.socials?.pinterest || "",
                                                 "Source URLs": (item.sourceUrls || []).join(", "),
+                                                "Tags": (item.tags || []).join(", "),
+                                                "Updated At": item.updatedAt ? new Date(item.updatedAt).toISOString() : ""
+                                            };
+                                        } else if (type === "facebook") {
+                                            return {
+                                                "Page Name": item.page_name || item.title || "",
+                                                "Facebook URL": item.facebook_url || "",
+                                                "Followers": item.followers_count || 0,
+                                                "Likes": item.likes_count || 0,
+                                                "Following": item.following_count || 0,
+                                                "Intro": (item.intro || "").replace(/\n/g, " "),
+                                                "Email": item.email || "",
+                                                "Phone": item.phone || "",
+                                                "Website": item.website || "",
+                                                "Address": item.address || "",
+                                                "Category": item.category || "",
+                                                "Categories": (item.categories || []).join(", "),
+                                                "Rating": item.rating || "",
+                                                "Ad Status": item.ad_status || "",
                                                 "Tags": (item.tags || []).join(", "),
                                                 "Updated At": item.updatedAt ? new Date(item.updatedAt).toISOString() : ""
                                             };
@@ -3279,7 +3581,7 @@ function GenericProfileTable<TData, TValue>({
     )
 }
 
-function FilterSheet({ type, filters, setFilters }: { type: "personal" | "company" | "google_maps" | "website_contact" | "instagram" | "x", filters: any, setFilters: (f: any) => void }) {
+function FilterSheet({ type, filters, setFilters }: { type: "personal" | "company" | "google_maps" | "website_contact" | "instagram" | "x" | "facebook", filters: any, setFilters: (f: any) => void }) {
     return (
         <Sheet>
             <SheetTrigger asChild>
@@ -3295,7 +3597,7 @@ function FilterSheet({ type, filters, setFilters }: { type: "personal" | "compan
                 <SheetHeader>
                     <SheetTitle>Advanced Filters</SheetTitle>
                     <SheetDescription>
-                        Narrow down your {type === "personal" ? "personal" : type === "company" ? "company" : type === "google_maps" ? "Google Maps" : type === "instagram" ? "Instagram" : "website contact"} leads.
+                        Narrow down your {type === "personal" ? "personal" : type === "company" ? "company" : type === "google_maps" ? "Google Maps" : type === "instagram" ? "Instagram" : type === "facebook" ? "Facebook" : "website contact"} leads.
                     </SheetDescription>
                 </SheetHeader>
                 <div className="py-6 space-y-6 px-1 pb-10">
@@ -3341,6 +3643,12 @@ function FilterSheet({ type, filters, setFilters }: { type: "personal" | "compan
                                     minMedia: 0, maxMedia: 10000000,
                                     joinedBefore: "", joinedAfter: "",
                                     location: "", tags: ""
+                                });
+                            } else if (type === "facebook") {
+                                setFilters({
+                                    hasEmail: "all", hasPhone: "all", hasWebsite: "all", hasRating: "all",
+                                    minFollowers: 0, maxFollowers: 10000000,
+                                    minLikes: 0, category: "", adStatus: "all", tags: ""
                                 });
                             } else {
                                 setFilters({
@@ -3403,6 +3711,24 @@ function FilterSheet({ type, filters, setFilters }: { type: "personal" | "compan
                                     <ThreeStateFilter label="Private" value={filters.isPrivate} onChange={(v) => setFilters({ ...filters, isPrivate: v })} />
                                     <ThreeStateFilter label="Mutual Follow" value={filters.mutualFollow} onChange={(v) => setFilters({ ...filters, mutualFollow: v })} />
                                     <ThreeStateFilter label="Has Channel" value={filters.hasChannel} onChange={(v) => setFilters({ ...filters, hasChannel: v })} />
+                                </>
+                            ) : type === "facebook" ? (
+                                <>
+                                    <ThreeStateFilter label="Has Rating" value={filters.hasRating} onChange={(v) => setFilters({ ...filters, hasRating: v })} />
+                                    <div className="space-y-1 mt-2">
+                                        <Label className="text-[10px]">Ad Status</Label>
+                                        <Select value={filters.adStatus} onValueChange={(v) => setFilters({ ...filters, adStatus: v })}>
+                                            <SelectTrigger className="h-8 text-xs bg-muted/20">
+                                                <SelectValue placeholder="Any Ad Status" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">Any Status</SelectItem>
+                                                <SelectItem value="ACTIVE">Active Ads</SelectItem>
+                                                <SelectItem value="INACTIVE">Inactive Ads</SelectItem>
+                                                <SelectItem value="none">No Ads Data</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
                                 </>
                             ) : type === "x" ? (
                                 <>
@@ -3469,6 +3795,21 @@ function FilterSheet({ type, filters, setFilters }: { type: "personal" | "compan
                                     <ThreeStateFilter label="Has Email" value={filters.hasEmail} onChange={(v) => setFilters({ ...filters, hasEmail: v })} />
                                     <ThreeStateFilter label="Has Phone" value={filters.hasPhone} onChange={(v) => setFilters({ ...filters, hasPhone: v })} />
                                     <ThreeStateFilter label="Has Website" value={filters.hasWebsite} onChange={(v) => setFilters({ ...filters, hasWebsite: v })} />
+                                </>
+                            ) : type === "facebook" ? (
+                                <>
+                                    <ThreeStateFilter label="Has Email" value={filters.hasEmail} onChange={(v) => setFilters({ ...filters, hasEmail: v })} />
+                                    <ThreeStateFilter label="Has Phone" value={filters.hasPhone} onChange={(v) => setFilters({ ...filters, hasPhone: v })} />
+                                    <ThreeStateFilter label="Has Website" value={filters.hasWebsite} onChange={(v) => setFilters({ ...filters, hasWebsite: v })} />
+                                    <div className="space-y-1 mt-2">
+                                        <Label className="text-[10px]">Category Search</Label>
+                                        <Input
+                                            placeholder="e.g. Agency, E-commerce..."
+                                            value={filters.category || ""}
+                                            onChange={(e) => setFilters({ ...filters, category: e.target.value })}
+                                            className="h-8 text-xs bg-muted/20"
+                                        />
+                                    </div>
                                 </>
                             ) : (
                                 <>
@@ -3591,7 +3932,7 @@ function FilterSheet({ type, filters, setFilters }: { type: "personal" | "compan
                         </div>
                     )}
 
-                    {(type === "personal" || type === "company" || type === "instagram" || type === "x") && (
+                    {(type === "personal" || type === "company" || type === "instagram" || type === "x" || type === "facebook") && (
                         <div className="space-y-4">
                             <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                                 {type === "personal" ? "Followers" : type === "company" ? "Followers" : "Followers"}
@@ -3633,6 +3974,21 @@ function FilterSheet({ type, filters, setFilters }: { type: "personal" | "compan
                                     placeholder="Max"
                                     value={(filters.maxFollowing === 10000000 ? "" : filters.maxFollowing) || ""}
                                     onChange={(e) => setFilters({ ...filters, maxFollowing: e.target.value === "" ? 0 : parseInt(e.target.value) })}
+                                    className="h-8 text-xs"
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {type === "facebook" && (
+                        <div className="space-y-4">
+                            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Likes</Label>
+                            <div className="flex items-center gap-2">
+                                <Input
+                                    type="number"
+                                    placeholder="Min"
+                                    value={filters.minLikes || ""}
+                                    onChange={(e) => setFilters({ ...filters, minLikes: e.target.value === "" ? 0 : parseInt(e.target.value) })}
                                     className="h-8 text-xs"
                                 />
                             </div>

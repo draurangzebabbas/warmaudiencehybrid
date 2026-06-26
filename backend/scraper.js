@@ -24,6 +24,9 @@ const ACTORS = {
     X_PROFILE: "m0LEAhkyKSbmcbPnl",
     X_FOLLOWERS: "C2Wk3I6xAqC4Xi63f",
     X_COMMENTS: "r0Lto6qhNw7DH2SXr",
+    FACEBOOK_PROFILE: "oJ48ceKNY7ueGPGL0",
+    FACEBOOK_FOLLOWERS: "hhgonmMEMGmpbDDAN",
+    FACEBOOK_COMMENTS: "boHTyXVlTvG5VM1fe",
 };
 
 // ─────────────────────────────────────────
@@ -418,6 +421,43 @@ async function scrapeXComments(postUrls, token, maxCommentsPerPost = 1000) {
     }, token);
 }
 
+// ─────────────────────────────────────────
+// Facebook Scrapers
+// ─────────────────────────────────────────
+
+/**
+ * Scrape Facebook profiles
+ */
+async function scrapeFacebookProfiles(startUrls, token) {
+    return callApifyActor(ACTORS.FACEBOOK_PROFILE, {
+        startUrls: startUrls.map(url => ({ url })),
+        proxy: { useApifyProxy: true, apifyProxyGroups: ["RESIDENTIAL"] }
+    }, token);
+}
+
+/**
+ * Scrape Facebook followers/following
+ */
+async function scrapeFacebookFollowers(startUrls, token, resultsLimit = 100) {
+    return callApifyActor(ACTORS.FACEBOOK_FOLLOWERS, {
+        startUrls: startUrls.map(url => ({ url })),
+        resultsLimit: resultsLimit,
+        proxy: { useApifyProxy: true }
+    }, token);
+}
+
+/**
+ * Scrape Facebook post comments
+ */
+async function scrapeFacebookComments(startUrls, token, commentsCount = 100) {
+    return callApifyActor(ACTORS.FACEBOOK_COMMENTS, {
+        startUrls: startUrls.map(url => ({ url })),
+        commentsMode: "RANKED_UNFILTERED",
+        commentsCount: commentsCount,
+        proxy: { useApifyProxy: true }
+    }, token);
+}
+
 module.exports = {
     ACTORS,
     callApifyActor,
@@ -438,6 +478,9 @@ module.exports = {
     scrapeXProfiles,
     scrapeXFollowers,
     scrapeXComments,
+    scrapeFacebookProfiles,
+    scrapeFacebookFollowers,
+    scrapeFacebookComments,
     testKey,
     normalizeUrl,
 };

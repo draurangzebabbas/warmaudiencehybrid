@@ -1346,43 +1346,527 @@ Saved to user's collection with tag: "Competitor: @username"
 
 ### 6. Facebook Extractor
 
-#### Name Here
+#### Facebook Followers & Following Scraper
 
-
-**Actor ID**: ``
+**Actor ID**: `hhgonmMEMGmpbDDAN`
 
 **Input**:
 ```json
 {
+    "followType": "follower", // following | or it would be null "" if user select both follower and following
+    "resultsLimit": 50, // no max limit user can put the what ever number he wants  default is 50
+    "startUrls": [
+        {
+            "url": "https://web.facebook.com/people/Ryiys-Hacker/61571220357480"
+        }
+    ]
 }
 ```
 
 **Output Structure**:
 ```json
 [
-
+  {
+    "facebookUrl": "https://web.facebook.com/people/Ryiys-Hacker/61571220357480",
+    "followType": "follower",
+    "id": "61590803549734",
+    "image": "https://scontent.frkh1-1.fna.fbcdn.net/v/t39.30808-1/723407955_122100321813360118_2732715999313004607_n.jpg?stp=cp0_dst-jpg_tt6&cstp=mx1024x1024&ctp=s80x80&_nc_cat=106&ccb=1-7&_nc_sid=167101&_nc_ohc=aQKQR4Ol1k0Q7kNvwEOKopp&_nc_oc=Adq8mVvRGBi4mksy0g-kJmBXU34cUi7jcsjF7PnfJIKNAJQlOQ7OfEv9BrvKEvXayTw&_nc_zt=24&_nc_ht=scontent.frkh1-1.fna&_nc_gid=B4PxHVDXDLpmi6gvsqyF9Q&_nc_ss=72289&oh=00_Af8KmKN5UTxSmFy3H8pNbqRO74ISTP-snGstuHnc2Bm-ag&oe=6A43D6F1",
+    "title": "AI Studio ",
+    "subtitle_text": "",
+    "url": "https://www.facebook.com/people/AI-Studio/61590803549734/",
+    "privacy_scope": null,
+    "__typename": "User",
+    "__isEntity": "User",
+    "facebookId": "61571220357480",
+    "navSections": [
+      {
+        "id": "YXBwX2NvbGxlY3Rpb246cGZiaWQwN2ZMYWRzNFZGWlFiQ3FVeUZrZGZ6ckprYm1jRWdFZ2RyeW5xN2tyM0x6VW96Q2pCNDJwNFJaMW9IdVUyQ0Q0TFBtRFJaUmlOOEFQOEs5azdXRzYybkp6WXd3V1ls",
+        "name": "Followers",
+        "url": "https://www.facebook.com/people/Ryiys-Hacker/61571220357480/?sk=followers"
+      }
+    ],
+    "pageAdLibrary": {
+      "is_business_page_active": false,
+      "id": "549620371548412"
+    },
+    "followersId": "YXBwX2NvbGxlY3Rpb246cGZiaWQwN2ZMYWRzNFZGWlFiQ3FVeUZrZGZ6ckprYm1jRWdFZ2RyeW5xN2tyM0x6VW96Q2pCNDJwNFJaMW9IdVUyQ0Q0TFBtRFJaUmlOOEFQOEs5azdXRzYybkp6WXd3V1ls",
+    "inputUrl": "https://web.facebook.com/people/Ryiys-Hacker/61571220357480"
+  },
+  {
+    "facebookUrl": "https://web.facebook.com/people/Ryiys-Hacker/61571220357480",
+    "followType": "follower",
+    "id": "100076533009921",
+    "image": "https://scontent.frkh1-1.fna.fbcdn.net/v/t39.30808-1/295970060_167419902485776_8152044860385811223_n.png?stp=cp0_dst-png&cstp=mx768x768&ctp=s80x80&_nc_cat=103&ccb=1-7&_nc_sid=167101&_nc_ohc=-K9k8nzBOJkQ7kNvwEU2ycr&_nc_oc=AdrZZpmE4ON8Eci9iZGHAhI9P4Ciay0ykkQeUuL5CwtjyCI2FsxYd6yCrLAckomwcjo&_nc_zt=24&_nc_ht=scontent.frkh1-1.fna&_nc_gid=B4PxHVDXDLpmi6gvsqyF9Q&_nc_ss=72289&oh=00_Af_HzvELpZgIcJ4tKH5uxDnNp1mAubbysxBk33u6M0SMeg&oe=6A43F163",
+    "title": "Mera sanghar ki awaz",
+    "subtitle_text": "",
+    "url": "https://www.facebook.com/people/Mera-sanghar-ki-awaz/100076533009921/",
+    "privacy_scope": null,
+    "__typename": "User",
+    "__isEntity": "User",
+    "facebookId": "61571220357480",
+    "navSections": [
+      {
+        "id": "YXBwX2NvbGxlY3Rpb246cGZiaWQwN2ZMYWRzNFZGWlFiQ3FVeUZrZGZ6ckprYm1jRWdFZ2RyeW5xN2tyM0x6VW96Q2pCNDJwNFJaMW9IdVUyQ0Q0TFBtRFJaUmlOOEFQOEs5azdXRzYybkp6WXd3V1ls",
+        "name": "Followers",
+        "url": "https://www.facebook.com/people/Ryiys-Hacker/61571220357480/?sk=followers"
+      }
+    ],
+    "pageAdLibrary": {
+      "is_business_page_active": false,
+      "id": "549620371548412"
+    },
+    "followersId": "YXBwX2NvbGxlY3Rpb246cGZiaWQwN2ZMYWRzNFZGWlFiQ3FVeUZrZGZ6ckprYm1jRWdFZ2RyeW5xN2tyM0x6VW96Q2pCNDJwNFJaMW9IdVUyQ0Q0TFBtRFJaUmlOOEFQOEs5azdXRzYybkp6WXd3V1ls",
+    "inputUrl": "https://web.facebook.com/people/Ryiys-Hacker/61571220357480"
+  },
+  {
+    "facebookUrl": "https://web.facebook.com/people/Ryiys-Hacker/61571220357480",
+    "followType": "follower",
+    "id": "61588609287025",
+    "image": "https://scontent.frkh1-1.fna.fbcdn.net/v/t39.30808-1/705959202_122116945407286976_5300863670970174263_n.jpg?stp=cp0_dst-jpg_tt6&cstp=mx1080x1080&ctp=s80x80&_nc_cat=101&ccb=1-7&_nc_sid=167101&_nc_ohc=Oi80ZW08ZIcQ7kNvwGuQoLX&_nc_oc=Adr52vXELDHLvs_8Lb7U_GTAgRSuoto1_PgyCg6ATyJtHVdj4DgHsFCsNM5YhGx8Tus&_nc_zt=24&_nc_ht=scontent.frkh1-1.fna&_nc_gid=B4PxHVDXDLpmi6gvsqyF9Q&_nc_ss=72289&oh=00_Af95mLc1Vq3R4KpiWljmjcFhY5NX3-NClA1hBTLJn-bHPA&oe=6A43E7F3",
+    "title": "Hindu Dharma Niti",
+    "subtitle_text": "",
+    "url": "https://www.facebook.com/people/Hindu-Dharma-Niti/61588609287025/",
+    "privacy_scope": null,
+    "__typename": "User",
+    "__isEntity": "User",
+    "facebookId": "61571220357480",
+    "navSections": [
+      {
+        "id": "YXBwX2NvbGxlY3Rpb246cGZiaWQwN2ZMYWRzNFZGWlFiQ3FVeUZrZGZ6ckprYm1jRWdFZ2RyeW5xN2tyM0x6VW96Q2pCNDJwNFJaMW9IdVUyQ0Q0TFBtRFJaUmlOOEFQOEs5azdXRzYybkp6WXd3V1ls",
+        "name": "Followers",
+        "url": "https://www.facebook.com/people/Ryiys-Hacker/61571220357480/?sk=followers"
+      }
+    ],
+    "pageAdLibrary": {
+      "is_business_page_active": false,
+      "id": "549620371548412"
+    },
+    "followersId": "YXBwX2NvbGxlY3Rpb246cGZiaWQwN2ZMYWRzNFZGWlFiQ3FVeUZrZGZ6ckprYm1jRWdFZ2RyeW5xN2tyM0x6VW96Q2pCNDJwNFJaMW9IdVUyQ0Q0TFBtRFJaUmlOOEFQOEs5azdXRzYybkp6WXd3V1ls",
+    "inputUrl": "https://web.facebook.com/people/Ryiys-Hacker/61571220357480"
+  },
+  {
+    "facebookUrl": "https://web.facebook.com/people/Ryiys-Hacker/61571220357480",
+    "followType": "follower",
+    "id": "61590924301341",
+    "image": "https://scontent.frkh1-1.fna.fbcdn.net/v/t39.30808-1/725782010_950070351379720_5659658725347658409_n.jpg?stp=c256.0.1024.1024a_cp0_dst-jpg_tt6&cstp=mx1024x1024&ctp=s80x80&_nc_cat=105&ccb=1-7&_nc_sid=167101&_nc_ohc=M-cwv6AiHwkQ7kNvwET_yQd&_nc_oc=AdrcnMFaRpeU5dBr72fY8BF6tzKZZMgDaguluYWZpKe9CTimzb8dXKIFzba7fOq2uzE&_nc_zt=24&_nc_ht=scontent.frkh1-1.fna&_nc_gid=B4PxHVDXDLpmi6gvsqyF9Q&_nc_ss=72289&oh=00_Af_7tbMGi9XA14_T9_dn2avtT-xEDXTpzcuIq-BwshCBbw&oe=6A440962",
+    "title": "Nexify",
+    "subtitle_text": "",
+    "url": "https://www.facebook.com/people/Nexify/61590924301341/",
+    "privacy_scope": null,
+    "__typename": "User",
+    "__isEntity": "User",
+    "facebookId": "61571220357480",
+    "navSections": [
+      {
+        "id": "YXBwX2NvbGxlY3Rpb246cGZiaWQwN2ZMYWRzNFZGWlFiQ3FVeUZrZGZ6ckprYm1jRWdFZ2RyeW5xN2tyM0x6VW96Q2pCNDJwNFJaMW9IdVUyQ0Q0TFBtRFJaUmlOOEFQOEs5azdXRzYybkp6WXd3V1ls",
+        "name": "Followers",
+        "url": "https://www.facebook.com/people/Ryiys-Hacker/61571220357480/?sk=followers"
+      }
+    ],
+    "pageAdLibrary": {
+      "is_business_page_active": false,
+      "id": "549620371548412"
+    },
+    "followersId": "YXBwX2NvbGxlY3Rpb246cGZiaWQwN2ZMYWRzNFZGWlFiQ3FVeUZrZGZ6ckprYm1jRWdFZ2RyeW5xN2tyM0x6VW96Q2pCNDJwNFJaMW9IdVUyQ0Q0TFBtRFJaUmlOOEFQOEs5azdXRzYybkp6WXd3V1ls",
+    "inputUrl": "https://web.facebook.com/people/Ryiys-Hacker/61571220357480"
+  }
 ]
 ```
 
-#### Name Here
+#### Facebook page contact info Scraper
 
 
-**Actor ID**: ``
+**Actor ID**: `oJ48ceKNY7ueGPGL0`
 
 **Input**:
 ```json
 {
+  "language": "en-GB",
+  "pages": [
+    "https://www.facebook.com/skinplusfindon/",
+    "buildingaiagents",
+    "https://web.facebook.com/aurangzeb.abbas.430665"
+  ]
 }
 ```
 
 **Output Structure**:
 ```json
 [
-
+  {
+    "facebookUrl": "https://www.facebook.com/skinplusfindon/",
+    "categories": [
+      "Page",
+      "Skin Care Service"
+    ],
+    "info": [
+      "Skinplus Dermatology, Findon. 530 likes",
+      "84 were here. We have qualified dermatologists and staff to assess your skin. We will discuss and treat your conce"
+    ],
+    "likes": 530,
+    "messenger": null,
+    "title": "Skinplus Dermatology | Findon SA",
+    "address": "178 Findon Road, Findon, SA, Australia, 5023 ",
+    "pageId": "100063568933834",
+    "pageName": "skinplusfindon",
+    "pageUrl": "https://www.facebook.com/skinplusfindon/",
+    "intro": "We have qualified dermatologists and staff to assess your skin. We will discuss and treat your conce",
+    "websites": [
+      "https://maps.google.com/maps?q=178+Findon+Road%2C+Findon%2C+SA%2C+Australia%2C+South+Australia&hl=en",
+      "http://www.skinplusdermatology.com.au/"
+    ],
+    "phone": "+61 8 8347 1144",
+    "email": "admin@skinplus.com.au",
+    "website": "http://www.skinplusdermatology.com.au/",
+    "followers": 530,
+    "followings": 10,
+    "profilePictureUrl": "https://scontent-lga3-1.xx.fbcdn.net/v/t1.30497-1/453178253_471506465671661_2781666950760530985_n.png?stp=dst-png&cstp=mx2048x2048&ctp=s200x200&_nc_cat=1&ccb=1-7&_nc_sid=8f254b&_nc_ohc=COf5-xtMqFAQ7kNvwFhSuFt&_nc_oc=Ado6U86rQhxyix4Y7hdTdnNDDjl-xsE9Q3NHzPG4cAJIx8IifdG6xtIgbIyjGsHiKE4&_nc_zt=24&_nc_ht=scontent-lga3-1.xx&_nc_ss=7c289&oh=00_Af9XI0QpcOC14UDtnEJ56HG76LXX4YwiICEIwAu6wamFHw&oe=6A6592FA",
+    "category": "Skin Care Service",
+    "addressUrl": "https://www.bing.com/maps/default.aspx?v=2&pc=FACEBK&mid=8100&where1=178+Findon+Road%2C+Findon%2C+SA%2C+Australia%2C+5023+&FORM=FBKPL1&mkt=en-US",
+    "business_hours": "Closing Soon",
+    "creation_date": "February 28, 2014",
+    "ad_status": "This Page isn't currently running ads.",
+    "additionalProperties": {
+      "messenger": null,
+      "address": "178 Findon Road, Findon, SA, Australia, 5023 ",
+      "profilePictureUrl": "https://scontent-lga3-1.xx.fbcdn.net/v/t1.30497-1/453178253_471506465671661_2781666950760530985_n.png?stp=dst-png&cstp=mx2048x2048&ctp=s200x200&_nc_cat=1&ccb=1-7&_nc_sid=8f254b&_nc_ohc=COf5-xtMqFAQ7kNvwFhSuFt&_nc_oc=Ado6U86rQhxyix4Y7hdTdnNDDjl-xsE9Q3NHzPG4cAJIx8IifdG6xtIgbIyjGsHiKE4&_nc_zt=24&_nc_ht=scontent-lga3-1.xx&_nc_ss=7c289&oh=00_Af9XI0QpcOC14UDtnEJ56HG76LXX4YwiICEIwAu6wamFHw&oe=6A6592FA",
+      "category": "Skin Care Service",
+      "addressUrl": "https://www.bing.com/maps/default.aspx?v=2&pc=FACEBK&mid=8100&where1=178+Findon+Road%2C+Findon%2C+SA%2C+Australia%2C+5023+&FORM=FBKPL1&mkt=en-US",
+      "business_hours": "Closing Soon",
+      "ad_status": "This Page isn't currently running ads."
+    },
+    "facebookId": "100063568933834",
+    "pageAdLibrary": {
+      "id": "657426830962249",
+      "pamv_comms_data": null
+    }
+  },
+  {
+    "facebookUrl": "https://web.facebook.com/aurangzeb.abbas.430665",
+    "categories": [],
+    "info": [],
+    "messenger": null,
+    "title": "Aurangzeb Abbas (@aurangzeb.abbas.430665) • Facebook, Connect with friends",
+    "pageId": "61551535823607",
+    "pageName": "aurangzeb.abbas.430665",
+    "pageUrl": "https://web.facebook.com/aurangzeb.abbas.430665",
+    "websites": [],
+    "personalProfile": {
+      "name": "Aurangzeb Abbas",
+      "gender": "MALE",
+      "profilePhoto": "https://www.facebook.com/photo/?fbid=122170236494051194&set=a.122094901736051194",
+      "profilePicLarge": "https://scontent-lax3-2.xx.fbcdn.net/v/t39.30808-1/474121875_122170236500051194_644245577295989236_n.jpg?stp=dst-jpg_tt6&cstp=mx288x288&ctp=s200x200&_nc_cat=111&ccb=1-7&_nc_sid=e99d92&_nc_ohc=oUpsg3i1ZJ4Q7kNvwFcdcPK&_nc_oc=Adq06hrlG2VcdLu4Hry_zfBbwytEXSNlekOk8BjyXlUzeXNlm8llXSjEbwc--8F9f3E&_nc_zt=24&_nc_ht=scontent-lax3-2.xx&_nc_gid=dLejItLQcXGG-OizFG7wPQ&_nc_ss=72289&oh=00_Af-75ch799qCxOyLdIyMo6b5FsctGfAVVOm-DNpdGCFTyg&oe=6A43E0EA",
+      "profilePicMedium": "https://scontent-lax3-2.xx.fbcdn.net/v/t39.30808-1/474121875_122170236500051194_644245577295989236_n.jpg?stp=dst-jpg_tt6&cstp=mx288x288&ctp=s148x148&_nc_cat=111&ccb=1-7&_nc_sid=e99d92&_nc_ohc=oUpsg3i1ZJ4Q7kNvwFcdcPK&_nc_oc=Adq06hrlG2VcdLu4Hry_zfBbwytEXSNlekOk8BjyXlUzeXNlm8llXSjEbwc--8F9f3E&_nc_zt=24&_nc_ht=scontent-lax3-2.xx&_nc_gid=dLejItLQcXGG-OizFG7wPQ&_nc_ss=72289&oh=00_Af-75ch799qCxOyLdIyMo6b5FsctGfAVVOm-DNpdGCFTyg&oe=6A43E0EA",
+      "profilePicSmall": "https://scontent-lax3-2.xx.fbcdn.net/v/t39.30808-1/474121875_122170236500051194_644245577295989236_n.jpg?stp=dst-jpg_tt6&cstp=mx288x288&ctp=s100x100&_nc_cat=111&ccb=1-7&_nc_sid=e99d92&_nc_ohc=oUpsg3i1ZJ4Q7kNvwFcdcPK&_nc_oc=Adq06hrlG2VcdLu4Hry_zfBbwytEXSNlekOk8BjyXlUzeXNlm8llXSjEbwc--8F9f3E&_nc_zt=24&_nc_ht=scontent-lax3-2.xx&_nc_gid=dLejItLQcXGG-OizFG7wPQ&_nc_ss=72289&oh=00_Af-75ch799qCxOyLdIyMo6b5FsctGfAVVOm-DNpdGCFTyg&oe=6A43E0EA"
+    },
+    "coverPhotoUrl": "https://scontent-lax3-1.xx.fbcdn.net/v/t39.30808-6/476361751_122172217160051194_9003053755581779337_n.png?stp=dst-png&cstp=mx1640x924&ctp=s960x960&_nc_cat=108&ccb=1-7&_nc_sid=cc71e4&_nc_ohc=2cL2S4-2-MoQ7kNvwH5Eb5t&_nc_oc=AdrxWxFLuESEbmuk1K0R0GBfO-cIrD2RZGC68cRQ00G3SEeWcBgOiq5Webu971cFZlg&_nc_zt=23&_nc_ht=scontent-lax3-1.xx&_nc_gid=dLejItLQcXGG-OizFG7wPQ&_nc_ss=72289&oh=00_Af9CfSwqpVHE9HvwkBc1JfTtGbTrOF6r_kz-Mu1VoXi65Q&oe=6A43DEA0",
+    "profilePhoto": "https://www.facebook.com/photo/?fbid=122170236494051194&set=a.122094901736051194",
+    "additionalProperties": {
+      "messenger": null,
+      "coverPhotoUrl": "https://scontent-lax3-1.xx.fbcdn.net/v/t39.30808-6/476361751_122172217160051194_9003053755581779337_n.png?stp=dst-png&cstp=mx1640x924&ctp=s960x960&_nc_cat=108&ccb=1-7&_nc_sid=cc71e4&_nc_ohc=2cL2S4-2-MoQ7kNvwH5Eb5t&_nc_oc=AdrxWxFLuESEbmuk1K0R0GBfO-cIrD2RZGC68cRQ00G3SEeWcBgOiq5Webu971cFZlg&_nc_zt=23&_nc_ht=scontent-lax3-1.xx&_nc_gid=dLejItLQcXGG-OizFG7wPQ&_nc_ss=72289&oh=00_Af9CfSwqpVHE9HvwkBc1JfTtGbTrOF6r_kz-Mu1VoXi65Q&oe=6A43DEA0"
+    },
+    "facebookId": "61551535823607"
+  },
+  {
+    "facebookUrl": "https://www.facebook.com/buildingaiagents",
+    "categories": [
+      "Page",
+      "Golf Instructor",
+      "Golf Course & Country Club",
+      "Sports"
+    ],
+    "info": [
+      "Building Ai Agents. 10 likes. ⛳Welcome to Pro Golfer!\nGuide | Tips | Reviews\nTake Your Swing To Next Level!\nJoin And Be A Part Of Golf Family"
+    ],
+    "likes": 10,
+    "messenger": null,
+    "title": "Building Ai Agents",
+    "pageId": "61568388660207",
+    "pageName": "buildingaiagents",
+    "pageUrl": "https://www.facebook.com/buildingaiagents",
+    "intro": "⛳Welcome to Pro Golfer!\nGuide | Tips | Reviews\nTake Your Swing To Next Level!\nJoin And Be A Part Of Golf Family",
+    "websites": [
+      "https://www.progolfer.xyz/"
+    ],
+    "website": "https://www.progolfer.xyz/",
+    "rating": "Not yet rated (0 Reviews)",
+    "followers": 10,
+    "followings": 1,
+    "profilePictureUrl": "https://scontent-det1-1.xx.fbcdn.net/v/t39.30808-1/465737642_122161965044051194_5709823965245971757_n.jpg?stp=dst-jpg_tt6&cstp=mx180x180&ctp=s180x180&_nc_cat=108&ccb=1-7&_nc_sid=f907e8&_nc_ohc=8FZj2cGDjMAQ7kNvwE7sGO6&_nc_oc=AdpkczZsb50raCMa0-DBIL9BNkWVVL6_L68my4IQ_mi9tUE1jx6zmWGWsyhXrN5SB38&_nc_zt=24&_nc_ht=scontent-det1-1.xx&_nc_gid=EH24a7_RMgOhZ3F0BfmS_Q&_nc_ss=7c289&oh=00_Af_wIELcRidcgA54kAQyaVand6KxhSbQEhVGJ2bR-iYIDw&oe=6A43EB4C",
+    "profilePhoto": "https://www.facebook.com/photo/?fbid=122097299960612955&set=a.122097299120612955",
+    "ratingCount": 0,
+    "category": "Golf Instructor",
+    "ratings": "Not yet rated (0 Reviews)",
+    "creation_date": "November 6, 2024",
+    "ad_status": "This Page isn't currently running ads.",
+    "additionalProperties": {
+      "messenger": null,
+      "profilePictureUrl": "https://scontent-det1-1.xx.fbcdn.net/v/t39.30808-1/465737642_122161965044051194_5709823965245971757_n.jpg?stp=dst-jpg_tt6&cstp=mx180x180&ctp=s180x180&_nc_cat=108&ccb=1-7&_nc_sid=f907e8&_nc_ohc=8FZj2cGDjMAQ7kNvwE7sGO6&_nc_oc=AdpkczZsb50raCMa0-DBIL9BNkWVVL6_L68my4IQ_mi9tUE1jx6zmWGWsyhXrN5SB38&_nc_zt=24&_nc_ht=scontent-det1-1.xx&_nc_gid=EH24a7_RMgOhZ3F0BfmS_Q&_nc_ss=7c289&oh=00_Af_wIELcRidcgA54kAQyaVand6KxhSbQEhVGJ2bR-iYIDw&oe=6A43EB4C",
+      "category": "Golf Instructor",
+      "ratings": "Not yet rated (0 Reviews)",
+      "ad_status": "This Page isn't currently running ads."
+    },
+    "facebookId": "61568388660207",
+    "pageAdLibrary": {
+      "id": "462612613605348",
+      "pamv_comms_data": null
+    }
+  }
 ]
 ```
 
+#### Facebook Comments [$1.5💰] Scraper
 
+
+**Actor ID**: `boHTyXVlTvG5VM1fe`
+
+**Input**:
+```json
+{
+  "commentsMode": "ALL",
+  "includeNestedComments": false,
+  "maxItems": 10,
+  "proxy": {
+    "useApifyProxy": true,
+    "apifyProxyGroups": [
+      "RESIDENTIAL"
+    ]
+  },
+  "startUrls": [
+    {
+      "url": "https://www.facebook.com/groups/183774529022936/permalink/2090871251646578/?rdid=ofrIy5Dr5XISD6GH"
+    }
+  ],
+  "maxConcurrency": 10,
+  "minConcurrency": 1,
+  "maxRequestRetries": 2
+}
+```
+
+**Output Structure**:
+```json
+[
+  {
+    "facebookUrl": "https://www.facebook.com/groups/183774529022936/permalink/2090871251646578/?rdid=ofrIy5Dr5XISD6GH",
+    "commentUrl": "https://www.facebook.com/groups/183774529022936/posts/2090871251646578/?comment_id=2091677278232642",
+    "commentId": "2091677278232642",
+    "id": "Y29tbWVudDoyMDkwODcxMjUxNjQ2NTc4XzIwOTE2NzcyNzgyMzI2NDI=",
+    "text": "em cực kỳ recommend dòng colosbaby mới này cho mẹ nào có con sinh mổ",
+    "comments": [],
+    "threadingDepth": 0,
+    "facebookId": "2090871251646578",
+    "postTitle": "HỘI REVIEW BỈM SỮA CHO BÉ &lt;3",
+    "pageAdLibrary": {
+      "is_business_page_active": false,
+      "id": "0"
+    },
+    "inputUrl": "https://www.facebook.com/groups/183774529022936/permalink/2090871251646578/?rdid=ofrIy5Dr5XISD6GH",
+    "feedbackId": "ZmVlZGJhY2s6MjA5MDg3MTI1MTY0NjU3OF8yMDkxNjc3Mjc4MjMyNjQy",
+    "date": "2026-02-04T08:38:25.000Z",
+    "profilePicture": "https://scontent.fcrk1-1.fna.fbcdn.net/v/t39.30808-1/480208753_2647814102070775_2899473982701283894_n.jpg?stp=cp0_dst-jpg_tt6&cstp=mx720x733&ctp=p32x32&_nc_cat=108&ccb=1-7&_nc_sid=e99d92&_nc_ohc=CRqvNY0N3HsQ7kNvwE1ziXM&_nc_oc=AdqBeGtMMKsAhZEMt8WrdykrRVOP8OcRTMi1EnA8GSwSzb8adoj-F3hjyeDJMb47pO4&_nc_zt=24&_nc_ht=scontent.fcrk1-1.fna&_nc_gid=7L4MNRivS23eBhPVYq6GnA&_nc_ss=7d289&oh=00_Af_BSJPdB_wJ9Sdm8iIg3xfJpwynTS4jJSb4Eow6R-g_SQ&oe=6A43F7F7",
+    "profileId": "pfbid0f3qRU7y7Cp4zc759jbTMy6SL1eKrqKqgDVMvCk433HTnN9uHQXeWHiRfmKWaiVgCl",
+    "profileName": "Nguyễn Thanh Mỹ",
+    "profileUrl": "https://www.facebook.com/marthacecilia.carretesespinoza"
+  },
+  {
+    "facebookUrl": "https://www.facebook.com/groups/183774529022936/permalink/2090871251646578/?rdid=ofrIy5Dr5XISD6GH",
+    "commentUrl": "https://www.facebook.com/groups/183774529022936/posts/2090871251646578/?comment_id=2093375878062782",
+    "commentId": "2093375878062782",
+    "id": "Y29tbWVudDoyMDkwODcxMjUxNjQ2NTc4XzIwOTMzNzU4NzgwNjI3ODI=",
+    "text": "Lúc trước tiêu hóa của bé nhà mình không tốt nên mình đổi sang cho uống sữa bột pha sẵn IQLac Colostrum của VPMILK nè, sữa có vị nhạt dễ uống lắm và trong thành phần có HMO – chất xơ kép FOS giúp tiêu hóa ổn định hấp thu tốt hơn, ngoài ra còn có L-lysine, canxi, DHA và sữa non giúp phát triển toàn diện về cân nặng, chiều cao, trí não và đề kháng nên mẹ yên tâm dùng lâu dài cho bé",
+    "comments": [],
+    "threadingDepth": 0,
+    "facebookId": "2090871251646578",
+    "postTitle": "HỘI REVIEW BỈM SỮA CHO BÉ &lt;3",
+    "pageAdLibrary": {
+      "is_business_page_active": false,
+      "id": "0"
+    },
+    "inputUrl": "https://www.facebook.com/groups/183774529022936/permalink/2090871251646578/?rdid=ofrIy5Dr5XISD6GH",
+    "feedbackId": "ZmVlZGJhY2s6MjA5MDg3MTI1MTY0NjU3OF8yMDkzMzc1ODc4MDYyNzgy",
+    "date": "2026-02-06T03:05:08.000Z",
+    "profilePicture": "https://scontent.fcrk1-3.fna.fbcdn.net/v/t39.30808-1/480071913_4223377674613101_2255084689167847811_n.jpg?stp=cp0_dst-jpg_tt6&cstp=mx950x960&ctp=s32x32&_nc_cat=100&ccb=1-7&_nc_sid=1d2534&_nc_ohc=iw8xY-i26DsQ7kNvwFynNU_&_nc_oc=AdpGx74E1OR2J05wedkM22wB78B04JCxIpFsnqf2StVMuFHQ--a72xsAuL1GrCvw8pE&_nc_zt=24&_nc_ht=scontent.fcrk1-3.fna&_nc_gid=7L4MNRivS23eBhPVYq6GnA&_nc_ss=7d289&oh=00_Af9pv2iMxHDFvCE6dMiCAcfhwdExXulNgxPYPCD7oChCaA&oe=6A441899",
+    "profileId": "100008227299398",
+    "profileName": "Phan Hồng Như"
+  },
+  {
+    "facebookUrl": "https://www.facebook.com/groups/183774529022936/permalink/2090871251646578/?rdid=ofrIy5Dr5XISD6GH",
+    "commentUrl": "https://www.facebook.com/groups/183774529022936/posts/2090871251646578/?comment_id=2092350724831964",
+    "commentId": "2092350724831964",
+    "id": "Y29tbWVudDoyMDkwODcxMjUxNjQ2NTc4XzIwOTIzNTA3MjQ4MzE5NjQ=",
+    "text": "e thấy dòng colosbaby này hơi lạ, có mom nào dùng rồi cho e xin review thực tế với, con e hay ốm vặt quá.",
+    "comments": [],
+    "threadingDepth": 0,
+    "facebookId": "2090871251646578",
+    "postTitle": "HỘI REVIEW BỈM SỮA CHO BÉ &lt;3",
+    "pageAdLibrary": {
+      "is_business_page_active": false,
+      "id": "0"
+    },
+    "inputUrl": "https://www.facebook.com/groups/183774529022936/permalink/2090871251646578/?rdid=ofrIy5Dr5XISD6GH",
+    "feedbackId": "ZmVlZGJhY2s6MjA5MDg3MTI1MTY0NjU3OF8yMDkyMzUwNzI0ODMxOTY0",
+    "date": "2026-02-05T01:44:38.000Z",
+    "profilePicture": "https://scontent.fcrk1-4.fna.fbcdn.net/v/t39.30808-1/686376288_122212954910372183_3748592845222154115_n.jpg?stp=c14.0.480.480a_cp0_dst-jpg_tt6&cstp=mx480x480&ctp=s32x32&_nc_cat=102&ccb=1-7&_nc_sid=e99d92&_nc_ohc=7H4lSgqT3goQ7kNvwHliK6O&_nc_oc=AdoB7j87xHNdYmDAzWbiAhM0fW9eoriGHrUyysLu7mbcd1nnrCeLRH4QgubsQ2tcfrA&_nc_zt=24&_nc_ht=scontent.fcrk1-4.fna&_nc_gid=7L4MNRivS23eBhPVYq6GnA&_nc_ss=7d289&oh=00_Af9fflL8cQv0lErqGAmRnLH5aoG6SBND74b3101biivW4w&oe=6A43F673",
+    "profileId": "pfbid02btMvtR7a7SCUYWeaqUaCJhELGWhBFjF9piqe3jxhK7T6ji3qnYrxTT77xNRb5H82l",
+    "profileName": "Hà Linh Nguyễn",
+    "profileUrl": "https://www.facebook.com/people/H%C3%A0-Linh-Nguy%E1%BB%85n/pfbid02btMvtR7a7SCUYWeaqUaCJhELGWhBFjF9piqe3jxhK7T6ji3qnYrxTT77xNRb5H82l/"
+  },
+  {
+    "facebookUrl": "https://www.facebook.com/groups/183774529022936/permalink/2090871251646578/?rdid=ofrIy5Dr5XISD6GH",
+    "commentUrl": "https://www.facebook.com/groups/183774529022936/posts/2090871251646578/?comment_id=2095301601203543",
+    "commentId": "2095301601203543",
+    "id": "Y29tbWVudDoyMDkwODcxMjUxNjQ2NTc4XzIwOTUzMDE2MDEyMDM1NDM=",
+    "text": "🎉🎉 CTKM CUỐI TUẦN – MUA LÀ CÓ QUÀ 🎁🎉\n📍 Kidsplaza – HH4B Linh Đàm\n⏰ 06/02 – 08/02\n🛒 Đơn hàng từ 1tr – 2tr ,..., 5tr – 10tr\n👉 🎁 Nhận quà tương ứng – càng mua càng lời\n🔥 Ưu đãi bỉm sữa cuối năm 🔥\n🥛 Withmom 679k (Giá gốc 799k)\n🥛 Pediasure Úc 669k (Giá gốc 799k)\n🥛 Meiji nội số 0 mua 2 giảm 120k\n🎁 Hikid – AP Úc tặng quà combo 3–6 lon\n🧷 Moony, gooby, hoppi, huggies , bobby tặng quà 🎁\n👕 Quần áo mua 1 tặng 1 🎉\n🥣 Đồ ăn dặm mua 2 tặng 1 🍽️\n👉 Cuối tuần ghé Kidsplaza HH4B Linh Đàm - 02466586640 mua sắm là có quà liền tay ba mẹ ơi! 💙👶🎁",
+    "comments": [],
+    "threadingDepth": 0,
+    "facebookId": "2090871251646578",
+    "postTitle": "HỘI REVIEW BỈM SỮA CHO BÉ &lt;3",
+    "pageAdLibrary": {
+      "is_business_page_active": false,
+      "id": "0"
+    },
+    "inputUrl": "https://www.facebook.com/groups/183774529022936/permalink/2090871251646578/?rdid=ofrIy5Dr5XISD6GH",
+    "feedbackId": "ZmVlZGJhY2s6MjA5MDg3MTI1MTY0NjU3OF8yMDk1MzAxNjAxMjAzNTQz",
+    "date": "2026-02-08T04:45:24.000Z",
+    "profilePicture": "https://scontent.fcrk1-5.fna.fbcdn.net/v/t39.30808-1/669053844_1626872678643956_8593908392008047111_n.jpg?stp=cp0_dst-jpg_tt6&cstp=mx960x960&ctp=s32x32&_nc_cat=104&ccb=1-7&_nc_sid=e99d92&_nc_ohc=7q1dnnG-tVAQ7kNvwHNN11I&_nc_oc=Adr7awkvGxD2lY9fcQ18iYno4B8puMD5OcYtpKJUos87eID5TDzNJsz0ImOAaBKT-Ac&_nc_zt=24&_nc_ht=scontent.fcrk1-5.fna&_nc_gid=7L4MNRivS23eBhPVYq6GnA&_nc_ss=7d289&oh=00_Af8oT9pPQMthpCUlfIddS9de1oeQczi6Es19THJfLcWDPA&oe=6A43E59B",
+    "profileId": "pfbid04oQudo6R63gw2erMuLpxvmu8e6Tq24jFP8BhHvkccc7jHhdH9ZBiKaCxQtdKJi5Nl",
+    "profileName": "Ngọc Ánh",
+    "profileUrl": "https://www.facebook.com/ngoc.anh.553680"
+  },
+  {
+    "facebookUrl": "https://www.facebook.com/groups/183774529022936/permalink/2090871251646578/?rdid=ofrIy5Dr5XISD6GH",
+    "commentUrl": "https://www.facebook.com/groups/183774529022936/posts/2090871251646578/?comment_id=2092553791478324",
+    "commentId": "2092553791478324",
+    "id": "Y29tbWVudDoyMDkwODcxMjUxNjQ2NTc4XzIwOTI1NTM3OTE0NzgzMjQ=",
+    "text": "Uống ok nha. Mà con tui uống bón",
+    "comments": [],
+    "threadingDepth": 0,
+    "facebookId": "2090871251646578",
+    "postTitle": "HỘI REVIEW BỈM SỮA CHO BÉ &lt;3",
+    "pageAdLibrary": {
+      "is_business_page_active": false,
+      "id": "0"
+    },
+    "inputUrl": "https://www.facebook.com/groups/183774529022936/permalink/2090871251646578/?rdid=ofrIy5Dr5XISD6GH",
+    "feedbackId": "ZmVlZGJhY2s6MjA5MDg3MTI1MTY0NjU3OF8yMDkyNTUzNzkxNDc4MzI0",
+    "date": "2026-02-05T06:31:51.000Z",
+    "profilePicture": "https://scontent.fcrk1-3.fna.fbcdn.net/v/t39.30808-1/498133537_4042073722781417_3915115452611508495_n.jpg?stp=cp0_dst-jpg_tt6&cstp=mx1128x1132&ctp=s32x32&_nc_cat=106&ccb=1-7&_nc_sid=1d2534&_nc_ohc=PSB9x0GUOMQQ7kNvwFGntl8&_nc_oc=Adpkedd1dhOxkCNOktuVCHRQGYm3CsSyqZ7MizwMYceqY5Wi5hmL89fRr4awvvMR4uw&_nc_zt=24&_nc_ht=scontent.fcrk1-3.fna&_nc_gid=7L4MNRivS23eBhPVYq6GnA&_nc_ss=7d289&oh=00_Af-cHEpJ1mVzuXH244A8CrkZzmlG_h5EGU4iodgP9WgcLA&oe=6A43E6A2",
+    "profileId": "100009364874442",
+    "profileName": "Van Nguyen",
+    "profileUrl": "https://www.facebook.com/van.nguyen.273393"
+  },
+  {
+    "facebookUrl": "https://www.facebook.com/groups/183774529022936/permalink/2090871251646578/?rdid=ofrIy5Dr5XISD6GH",
+    "commentUrl": "https://www.facebook.com/groups/183774529022936/posts/2090871251646578/?comment_id=2091662731567430",
+    "commentId": "2091662731567430",
+    "id": "Y29tbWVudDoyMDkwODcxMjUxNjQ2NTc4XzIwOTE2NjI3MzE1Njc0MzA=",
+    "text": "sữa colos baby lacto mới ra mua concung có ko mn???",
+    "comments": [],
+    "threadingDepth": 0,
+    "facebookId": "2090871251646578",
+    "postTitle": "HỘI REVIEW BỈM SỮA CHO BÉ &lt;3",
+    "pageAdLibrary": {
+      "is_business_page_active": false,
+      "id": "0"
+    },
+    "inputUrl": "https://www.facebook.com/groups/183774529022936/permalink/2090871251646578/?rdid=ofrIy5Dr5XISD6GH",
+    "feedbackId": "ZmVlZGJhY2s6MjA5MDg3MTI1MTY0NjU3OF8yMDkxNjYyNzMxNTY3NDMw",
+    "date": "2026-02-04T08:12:56.000Z",
+    "profilePicture": "https://scontent.fcrk1-1.fna.fbcdn.net/v/t39.30808-1/584899047_122095978773137546_5015286171172155911_n.jpg?stp=c47.0.583.583a_cp0_dst-jpg_tt6&cstp=mx583x583&ctp=s32x32&_nc_cat=107&ccb=1-7&_nc_sid=e99d92&_nc_ohc=pHa4m92l05wQ7kNvwFPCnb4&_nc_oc=AdqRfU7PD_UxBXLNTs7fF1RLCrsm150UZCt-kjSYHlV0O5Ve0bdefOyv6PVNBntx7ec&_nc_zt=24&_nc_ht=scontent.fcrk1-1.fna&_nc_gid=7L4MNRivS23eBhPVYq6GnA&_nc_ss=7d289&oh=00_Af-hjJlYlgfh-zBH-nHjoGT5iXdx6G7nVzd2PqVMc6NkVg&oe=6A4408D8",
+    "profileId": "pfbid0hw337ApxhRBz1dTz4Tr65YKFvSuZSLqAggXHeQkHV6oQUyzgATcZfmyxoYmC3KfZl",
+    "profileName": "Di Trung Lý",
+    "profileUrl": "https://www.facebook.com/people/Di-Trung-L%C3%BD/pfbid0hw337ApxhRBz1dTz4Tr65YKFvSuZSLqAggXHeQkHV6oQUyzgATcZfmyxoYmC3KfZl/"
+  },
+  {
+    "facebookUrl": "https://www.facebook.com/groups/183774529022936/permalink/2090871251646578/?rdid=ofrIy5Dr5XISD6GH",
+    "commentUrl": "https://www.facebook.com/groups/183774529022936/posts/2090871251646578/?comment_id=2093596038040766",
+    "commentId": "2093596038040766",
+    "id": "Y29tbWVudDoyMDkwODcxMjUxNjQ2NTc4XzIwOTM1OTYwMzgwNDA3NjY=",
+    "text": "Bé nhà mình dùng VPMilk IQlac Colostrum, nhờ L-Lysine hỗ trợ ăn uống tốt hơn, DHA giúp não bộ phát triển, HMO chăm sóc đường ruột, thêm Sữa non tăng sức đề kháng nên con lớn đều",
+    "comments": [],
+    "threadingDepth": 0,
+    "facebookId": "2090871251646578",
+    "postTitle": "HỘI REVIEW BỈM SỮA CHO BÉ &lt;3",
+    "pageAdLibrary": {
+      "is_business_page_active": false,
+      "id": "0"
+    },
+    "inputUrl": "https://www.facebook.com/groups/183774529022936/permalink/2090871251646578/?rdid=ofrIy5Dr5XISD6GH",
+    "feedbackId": "ZmVlZGJhY2s6MjA5MDg3MTI1MTY0NjU3OF8yMDkzNTk2MDM4MDQwNzY2",
+    "date": "2026-02-06T09:21:28.000Z",
+    "profilePicture": "https://scontent.fcrk1-1.fna.fbcdn.net/v/t39.30808-1/611005688_917507507276375_1878062109648653394_n.png?stp=cp0_dst-png&cstp=mx800x800&ctp=s32x32&_nc_cat=107&ccb=1-7&_nc_sid=1d2534&_nc_ohc=nWVz65wa6dsQ7kNvwFyAOhy&_nc_oc=AdqD9DzkjJSc-qnwHkcirVTqCQ_gwnLKnJkoBXrZOrivCAeIEiXB6KAq1zy5B3l4LK0&_nc_zt=24&_nc_ht=scontent.fcrk1-1.fna&_nc_gid=7L4MNRivS23eBhPVYq6GnA&_nc_ss=7d289&oh=00_Af8IsjA5xTIecJ4kMZ7RY8AJV5zRd2recfax6ipAgMZIkA&oe=6A43EAF2",
+    "profileId": "100070514013100",
+    "profileName": "Quỳnh Châu",
+    "profileUrl": "https://www.facebook.com/quynh.chau.3425"
+  },
+  {
+    "facebookUrl": "https://www.facebook.com/groups/183774529022936/permalink/2090871251646578/?rdid=ofrIy5Dr5XISD6GH",
+    "commentUrl": "https://www.facebook.com/groups/183774529022936/posts/2090871251646578/?comment_id=2091663774900659",
+    "commentId": "2091663774900659",
+    "id": "Y29tbWVudDoyMDkwODcxMjUxNjQ2NTc4XzIwOTE2NjM3NzQ5MDA2NTk=",
+    "text": "ủa thấy colosbaby chễm chệ trong top kìa chị nào dùng rồi cho em xin review thật để em mua cho con thử với",
+    "comments": [],
+    "threadingDepth": 0,
+    "facebookId": "2090871251646578",
+    "postTitle": "HỘI REVIEW BỈM SỮA CHO BÉ &lt;3",
+    "pageAdLibrary": {
+      "is_business_page_active": false,
+      "id": "0"
+    },
+    "inputUrl": "https://www.facebook.com/groups/183774529022936/permalink/2090871251646578/?rdid=ofrIy5Dr5XISD6GH",
+    "feedbackId": "ZmVlZGJhY2s6MjA5MDg3MTI1MTY0NjU3OF8yMDkxNjYzNzc0OTAwNjU5",
+    "date": "2026-02-04T08:14:36.000Z",
+    "profilePicture": "https://scontent.fcrk1-3.fna.fbcdn.net/v/t39.30808-1/591833854_122093556303155177_2533465297542927299_n.jpg?stp=cp0_dst-jpg_tt6&cstp=mx877x877&ctp=s32x32&_nc_cat=101&ccb=1-7&_nc_sid=e99d92&_nc_ohc=u8Jitb3aE64Q7kNvwGwUdkz&_nc_oc=Adpk7fpI_csntZwPvkDGr8Wghd4hmsc656uMuIVSGyTRrUTifGIlcjQ47OdvVG9IWMs&_nc_zt=24&_nc_ht=scontent.fcrk1-3.fna&_nc_gid=7L4MNRivS23eBhPVYq6GnA&_nc_ss=7d289&oh=00_Af9VdP4tSB-oD40LAERCw8ta5ybGlbCtYwLBSTMcC5AQ5Q&oe=6A43F57C",
+    "profileId": "pfbid02tZCUrdnLy3UoWugji5u5pn5hzvDpS4cCFe2WVyGBUwQ7frnjgku9B8CQwQ2HNJm8l",
+    "profileName": "Đặng Bảo Vũ",
+    "profileUrl": "https://www.facebook.com/people/%C4%90%E1%BA%B7ng-B%E1%BA%A3o-V%C5%A9/pfbid02tZCUrdnLy3UoWugji5u5pn5hzvDpS4cCFe2WVyGBUwQ7frnjgku9B8CQwQ2HNJm8l/"
+  },
+  {
+    "facebookUrl": "https://www.facebook.com/groups/183774529022936/permalink/2090871251646578/?rdid=ofrIy5Dr5XISD6GH",
+    "commentUrl": "https://www.facebook.com/groups/183774529022936/posts/2090871251646578/?comment_id=2091678568232513",
+    "commentId": "2091678568232513",
+    "id": "Y29tbWVudDoyMDkwODcxMjUxNjQ2NTc4XzIwOTE2Nzg1NjgyMzI1MTM=",
+    "text": "Bé nhà mình 4 tuổi, cơ địa dễ táo nên mình rất kỹ khi chọn sữa. IQLac Colostrum có HMO và FOS – Inulin giúp đường ruột khoẻ. Bé đi ngoài đều, bụng nhẹ. Thêm sữa non + kẽm giúp tăng đề kháng, bé khoẻ hơn, cân nặng cải thiện từ từ.",
+    "comments": [],
+    "threadingDepth": 0,
+    "facebookId": "2090871251646578",
+    "postTitle": "HỘI REVIEW BỈM SỮA CHO BÉ &lt;3",
+    "pageAdLibrary": {
+      "is_business_page_active": false,
+      "id": "0"
+    },
+    "inputUrl": "https://www.facebook.com/groups/183774529022936/permalink/2090871251646578/?rdid=ofrIy5Dr5XISD6GH",
+    "feedbackId": "ZmVlZGJhY2s6MjA5MDg3MTI1MTY0NjU3OF8yMDkxNjc4NTY4MjMyNTEz",
+    "date": "2026-02-04T08:40:32.000Z",
+    "profilePicture": "https://scontent.fcrk1-3.fna.fbcdn.net/v/t39.30808-1/609019155_122154983504887054_2950532449399489522_n.jpg?stp=c0.0.736.736a_cp0_dst-jpg_tt6&cstp=mx736x736&ctp=s32x32&_nc_cat=100&ccb=1-7&_nc_sid=e99d92&_nc_ohc=2XBzqdx3MdoQ7kNvwHY9XCx&_nc_oc=Adr5ZR9IOEQeg95-YzrGYSvsBa6_Ic6Szb8mDKkO_aiZ0Hk4q0H61xxAiLNZ0dai0qk&_nc_zt=24&_nc_ht=scontent.fcrk1-3.fna&_nc_gid=7L4MNRivS23eBhPVYq6GnA&_nc_ss=7d289&oh=00_Af8w-ade22cImeqYbl0CIj4VvpdMp_9SzL4OMEmflX5qtA&oe=6A440C29",
+    "profileId": "pfbid0hRmVx6CTjVbJXnp61aR7khYvG5mgwWTdT3FaQZBfaH8LT33J7QEW67aBNm33Cg1Pl",
+    "profileName": "Hoài An",
+    "profileUrl": "https://www.facebook.com/hoaian060125"
+  },
+  {
+    "facebookUrl": "https://www.facebook.com/groups/183774529022936/permalink/2090871251646578/?rdid=ofrIy5Dr5XISD6GH",
+    "commentUrl": "https://www.facebook.com/groups/183774529022936/posts/2090871251646578/?comment_id=2093595831374120",
+    "commentId": "2093595831374120",
+    "id": "Y29tbWVudDoyMDkwODcxMjUxNjQ2NTc4XzIwOTM1OTU4MzEzNzQxMjA=",
+    "text": "Bé nhà mình đang dùng VPMilk IQlac Colostrum, L,Lysine giúp bé ăn ngon, DHA hỗ trợ phát triển trí não, HMO tốt cho tiêu hóa và Sữa non tăng đề kháng, nên con tiêu hóa tốt, tăng cân và phát triển toàn diện rõ rệt luôn mom ạ.",
+    "comments": [],
+    "threadingDepth": 0,
+    "facebookId": "2090871251646578",
+    "postTitle": "HỘI REVIEW BỈM SỮA CHO BÉ &lt;3",
+    "pageAdLibrary": {
+      "is_business_page_active": false,
+      "id": "0"
+    },
+    "inputUrl": "https://www.facebook.com/groups/183774529022936/permalink/2090871251646578/?rdid=ofrIy5Dr5XISD6GH",
+    "feedbackId": "ZmVlZGJhY2s6MjA5MDg3MTI1MTY0NjU3OF8yMDkzNTk1ODMxMzc0MTIw",
+    "date": "2026-02-06T09:21:05.000Z",
+    "profilePicture": "https://scontent.fcrk1-4.fna.fbcdn.net/v/t39.30808-1/698705417_1388544346508922_8238365221394039543_n.jpg?stp=cp6_dst-jpg_tt6&cstp=mx1828x1828&ctp=s32x32&_nc_cat=109&ccb=1-7&_nc_sid=1d2534&_nc_ohc=f7bWFI0HbDgQ7kNvwFSrdeL&_nc_oc=Adql3ZxeA2y_bdmLhiAorxlxvHQcR6y5cG77slyCOmLDPqom0a3YSQop0PcvgmWoyOw&_nc_zt=24&_nc_ht=scontent.fcrk1-4.fna&_nc_gid=7L4MNRivS23eBhPVYq6GnA&_nc_ss=7d289&oh=00_Af_XEX3dqjESr1z_VACcwFHWn7LBS8u9Bofy23wrFBrBsQ&oe=6A43E8D7",
+    "profileId": "100060601086317",
+    "profileName": "Đinh Phượng",
+    "profileUrl": "https://www.facebook.com/inhphuong.536311"
+  }
+]
+```
 
 ### 7. TikTok Extractor
 

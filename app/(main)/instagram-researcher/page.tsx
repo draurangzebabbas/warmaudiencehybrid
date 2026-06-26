@@ -362,10 +362,10 @@ export default function InstagramResearchersPage() {
                                     <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2">
                                         <div className="space-y-2">
                                             <Label className="text-xs">Max Comment Pages (100 max)</Label>
-                                            <Input 
-                                                type="number" 
-                                                min={1} 
-                                                max={100} 
+                                            <Input
+                                                type="number"
+                                                min={1}
+                                                max={100}
                                                 value={maxPages}
                                                 onChange={(e) => {
                                                     const val = parseInt(e.target.value) || 1;
@@ -475,8 +475,8 @@ export default function InstagramResearchersPage() {
                 </Card>
             </div>
 
-            <LimitReachedDialog 
-                isOpen={isLimitDialogOpen} 
+            <LimitReachedDialog
+                isOpen={isLimitDialogOpen}
                 onOpenChange={setIsLimitDialogOpen}
                 limitType="leads"
                 currentLimit={profilesLimit}
