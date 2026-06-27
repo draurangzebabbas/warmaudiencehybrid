@@ -120,6 +120,14 @@ async function processJob(jobData) {
                 await handleFacebookFollowersScrape(userId, input, keyManager, input.tags || ["FacebookFollowers"], jobId);
                 break;
 
+            case "facebook_groups_search":
+                await handleFacebookGroupsSearch(userId, input, keyManager, input.tags || ["FacebookGroup"], jobId);
+                break;
+
+            case "facebook_group_members":
+                await handleFacebookGroupMembersScrape(userId, input, keyManager, input.tags || ["FacebookGroupMember"], jobId);
+                break;
+
             default:
                 console.warn(`Unknown job type: ${type}`);
         }
@@ -1334,4 +1342,84 @@ async function handleFacebookFollowersScrape(userId, input, keyManager, tags = [
     }
 }
 
-module.exports = { processJob, handleWebsiteContactUpdate };
+function parseFollowersCount(str) {
+    if (!str) return 0;
+    const cleanStr = str.toString().toLowerCase().replace(/,/g, '').trim();
+    const match = cleanStr.match(/([\d\.]+)\s*([km]?)/);
+    if (!match) return 0;
+    let num = parseFloat(match[1]);
+    if (match[2] === 'k') num *= 1000;
+    if (match[2] === 'm') num *= 1000000;
+    return Math.floor(num);
+}
+
+async function handleFacebookGroupsSearch(userId, input, keyManager, tags = ["FacebookGroup"], jobId) {
+    const { keyword, maxItems = 200 } = input;
+    if (!keyword) return;
+
+    if (jobId) await supabaseApi.updateJobProgress(jobId, 20);
+
+    const results = await executeWithRetry(
+        keyManager,
+        "Facebook Groups Search",
+        (key) => scraper.scrapeFacebookGroupsSearch(keyword, key, maxItems)
+    );
+
+    if (results && results.length > 0) {
+        const formatted = results.map(l => ({
+            facebook_url: l.url,
+            facebook_id: l.id,
+            page_name: l.name,
+            title: l.name,
+            profile_pic_url: l.profilePictureUri,
+            category: "Group",
+            followers_count: parseFollowersCount(l.memberInfo),
+            extraData: l
+        }));
+
+        const saved = await supabaseApi.upsertFacebookLeadsBulk(formatted);
+        
+        if (saved && saved.length > 0) {
+            const sids = saved.map(s => s.id);
+            await supabaseApi.linkUserToLeadsBulk(userId, sids, "facebook", tags);
+            console.log(`✅ Successfully saved and linked ${saved.length} Facebook Groups in Supabase`);
+        }
+    }
+    if (jobId) await supabaseApi.updateJobProgress(jobId, 100);
+}
+
+async function handleFacebookGroupMembersScrape(userId, input, keyManager, tags = ["FacebookGroupMember"], jobId) {
+    const { groupUrls, maxItems = 50 } = input;
+    if (!groupUrls || groupUrls.length === 0) return;
+
+    if (jobId) await supabaseApi.updateJobProgress(jobId, 20);
+
+    const members = await executeWithRetry(
+        keyManager,
+        "Facebook Group Members",
+        (key) => scraper.scrapeFacebookGroupMembers(groupUrls, key, maxItems)
+    );
+
+    const allProfileUrls = new Set();
+    if (members && members.length > 0) {
+        members.forEach(m => {
+            if (m.member?.profileUrl) {
+                allProfileUrls.add(m.member.profileUrl);
+            }
+        });
+    }
+
+    if (allProfileUrls.size > 0) {
+        const urls = Array.from(allProfileUrls);
+        console.log(`✨ Enriching ${urls.length} unique Facebook Group Member profiles...`);
+        // Batch them 50 at a time and call handleFacebookProfilesScrape
+        await handleFacebookProfilesScrape(userId, { urls }, keyManager, tags, jobId, false);
+    } else {
+        if (jobId) await supabaseApi.updateJobProgress(jobId, 100);
+    }
+}
+
+module.exports = {
+    processJob,
+    handleWebsiteContactUpdate
+};

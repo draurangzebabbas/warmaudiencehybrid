@@ -712,6 +712,90 @@ app.post("/api/scrape-facebook-followers", async (req, res) => {
 });
 
 // ─────────────────────────────────────────
+// POST /api/scrape-facebook-groups
+// ─────────────────────────────────────────
+app.post("/api/scrape-facebook-groups", async (req, res) => {
+    try {
+        const { keyword, maxItems = 200, tags = [] } = req.body;
+
+        if (!keyword) {
+            return res.status(400).json({ error: "keyword is required" });
+        }
+
+        const [subscription, currentCount] = await Promise.all([
+            supabaseApi.getUserSubscription(req.userId),
+            supabaseApi.getMonthlyLeadCount(req.userId)
+        ]);
+        
+        const planLimits = { free: 1000, growth: 10000, pro: 10000, elite: 1000000, scale: 1000000 };
+        const profilesLimit = planLimits[subscription.plan_slug] || 1000;
+        
+        if (currentCount >= profilesLimit) {
+            return res.status(403).json({
+                error: `Limit Reached: You have consumed all your lead storage for this month (${profilesLimit} leads). Please upgrade your plan for more capacity.`,
+                code: "LIMIT_REACHED"
+            });
+        }
+
+        processJob({
+            userId: req.userId,
+            type: "facebook_groups_search",
+            input: { keyword, maxItems, tags },
+        }).catch((err) => console.error("❌ Facebook groups search failed:", err));
+
+        res.json({
+            status: "processing",
+            message: `Facebook groups search started for keyword: ${keyword}`,
+        });
+    } catch (e) {
+        console.error("scrape-facebook-groups error:", e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// ─────────────────────────────────────────
+// POST /api/scrape-facebook-group-members
+// ─────────────────────────────────────────
+app.post("/api/scrape-facebook-group-members", async (req, res) => {
+    try {
+        const { groupUrls, maxItems = 50, tags = [] } = req.body;
+
+        if (!groupUrls || !Array.isArray(groupUrls) || groupUrls.length === 0) {
+            return res.status(400).json({ error: "groupUrls array is required" });
+        }
+
+        const [subscription, currentCount] = await Promise.all([
+            supabaseApi.getUserSubscription(req.userId),
+            supabaseApi.getMonthlyLeadCount(req.userId)
+        ]);
+        
+        const planLimits = { free: 1000, growth: 10000, pro: 10000, elite: 1000000, scale: 1000000 };
+        const profilesLimit = planLimits[subscription.plan_slug] || 1000;
+        
+        if (currentCount >= profilesLimit) {
+            return res.status(403).json({
+                error: `Limit Reached: You have consumed all your lead storage for this month (${profilesLimit} leads). Please upgrade your plan for more capacity.`,
+                code: "LIMIT_REACHED"
+            });
+        }
+
+        processJob({
+            userId: req.userId,
+            type: "facebook_group_members",
+            input: { groupUrls, maxItems, tags },
+        }).catch((err) => console.error("❌ Facebook group members scrape failed:", err));
+
+        res.json({
+            status: "processing",
+            message: `Facebook group members extraction started for ${groupUrls.length} groups`,
+        });
+    } catch (e) {
+        console.error("scrape-facebook-group-members error:", e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// ─────────────────────────────────────────
 // Tracker Management
 // ─────────────────────────────────────────
 

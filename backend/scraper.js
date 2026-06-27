@@ -27,6 +27,8 @@ const ACTORS = {
     FACEBOOK_PROFILE: "oJ48ceKNY7ueGPGL0",
     FACEBOOK_FOLLOWERS: "hhgonmMEMGmpbDDAN",
     FACEBOOK_COMMENTS: "boHTyXVlTvG5VM1fe",
+    FACEBOOK_GROUPS_SEARCH: "3uGJFQnb6Rt6kmLwB",
+    FACEBOOK_GROUP_MEMBERS: "DxousIWHdXTeG79fr",
 };
 
 // ─────────────────────────────────────────
@@ -472,6 +474,26 @@ async function scrapeFacebookComments(startUrls, token, maxItems = 100) {
     }, token);
 }
 
+/**
+ * Scrape Facebook Groups (Search)
+ */
+async function scrapeFacebookGroupsSearch(keyword, token, maxItems = 200) {
+    return callApifyActor(ACTORS.FACEBOOK_GROUPS_SEARCH, {
+        searchQuery: keyword,
+        maxItems: maxItems
+    }, token);
+}
+
+/**
+ * Scrape Facebook Group Members
+ */
+async function scrapeFacebookGroupMembers(groupUrls, token, maxItems = 50) {
+    return callApifyActor(ACTORS.FACEBOOK_GROUP_MEMBERS, {
+        groupUrls: groupUrls,
+        maxItems: maxItems
+    }, token);
+}
+
 module.exports = {
     ACTORS,
     callApifyActor,
@@ -495,6 +517,8 @@ module.exports = {
     scrapeFacebookProfiles,
     scrapeFacebookFollowers,
     scrapeFacebookComments,
+    scrapeFacebookGroupsSearch,
+    scrapeFacebookGroupMembers,
     testKey,
     normalizeUrl,
 };

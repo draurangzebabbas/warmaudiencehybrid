@@ -1892,6 +1892,144 @@ Saved to user's collection with tag: "Competitor: @username"
 ]
 ```
 
+#### Facebook Groups Search Scraper
+
+**Actor ID**: `3uGJFQnb6Rt6kmLwB`
+
+**Input**:
+```json
+{
+  "maxItems": 200,
+  "searchQuery": "keyword"
+}
+```
+
+**Output Structure**:
+```json
+[
+ {
+    "id": "1330000944163532",
+    "name": "Amazon Pinoy VA Hub",
+    "url": "https://www.facebook.com/groups/1330000944163532/",
+    "profilePictureUri": "https://scontent-ams2-1.xx.fbcdn.net/v/t39.30808-6/277744148_10158580710101517_6664623450472920218_n.jpg?stp=c230.0.501.501a_cp0_dst-jpg_tt6&cstp=mx501x501&ctp=s64x64&_nc_cat=106&ccb=1-7&_nc_sid=33e84f&_nc_ohc=Csr50iO6ELwQ7kNvwHsXXiw&_nc_oc=Ado5ab2RuAxh1ETmA87IYULSy-_AMgBApE5UFR56FIlchTrZjmUw1s26f-uhRvi9HHM&_nc_zt=23&_nc_ht=scontent-ams2-1.xx&_nc_gid=jmu5oSGARtGzUC5eq1j8dQ&_nc_ss=7f2a8&oh=00_Af-_R6OO4tcfnHtHnKBzhFxambWe5Kph3j2i5IvwGUD5Qg&oe=6A4563C5",
+    "visibility": "Public",
+    "memberInfo": "21meK mbers",
+    "postFrequency": "10+ posts a day",
+    "type": "Group",
+    "viewerJoinState": "CAN_JOIN"
+  },
+  {
+    "id": "25051861101170111",
+    "name": "Amazon VA helper \\Products for USA",
+    "url": "https://www.facebook.com/groups/25051861101170111/",
+    "profilePictureUri": "https://scontent-ams2-1.xx.fbcdn.net/v/t39.30808-6/618620543_122120369181047793_1509106888010986148_n.jpg?stp=c229.0.568.568a_cp0_dst-jpg_tt6&cstp=mx568x568&ctp=s64x64&_nc_cat=106&ccb=1-7&_nc_sid=33e84f&_nc_ohc=EbAGLKsMLHsQ7kNvwFX754A&_nc_oc=Adq9d7D39JzgbWvZeO8rtFwcgMSgmTsygqWx4AWXE_f-wVlEjSCDrLGY0VQ2uj9N-SI&_nc_zt=23&_nc_ht=scontent-ams2-1.xx&_nc_gid=jmu5oSGARtGzUC5eq1j8dQ&_nc_ss=7f2a8&oh=00_Af8zAwTlULrRe4AZCtiJTQKZFxnqidDHex-hE_pM1Bdk4g&oe=6A45532E",
+    "visibility": "Public",
+    "memberInfo": "9.3K members",
+    "postFrequency": "90+ posts a day",
+    "type": "Group",
+    "viewerJoinState": "CAN_JOIN"
+  },
+  {
+    "id": "797110348254254",
+    "name": "Amazon Sellers and Experts / HireAmazonExpert.com",
+    "url": "https://www.facebook.com/groups/797110348254254/",
+    "profilePictureUri": "https://scontent-ams2-1.xx.fbcdn.net/v/t39.30808-6/464490827_506531135700122_4982669012377506734_n.png?stp=c254.0.312.312a_cp0_dst-png&cstp=mx312x312&ctp=s64x64&_nc_cat=100&ccb=1-7&_nc_sid=33e84f&_nc_ohc=QT1xngk8ohEQ7kNvwGQ8TmL&_nc_oc=AdqeicBTTdIRwDHMhaeoMIKZehL88LApdAwqGIxqQe58XfMRUnDN3hWzO641vKS89Xg&_nc_zt=23&_nc_ht=scontent-ams2-1.xx&_nc_gid=jmu5oSGARtGzUC5eq1j8dQ&_nc_ss=7f2a8&oh=00_Af_s0PVhfkuhEpTAiLbdQC5SjZlNnYLVhJ184chaH_uc6A&oe=6A4544A6",
+    "visibility": "Private",
+    "memberInfo": "171K members",
+    "postFrequency": "10+ posts a day",
+    "type": "Group",
+    "viewerJoinState": "CAN_REQUEST"
+  }
+]
+```
+
+#### Facebook Group Members Scraper
+
+**Actor ID**: `DxousIWHdXTeG79fr`
+
+**Input**:
+```json
+{
+  "groupUrls": [
+    "https://facebook.com/groups/913542246681768/"
+  ],
+  "maxItems": 50
+}
+```
+
+**Output Structure**:
+```json
+[
+  {
+    "groupUrl": "https://facebook.com/groups/913542246681768/",
+    "member": {
+      "id": "100077457768136",
+      "name": "Rdp Provider",
+      "profileUrl": "https://www.facebook.com/profile.php?id=100077457768136",
+      "isVerified": false,
+      "profilePicture": "https://scontent-ams2-1.xx.fbcdn.net/v/t39.30808-1/729325265_1074195011839081_8511836286961769002_n.jpg?stp=c0.0.720.720a_cp0_dst-jpg_tt6&cstp=mx720x720&ctp=s60x60&_nc_cat=111&ccb=1-7&_nc_sid=1d2534&_nc_ohc=t6pSelTg_Z0Q7kNvwGHQ0oI&_nc_oc=AdrJhK2ej0hzVYdVHGLW5tAWpSMfLHOrK9Wu__5LxT5Rh45B3AZn-zk73HyIyQ51BKs&_nc_zt=24&_nc_ht=scontent-ams2-1.xx&_nc_gid=9Dl4G3UGyZc5ylytWr1knA&_nc_ss=7f2a8&oh=00_Af_pWDYUc4HD0jRy315eV4CelBV7Ax_NKq1yviiq5vBT7w&oe=6A454962",
+      "bio": {
+        "delight_ranges": [],
+        "image_ranges": [],
+        "inline_style_ranges": [],
+        "aggregated_ranges": [],
+        "ranges": [],
+        "color_ranges": [],
+        "text": "Works at Google for Publishers"
+      },
+      "groupInfo": {
+        "membershipId": "1074190925172823",
+        "contributionScore": null,
+        "totalSignals": 0
+      }
+    },
+    "scrapedAt": "2026-06-27T07:56:36.960Z"
+  },
+  {
+    "groupUrl": "https://facebook.com/groups/913542246681768/",
+    "member": {
+      "id": "61578619195291",
+      "name": "Batool Fatima",
+      "profileUrl": "https://www.facebook.com/profile.php?id=61578619195291",
+      "isVerified": false,
+      "profilePicture": "https://scontent-ams2-1.xx.fbcdn.net/v/t39.30808-1/532058535_122113135130953973_5794704956474211947_n.jpg?stp=c0.0.736.736a_cp0_dst-jpg_tt6&cstp=mx736x736&ctp=s60x60&_nc_cat=101&ccb=1-7&_nc_sid=1d2534&_nc_ohc=neJHuc-jj3wQ7kNvwHZx96h&_nc_oc=Adr7_cZdPRDQfreBQWDDOi1g2ccgPVPJIs7czNf5_OViE9XVLbZ4hoIHrFqUsMiVsfw&_nc_zt=24&_nc_ht=scontent-ams2-1.xx&_nc_gid=9Dl4G3UGyZc5ylytWr1knA&_nc_ss=7f2a8&oh=00_Af_E-pkxJrWLzprNS6vuHYcRr7bcfIf2VAafJxquv76NHA&oe=6A455A60",
+      "bio": null,
+      "groupInfo": {
+        "membershipId": "122175026462953973",
+        "contributionScore": null,
+        "totalSignals": 0
+      }
+    },
+    "scrapedAt": "2026-06-27T07:56:36.960Z"
+  },
+  {
+    "groupUrl": "https://facebook.com/groups/913542246681768/",
+    "member": {
+      "id": "61591229649542",
+      "name": "Romel Abejuela",
+      "profileUrl": "https://www.facebook.com/profile.php?id=61591229649542",
+      "isVerified": false,
+      "profilePicture": "https://scontent-ams2-1.xx.fbcdn.net/v/t39.30808-1/732081791_122099640303374321_8199156922289428816_n.jpg?stp=c250.107.545.546a_cp0_dst-jpg_tt6&cstp=mx545x546&ctp=s60x60&_nc_cat=102&ccb=1-7&_nc_sid=e99d92&_nc_ohc=ivF-3nCTregQ7kNvwEgPMmk&_nc_oc=Adp2zUVS-sW7uApr6METLSYfoa-7EO1iija2w4t4VruZQnQo3g-WkjorFhOSZLoEd_k&_nc_zt=24&_nc_ht=scontent-ams2-1.xx&_nc_gid=9Dl4G3UGyZc5ylytWr1knA&_nc_ss=7f2a8&oh=00_Af_-30mogyauXunR05WKDmv-93qC63v40kU9ira5TrdOiA&oe=6A4543D6",
+      "bio": {
+        "delight_ranges": [],
+        "image_ranges": [],
+        "inline_style_ranges": [],
+        "aggregated_ranges": [],
+        "ranges": [],
+        "color_ranges": [],
+        "text": "Outbound Appointment Setter at Scaled up Marketing"
+      },
+      "groupInfo": {
+        "membershipId": "122099724471374321",
+        "contributionScore": null,
+        "totalSignals": 0
+      }
+    },
+    "scrapedAt": "2026-06-27T07:56:36.960Z"
+  }
+]
+```
+
 ### 7. TikTok Extractor
 
 #### Tiktok Comments Scraper
