@@ -2651,7 +2651,7 @@ export default function ProfilesPage() {
                                             {
                                                 label: "Export Selected",
                                                 onClick: (rows) => {
-                                                    const csv = ["Name,URL,Members,Visibility,Post Frequency,Search Keyword", ...rows.map((r: any) => `"${r.name || ''}",${r.url || ''},${r.member_count || ''},${r.visibility || ''},"${r.post_frequency || ''}","${r.search_keyword || ''}"`).join("\n");
+                                                    const csv = ["Name,URL,Members,Visibility,Post Frequency,Search Keyword", ...rows.map((r: any) => `"${r.name || ''}",${r.url || ''},${r.member_count || ''},${r.visibility || ''},"${r.post_frequency || ''}","${r.search_keyword || ''}"`)].join("\n");
                                                     const blob = new Blob([csv], { type: 'text/csv' });
                                                     const url = window.URL.createObjectURL(blob);
                                                     const a = document.createElement('a');
