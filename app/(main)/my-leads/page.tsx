@@ -268,7 +268,8 @@ export default function ProfilesPage() {
                         website_contact: website_contacts (*),
                         instagram: instagram_leads (*),
                         x: x_leads (*),
-                        facebook: facebook_leads (*)
+                        facebook: facebook_leads (*),
+                        facebook_group: facebook_groups (*)
                     `)
                     .eq("user_id", userId)
                     .eq("profile_type", profileType)
@@ -282,7 +283,7 @@ export default function ProfilesPage() {
                         if (data) {
                             const formatted = data
                                 .map(d => {
-                                    const detailsRaw = d.personal || d.company || d.google_maps || d.website_contact || d.instagram || d.x || d.facebook;
+                                    const detailsRaw = d.personal || d.company || d.google_maps || d.website_contact || d.instagram || d.x || d.facebook || d.facebook_group;
                                     if (!detailsRaw) return null;
                                     const details = Array.isArray(detailsRaw) ? detailsRaw[0] : detailsRaw;
                                     if (!details) return null;
@@ -377,6 +378,14 @@ export default function ProfilesPage() {
                                             junctionId: d.id,
                                             _id: d.id
                                         };
+                                    } else if (profileType === "facebook_group") {
+                                        return {
+                                            ...details,
+                                            updatedAt: new Date(d.updated_at || d.created_at).getTime(),
+                                            tags: d.tags,
+                                            junctionId: d.id,
+                                            _id: d.id
+                                        };
                                     } else if (profileType === "facebook") {
                                         return {
                                             ...details,
@@ -452,6 +461,7 @@ export default function ProfilesPage() {
     const { leads: instagramLeads, loading: loadingInstagramLeads } = useLeadsFromSupabase(user?._id, "instagram");
     const { leads: xLeads, loading: loadingXLeads, refresh: refreshXLeads } = useLeadsFromSupabase(user?._id, "x");
     const { leads: facebookLeads, loading: loadingFacebookLeads, refresh: refreshFacebookLeads } = useLeadsFromSupabase(user?._id, "facebook");
+    const { leads: facebookGroups, loading: loadingFacebookGroups, refresh: refreshFacebookGroups } = useLeadsFromSupabase(user?._id, "facebook_group");
 
     const getOrCreateKey = useAction(api.actions.supabase.getOrCreateWebhookKey);
 
@@ -2092,6 +2102,101 @@ export default function ProfilesPage() {
         }
     ], []);
 
+    const facebookGroupColumns = useMemo<ColumnDef<any>[]>(() => [
+        {
+            id: "select",
+            header: ({ table }) => (
+                <Checkbox
+                    checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")}
+                    onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+                    aria-label="Select all"
+                />
+            ),
+            cell: ({ row }) => (
+                <Checkbox
+                    checked={row.getIsSelected()}
+                    onCheckedChange={(value) => row.toggleSelected(!!value)}
+                    aria-label="Select row"
+                />
+            ),
+            enableSorting: false,
+            enableHiding: false,
+        },
+        {
+            accessorKey: "name",
+            header: "Group Name",
+            cell: ({ row }) => (
+                <div className="flex items-center gap-3">
+                    <Avatar className="h-9 w-9">
+                        <AvatarImage src={row.original.profile_picture_uri} />
+                        <AvatarFallback><IconBrandFacebook className="size-4 text-blue-600" /></AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col">
+                        <a
+                            href={row.original.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-medium text-sm hover:text-blue-600 transition-colors flex items-center gap-1 group"
+                        >
+                            {row.original.name || row.original.url}
+                            <IconExternalLink className="size-3 opacity-0 group-hover:opacity-100 transition-opacity text-blue-600" />
+                        </a>
+                        {row.original.visibility && <span className="text-[10px] text-muted-foreground">{row.original.visibility}</span>}
+                    </div>
+                </div>
+            ),
+        },
+        {
+            accessorKey: "member_count",
+            header: "Members",
+            cell: ({ row }) => row.original.member_count?.toLocaleString() || row.original.member_info || "-",
+        },
+        {
+            accessorKey: "post_frequency",
+            header: "Post Frequency",
+            cell: ({ row }) => row.original.post_frequency || "-",
+        },
+        {
+            accessorKey: "search_keyword",
+            header: "Found Via",
+            cell: ({ row }) => row.original.search_keyword ? <Badge variant="outline" className="text-[10px]">{row.original.search_keyword}</Badge> : "-",
+        },
+        {
+            accessorKey: "tags",
+            header: "Tags",
+            cell: ({ row }) => (
+                <div className="flex flex-wrap gap-1 max-w-[150px]">
+                    {row.original.tags?.map((tag: string, idx: number) => (
+                        <Badge key={idx} variant="outline" className="text-[9px] px-1 h-3.5 bg-muted/30">{tag}</Badge>
+                    ))}
+                    {(!row.original.tags || row.original.tags.length === 0) && <span className="text-muted-foreground text-[10px]">-</span>}
+                </div>
+            )
+        },
+        {
+            id: "actions",
+            cell: ({ row }) => (
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0"><IconDotsVertical className="h-4 w-4" /></Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuItem asChild>
+                            <a href={row.original.url} target="_blank" rel="noopener noreferrer">
+                                <IconExternalLink className="mr-2 h-4 w-4" /> View Group
+                            </a>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteProfile(row.original.junctionId)}>
+                            Remove
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            ),
+        }
+    ], []);
+
     const websiteContactColumns = useMemo<ColumnDef<WebsiteContact>[]>(() => [
         {
             id: "select",
@@ -2293,7 +2398,8 @@ export default function ProfilesPage() {
                                 <TabsTrigger value="website_contact">Website Contacts</TabsTrigger>
                                 <TabsTrigger value="instagram">Instagram Lead</TabsTrigger>
                                 <TabsTrigger value="tiktok">TikTok Lead</TabsTrigger>
-                                <TabsTrigger value="facebook">Facebook Lead</TabsTrigger>
+                                <TabsTrigger value="facebook">Facebook Leads</TabsTrigger>
+                                <TabsTrigger value="facebook_groups">Facebook Groups</TabsTrigger>
                                 <TabsTrigger value="x">X Lead</TabsTrigger>
                             </TabsList>
 
@@ -2513,6 +2619,44 @@ export default function ProfilesPage() {
                                                     const a = document.createElement('a');
                                                     a.href = url;
                                                     a.download = 'facebook_leads.csv';
+                                                    a.click();
+                                                }
+                                            }
+                                        ]
+                                    }}
+                                />
+                            </TabsContent>
+                            <TabsContent value="facebook_groups">
+                                <GenericProfileTable
+                                    data={facebookGroups}
+                                    columns={facebookGroupColumns}
+                                    isLoading={loadingFacebookGroups}
+                                    filterColumn="name"
+                                    type="facebook_group"
+                                    filters={{}}
+                                    setFilters={() => {}}
+                                    onBulkDelete={async (ids) => {
+                                        if (confirm(`Are you sure you want to remove ${ids.length} Facebook groups?`)) {
+                                            const { error } = await supabase.from("user_leads").delete().in("id", ids);
+                                            if (error) toast.error(error.message);
+                                            else { toast.success("Groups removed"); window.location.reload(); }
+                                        }
+                                    }}
+                                    onBulkUpdate={async () => { toast.info("Not available."); }}
+                                    searchPlaceholder="Filter Facebook groups..."
+                                    onRefresh={refreshFacebookGroups}
+                                    bulkActions={{
+                                        show: true,
+                                        actions: [
+                                            {
+                                                label: "Export Selected",
+                                                onClick: (rows) => {
+                                                    const csv = ["Name,URL,Members,Visibility,Post Frequency,Search Keyword", ...rows.map((r: any) => `"${r.name || ''}",${r.url || ''},${r.member_count || ''},${r.visibility || ''},"${r.post_frequency || ''}","${r.search_keyword || ''}"`).join("\n");
+                                                    const blob = new Blob([csv], { type: 'text/csv' });
+                                                    const url = window.URL.createObjectURL(blob);
+                                                    const a = document.createElement('a');
+                                                    a.href = url;
+                                                    a.download = 'facebook_groups.csv';
                                                     a.click();
                                                 }
                                             }
