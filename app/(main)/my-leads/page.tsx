@@ -3115,7 +3115,7 @@ interface DataTableProps<TData, TValue> {
     data: TData[]
     isLoading?: boolean
     filterColumn: string
-    type: "personal" | "company" | "google_maps" | "website_contact" | "instagram" | "x" | "facebook"
+    type: "personal" | "company" | "google_maps" | "website_contact" | "instagram" | "x" | "facebook" | "facebook_group"
     filters: any
     setFilters: (filters: any) => void
     onBulkDelete?: (ids: any[]) => Promise<void>
@@ -3697,7 +3697,7 @@ function GenericProfileTable<TData, TValue>({
     )
 }
 
-function FilterSheet({ type, filters, setFilters }: { type: "personal" | "company" | "google_maps" | "website_contact" | "instagram" | "x" | "facebook", filters: any, setFilters: (f: any) => void }) {
+function FilterSheet({ type, filters, setFilters }: { type: "personal" | "company" | "google_maps" | "website_contact" | "instagram" | "x" | "facebook" | "facebook_group", filters: any, setFilters: (f: any) => void }) {
     return (
         <Sheet>
             <SheetTrigger asChild>
@@ -3713,7 +3713,7 @@ function FilterSheet({ type, filters, setFilters }: { type: "personal" | "compan
                 <SheetHeader>
                     <SheetTitle>Advanced Filters</SheetTitle>
                     <SheetDescription>
-                        Narrow down your {type === "personal" ? "personal" : type === "company" ? "company" : type === "google_maps" ? "Google Maps" : type === "instagram" ? "Instagram" : type === "facebook" ? "Facebook" : "website contact"} leads.
+                        Narrow down your {type === "personal" ? "personal" : type === "company" ? "company" : type === "google_maps" ? "Google Maps" : type === "instagram" ? "Instagram" : type === "facebook" ? "Facebook" : type === "facebook_group" ? "Facebook Group" : "website contact"} leads.
                     </SheetDescription>
                 </SheetHeader>
                 <div className="py-6 space-y-6 px-1 pb-10">
@@ -3765,6 +3765,11 @@ function FilterSheet({ type, filters, setFilters }: { type: "personal" | "compan
                                     hasEmail: "all", hasPhone: "all", hasWebsite: "all",
                                     minFollowers: 0, maxFollowers: 10000000,
                                     minLikes: 0, category: "", tags: ""
+                                });
+                            } else if (type === "facebook_group") {
+                                setFilters({
+                                    hasEmail: "all", hasPhone: "all", hasWebsite: "all",
+                                    tags: ""
                                 });
                             } else {
                                 setFilters({

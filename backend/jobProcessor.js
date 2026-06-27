@@ -1227,8 +1227,8 @@ async function handleFacebookProfilesScrape(userId, input, keyManager, tags = ["
             if (results && results.length > 0) {
                 const mapped = results.map(r => ({
                     // Primary identifier — facebookUrl or pageUrl from actor output
-                    facebook_url: r.facebookUrl || r.pageUrl,
-                    facebook_id: r.facebookId || r.pageId,
+                    facebook_url: r.facebookUrl || r.pageUrl || r.url || r.inputUrl || r.id,
+                    facebook_id: r.facebookId || r.pageId || r.id,
                     page_name: r.pageName,
                     title: r.title,
                     profile_pic_url: r.profilePictureUrl || r.personalProfile?.profilePicLarge || r.personalProfile?.profilePicMedium,
@@ -1410,11 +1410,33 @@ async function handleFacebookGroupMembersScrape(userId, input, keyManager, tags 
 
     const allProfileUrls = new Set();
     if (members && members.length > 0) {
+        const basicMapped = [];
+        
         members.forEach(m => {
             if (m.member?.profileUrl) {
                 allProfileUrls.add(m.member.profileUrl);
+                
+                // Pre-save them so they appear in the UI immediately
+                basicMapped.push({
+                    facebook_url: m.member.profileUrl,
+                    facebook_id: m.member.id,
+                    title: m.member.name,
+                    profile_pic_url: m.member.profilePicture,
+                    intro: m.member.bio?.text || "",
+                    is_verified: m.member.isVerified,
+                    extra_data: { groupUrl: m.groupUrl }
+                });
             }
         });
+
+        if (basicMapped.length > 0) {
+            console.log(`✨ Saving ${basicMapped.length} basic Facebook Group Members to database...`);
+            const upserted = await supabaseApi.upsertFacebookLeadsBulk(basicMapped);
+            if (upserted && upserted.length > 0) {
+                const leadIds = upserted.map(u => u.id);
+                await supabaseApi.linkUserToLeadsBulk(userId, leadIds, "facebook", tags);
+            }
+        }
     }
 
     if (allProfileUrls.size > 0) {

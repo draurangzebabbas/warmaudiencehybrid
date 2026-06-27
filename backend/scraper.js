@@ -480,7 +480,8 @@ async function scrapeFacebookComments(startUrls, token, maxItems = 100) {
 async function scrapeFacebookGroupsSearch(keyword, token, maxItems = 200) {
     return callApifyActor(ACTORS.FACEBOOK_GROUPS_SEARCH, {
         searchQuery: keyword,
-        maxItems: maxItems
+        maxItems: maxItems,
+        proxy: { useApifyProxy: true, apifyProxyGroups: ["RESIDENTIAL"] }
     }, token);
 }
 
@@ -490,7 +491,8 @@ async function scrapeFacebookGroupsSearch(keyword, token, maxItems = 200) {
 async function scrapeFacebookGroupMembers(groupUrls, token, maxItems = 50) {
     return callApifyActor(ACTORS.FACEBOOK_GROUP_MEMBERS, {
         groupUrls: groupUrls,
-        maxItems: maxItems
+        maxItems: maxItems,
+        proxy: { useApifyProxy: true, apifyProxyGroups: ["RESIDENTIAL"] }
     }, token);
 }
 
