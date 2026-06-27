@@ -988,7 +988,6 @@ export default function ProfilesPage() {
                 const q = facebookFilters.category.toLowerCase();
                 if (!cat.includes(q) && !cats.includes(q)) return false;
             }
-            }
             if (facebookFilters.tags) {
                 const q = facebookFilters.tags.toLowerCase();
                 const hasMatch = (fb.tags || []).some((t: string) => t.toLowerCase().includes(q));
