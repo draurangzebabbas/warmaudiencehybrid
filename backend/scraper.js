@@ -32,7 +32,7 @@ const ACTORS = {
 // ─────────────────────────────────────────
 // Core Apify Caller
 // ─────────────────────────────────────────
-async function callApifyActor(actorId, input, token, timeout = 300000) {
+async function callApifyActor(actorId, input, token, timeout = 2400000) {
     // We use the 'acts/' alias because it handles both Actors and Tasks correctly.
     // 'actors/' often returns 404 if the ID is for a Task.
     const startUrl = `https://api.apify.com/v2/acts/${actorId}/runs`;
@@ -176,7 +176,7 @@ async function scrapeGoogleMaps(options, token) {
 
     console.log("🚀 [PROD] Sending Official Google Maps Payload:", JSON.stringify(payload, null, 2));
 
-    return callApifyActor(ACTORS.GOOGLE_MAPS, payload, token, 600000); 
+    return callApifyActor(ACTORS.GOOGLE_MAPS, payload, token); 
 }
 
 // ─────────────────────────────────────────
@@ -224,7 +224,7 @@ async function searchKeywords(keywords, token, maxPosts = 50, dateFilter = "past
 async function scrapePostEngagement(postUrls, token) {
     return callApifyActor(ACTORS.POST_COMMENTS, {
         posts: postUrls,
-    }, token, 1800000);
+    }, token);
 }
 
 /**
@@ -267,7 +267,7 @@ async function scrapeProfileComments(profileUrls, token, maxItems = 20) {
         profiles: profileUrls,
         maxItems,
         postedLimit: "month"
-    }, token, 1800000);
+    }, token);
 }
 
 /**
@@ -334,7 +334,7 @@ async function scrapeWebsiteContacts(urls, token) {
         verifyLeadsEnrichmentEmails: true
     };
 
-    return callApifyActor(ACTORS.WEBSITE_CONTACTS, payload, token, 600000);
+    return callApifyActor(ACTORS.WEBSITE_CONTACTS, payload, token);
 }
 
 /**
@@ -418,7 +418,7 @@ async function scrapeXComments(postUrls, token, maxCommentsPerPost = 1000) {
             useApifyProxy: true,
             apifyProxyGroups: ["RESIDENTIAL"]
         }
-    }, token, 1800000);
+    }, token);
 }
 
 // ─────────────────────────────────────────
@@ -469,7 +469,7 @@ async function scrapeFacebookComments(startUrls, token, maxItems = 100) {
         includeNestedComments: false,
         maxItems: maxItems,
         proxy: { useApifyProxy: true, apifyProxyGroups: ["RESIDENTIAL"] }
-    }, token, 1800000);
+    }, token);
 }
 
 module.exports = {
