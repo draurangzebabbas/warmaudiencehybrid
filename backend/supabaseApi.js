@@ -456,6 +456,38 @@ async function upsertFacebookLeadsBulk(leads) {
 }
 
 /**
+ * Upsert multiple Facebook Groups (from keyword search)
+ * Fields match the 3uGJFQnb6Rt6kmLwB actor output
+ */
+async function upsertFacebookGroupsBulk(groups) {
+    const items = groups.map(g => ({
+        group_id: g.group_id,
+        name: g.name,
+        url: g.url,
+        profile_picture_uri: g.profile_picture_uri,
+        visibility: g.visibility,
+        member_info: g.member_info,
+        member_count: g.member_count || 0,
+        post_frequency: g.post_frequency,
+        viewer_join_state: g.viewer_join_state,
+        search_keyword: g.search_keyword,
+        extra_data: g.extra_data || {},
+        updated_at: new Date().toISOString()
+    }));
+
+    const { data, error } = await supabase
+        .from("facebook_groups")
+        .upsert(items, { onConflict: 'url' })
+        .select("id, url, name");
+
+    if (error) {
+        console.error("❌ Supabase Facebook Groups bulk upsert error:", error.message);
+        throw error;
+    }
+    return data;
+}
+
+/**
  * Get website contacts by domains
  */
 async function getWebsiteContactsByDomains(domains) {
@@ -480,6 +512,7 @@ async function linkUserToLeadsBulk(userId, leadIds, type, tags = []) {
                     type === "instagram" ? "instagram_id" :
                     type === "x" ? "x_id" :
                     type === "facebook" ? "facebook_id" :
+                    type === "facebook_group" ? "facebook_group_id" :
                     "linkedin_id";
 
     // 1. Fetch existing tags for these leads for this user to allow merging
@@ -824,6 +857,7 @@ module.exports = {
     upsertInstagramLeadsBulk,
     upsertXLeadsBulk,
     upsertFacebookLeadsBulk,
+    upsertFacebookGroupsBulk,
     getCachedFacebookProfile,
     linkUserToLeadsBulk,
     removeUserLead,

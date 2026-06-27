@@ -1366,24 +1366,32 @@ async function handleFacebookGroupsSearch(userId, input, keyManager, tags = ["Fa
     );
 
     if (results && results.length > 0) {
+        console.log(`✨ Found ${results.length} Facebook Groups. Saving to facebook_groups table...`);
+        
+        // Actor output fields: id, name, url, profilePictureUri, visibility, memberInfo, postFrequency, type, viewerJoinState
         const formatted = results.map(l => ({
-            facebook_url: l.url,
-            facebook_id: l.id,
-            page_name: l.name,
-            title: l.name,
-            profile_pic_url: l.profilePictureUri,
-            category: "Group",
-            followers_count: parseFollowersCount(l.memberInfo),
-            extraData: l
+            group_id: l.id,
+            name: l.name,
+            url: l.url,
+            profile_picture_uri: l.profilePictureUri,
+            visibility: l.visibility,
+            member_info: l.memberInfo,
+            member_count: parseFollowersCount(l.memberInfo),
+            post_frequency: l.postFrequency,
+            viewer_join_state: l.viewerJoinState,
+            search_keyword: keyword,
+            extra_data: l
         }));
 
-        const saved = await supabaseApi.upsertFacebookLeadsBulk(formatted);
+        const saved = await supabaseApi.upsertFacebookGroupsBulk(formatted);
         
         if (saved && saved.length > 0) {
             const sids = saved.map(s => s.id);
-            await supabaseApi.linkUserToLeadsBulk(userId, sids, "facebook", tags);
+            await supabaseApi.linkUserToLeadsBulk(userId, sids, "facebook_group", tags);
             console.log(`✅ Successfully saved and linked ${saved.length} Facebook Groups in Supabase`);
         }
+    } else {
+        console.warn("⚠️ No Facebook Groups found for keyword:", keyword);
     }
     if (jobId) await supabaseApi.updateJobProgress(jobId, 100);
 }
