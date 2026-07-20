@@ -1,11 +1,11 @@
 'use client'
 import { Logo } from '@/components/logo'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Menu, X } from 'lucide-react'
 import Image from 'next/image'
-import { authClient } from "@/lib/auth-client"
+import { supabase } from "@/src/lib/supabase"
 import { ThemeToggle } from "@/components/theme-toggle"
 
 const menuItems = [
@@ -18,7 +18,13 @@ const menuItems = [
 
 export default function HeroSection() {
     const [menuState, setMenuState] = useState(false)
-    const { data: session } = authClient.useSession()
+    const [session, setSession] = useState<boolean>(false)
+
+    useEffect(() => {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            setSession(!!session)
+        })
+    }, [])
 
     return (
         <>

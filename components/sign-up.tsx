@@ -7,12 +7,13 @@ import { Label } from '@/components/ui/label'
 import Link from 'next/link'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { authClient } from '@/lib/auth-client'
+import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { IconEye, IconEyeOff } from '@tabler/icons-react'
 
 export default function SignUpPage() {
     const router = useRouter()
+    const supabase = createClient()
     const [firstName, setFirstName] = useState("")
     const [lastName, setLastName] = useState("")
     const [email, setEmail] = useState("")
@@ -23,27 +24,33 @@ export default function SignUpPage() {
     const handleSignUp = async (e: React.FormEvent) => {
         e.preventDefault()
         setLoading(true)
-        await authClient.signUp.email({
+        
+        const { error } = await supabase.auth.signUp({
             email,
             password,
-            name: `${firstName} ${lastName}`,
-            callbackURL: "/dashboard", // Optional: Redirect to dashboard to verify or onboarding
-        }, {
-            onSuccess: () => {
-                toast.success("Account created successfully")
-                router.push("/dashboard")
-            },
-            onError: (ctx: any) => {
-                toast.error(ctx.error.message)
-                setLoading(false)
+            options: {
+                data: {
+                    first_name: firstName,
+                    last_name: lastName,
+                }
             }
         })
+        
+        if (error) {
+            toast.error(error.message)
+            setLoading(false)
+        } else {
+            toast.success("Account created successfully")
+            router.push("/dashboard")
+        }
     }
 
     const handleGoogleSignUp = async () => {
-        await authClient.signIn.social({
+        await supabase.auth.signInWithOAuth({
             provider: "google",
-            callbackURL: "/dashboard"
+            options: {
+                redirectTo: `${window.location.origin}/api/auth/callback?next=/dashboard`
+            }
         })
     }
 

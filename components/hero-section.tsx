@@ -20,11 +20,17 @@ const menuItems = [
     { name: 'Contact', href: '#contact' },
 ]
 
-import { authClient } from '@/lib/auth-client'
+import { supabase } from "@/src/lib/supabase"
 
 export default function HeroSection() {
-    const [menuState, setMenuState] = React.useState(false)
-    const { data: session } = authClient.useSession()
+    const [menuState, setMenuState] = React.useState(false);
+    const [session, setSession] = React.useState<any>(null);
+
+    React.useEffect(() => {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            setSession(session);
+        });
+    }, []);
 
     return (
         <>

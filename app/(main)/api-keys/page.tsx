@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { useQuery, useMutation } from "convex/react";
-import { api } from "@/convex/_generated/api";
+
 import { supabase } from "@/src/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -62,20 +61,22 @@ import { Label } from "@/components/ui/label";
 
 
 export default function ApiKeysPage() {
-    const user = useQuery(api.auth.getCurrentUser);
+    const [userId, setUserId] = useState<string | undefined>(undefined);
 
     // --- Supabase State ---
     const [apiKeys, setApiKeys] = useState<any[] | undefined>(undefined);
     const [loading, setLoading] = useState(true);
 
     const fetchKeys = async () => {
-        if (!user?._id) return;
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        setUserId(user.id);
         setLoading(true);
         try {
             const { data, error } = await supabase
                 .from("user_api_keys")
                 .select("*")
-                .eq("user_id", user._id)
+                .eq("user_id", user.id)
                 .order("created_at", { ascending: false });
 
             if (error) throw error;
@@ -90,7 +91,7 @@ export default function ApiKeysPage() {
 
     useEffect(() => {
         fetchKeys();
-    }, [user?._id]);
+    }, []);
 
     const [name, setName] = useState("");
     const [provider, setProvider] = useState("openrouter");
@@ -106,7 +107,7 @@ export default function ApiKeysPage() {
 
     const handleAddKey = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!name || !key || !user?._id) {
+        if (!name || !key || !userId) {
             toast.error("Please fill in all fields");
             return;
         }
@@ -123,7 +124,7 @@ export default function ApiKeysPage() {
 
             if (existing) {
                 // If it's already assigned to someone else
-                if (existing.user_id && existing.user_id !== user._id) {
+                if (existing.user_id && existing.user_id !== userId) {
                     toast.error("This API Key is already registered by another user.");
                     return;
                 }
@@ -132,7 +133,7 @@ export default function ApiKeysPage() {
                 const { error: updateError } = await supabase
                     .from("user_api_keys")
                     .update({
-                        user_id: user._id,
+                        user_id: userId,
                         name,
                         provider,
                         status: "active"
@@ -145,7 +146,7 @@ export default function ApiKeysPage() {
                 const { error: insertError } = await supabase
                     .from("user_api_keys")
                     .insert([{
-                        user_id: user._id,
+                        user_id: userId,
                         name,
                         provider,
                         key,
@@ -451,7 +452,7 @@ export default function ApiKeysPage() {
                                                         pName = pName.trim();
                                                         pKey = pKey.trim();
 
-                                                        if (pName && pKey && user?._id) {
+                                                        if (pName && pKey && userId) {
                                                             try {
                                                                 // Check if key exists
                                                                 const { data: existing } = await supabase
@@ -461,11 +462,11 @@ export default function ApiKeysPage() {
                                                                     .maybeSingle();
 
                                                                 if (existing) {
-                                                                    if (!existing.user_id || existing.user_id === user._id) {
+                                                                    if (!existing.user_id || existing.user_id === userId) {
                                                                         await supabase
                                                                             .from("user_api_keys")
                                                                             .update({
-                                                                                user_id: user._id,
+                                                                                user_id: userId,
                                                                                 name: pName,
                                                                                 provider,
                                                                                 status: "active"
@@ -477,7 +478,7 @@ export default function ApiKeysPage() {
                                                                     }
                                                                 } else {
                                                                     await supabase.from("user_api_keys").insert([{
-                                                                        user_id: user._id,
+                                                                        user_id: userId,
                                                                         name: pName,
                                                                         provider,
                                                                         key: pKey,

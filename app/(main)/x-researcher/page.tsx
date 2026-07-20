@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAction, useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
+import { useUsage } from "@/hooks/use-usage";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,29 +28,31 @@ export default function XResearchersPage() {
     const [isLimitDialogOpen, setIsLimitDialogOpen] = useState(false);
     const [profilesCount, setProfilesCount] = useState(0);
 
-    const usage = useQuery(api.usage.getUsage);
-    const user = useQuery(api.auth.getCurrentUser);
-    const getOrCreateKey = useAction(api.actions.supabase.getOrCreateWebhookKey);
+    const usage = useUsage();
+    const [user, setUser] = useState<any>(null);
 
     useEffect(() => {
-        if (!user?._id) return;
-        const fetchCount = async () => {
-            const { count } = await supabase
-                .from("user_leads")
-                .select("*", { count: "exact", head: true })
-                .eq("user_id", user._id);
-            setProfilesCount(count || 0);
+        const fetchUserAndCount = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            setUser(user);
+            if (user) {
+                const { count } = await supabase
+                    .from("user_leads")
+                    .select("*", { count: "exact", head: true })
+                    .eq("user_id", user.id);
+                setProfilesCount(count || 0);
+            }
         };
-        fetchCount();
-    }, [user?._id]);
+        fetchUserAndCount();
+    }, []);
 
     const profilesLimit = usage?.usage?.profilesLimit || 1000;
     const isLimitReached = profilesCount >= profilesLimit;
 
     const getKey = async () => {
-        const apiData = await getOrCreateKey();
-        if (!apiData?.key) throw new Error("Authentication failed: Internal API Key could not be retrieved.");
-        return apiData.key;
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error || !session) throw new Error("Authentication failed");
+        return session.access_token;
     };
 
     const handleScrapeProfiles = async () => {

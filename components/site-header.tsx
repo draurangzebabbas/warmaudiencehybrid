@@ -4,12 +4,28 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { authClient } from "@/lib/auth-client"
+import { supabase } from "@/src/lib/supabase"
+import { useState, useEffect } from "react"
 
 import { usePathname } from "next/navigation"
 
 export function SiteHeader() {
-  const { data: session, isPending } = authClient.useSession()
+  const [session, setSession] = useState<any>(null);
+  const [isPending, setIsPending] = useState(true);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setIsPending(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   const pathname = usePathname()
 
   const getPageTitle = (path: string) => {
@@ -40,7 +56,7 @@ export function SiteHeader() {
           {isPending ? (
             <span className="text-sm text-muted-foreground">Loading...</span>
           ) : session ? (
-            <span className="text-sm font-medium">{session.user.name || session.user.email}</span>
+            <span className="text-sm font-medium">{session.user.user_metadata?.full_name || session.user.email}</span>
           ) : (
             <span className="text-sm text-muted-foreground">Guest</span>
           )}

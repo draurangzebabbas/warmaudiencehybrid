@@ -5,7 +5,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Menu, X } from "lucide-react"
-import { authClient } from "@/lib/auth-client"
+import { supabase } from "@/src/lib/supabase"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { LogoIcon } from "@/components/logo"
 
@@ -19,7 +19,13 @@ const menuItems = [
 
 export default function LandingNav() {
     const [menuState, setMenuState] = React.useState(false)
-    const { data: session } = authClient.useSession()
+    const [session, setSession] = React.useState<any>(null);
+
+    React.useEffect(() => {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            setSession(session);
+        });
+    }, []);
 
     return (
         <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">

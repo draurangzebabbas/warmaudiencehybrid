@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label'
 import Link from 'next/link'
 import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { authClient } from '@/lib/auth-client'
+import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { Suspense } from 'react'
 import { IconEye, IconEyeOff } from '@tabler/icons-react'
@@ -15,7 +15,7 @@ import { IconEye, IconEyeOff } from '@tabler/icons-react'
 function ResetPasswordForm() {
     const router = useRouter()
     const searchParams = useSearchParams()
-    const token = searchParams.get("token")
+    const supabase = createClient()
 
     const [password, setPassword] = useState("")
     const [confirmPassword, setConfirmPassword] = useState("")
@@ -31,15 +31,9 @@ function ResetPasswordForm() {
             return
         }
 
-        if (!token) {
-            toast.error("Invalid or missing reset token")
-            return
-        }
-
         setLoading(true)
-        const { error } = await authClient.resetPassword({
-            newPassword: password,
-            token: token,
+        const { error } = await supabase.auth.updateUser({
+            password: password,
         })
 
         if (error) {
@@ -51,17 +45,7 @@ function ResetPasswordForm() {
         setLoading(false)
     }
 
-    if (!token) {
-        return (
-            <div className="text-center p-8">
-                <h1 className="text-xl font-semibold">Invalid Link</h1>
-                <p className="mt-2 text-sm">The reset link is missing or invalid.</p>
-                <Button asChild className="mt-4" variant="outline">
-                    <Link href="/forgot-password">Request new link</Link>
-                </Button>
-            </div>
-        )
-    }
+    // The token is handled automatically by the Supabase client or PKCE callback
 
     return (
         <form

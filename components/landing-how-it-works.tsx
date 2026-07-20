@@ -20,7 +20,7 @@ const steps = [
     {
         name: "Build Your Audience Insight Vault",
         subtitle: "Build With Velocity",
-        description: "Our system extracts, enriches, and saves data to your private Convex database. Smart analytics ensures you never pay for the same research twice.",
+        description: "Our system extracts, enriches, and saves data to your private Supabase database. Smart analytics ensures you never pay for the same research twice.",
         icon: Database,
     },
     {

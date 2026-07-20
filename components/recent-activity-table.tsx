@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
 import { supabase } from "@/src/lib/supabase";
 import {
     IconLoader,
@@ -26,12 +24,20 @@ import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
 
 export function RecentActivityTable() {
-    const user = useQuery(api.auth.getCurrentUser);
+    const [userId, setUserId] = useState<string | null>(null);
     const [activity, setActivity] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (!user?._id) return;
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session?.user?.id) {
+                setUserId(session.user.id);
+            }
+        });
+    }, []);
+
+    useEffect(() => {
+        if (!userId) return;
 
         const fetchActivity = async () => {
             try {
@@ -48,7 +54,7 @@ export function RecentActivityTable() {
                         instagram: instagram_id (*),
                         website_contact: website_contact_id (*)
                     `)
-                    .eq("user_id", user._id)
+                    .eq("user_id", userId)
                     .order("created_at", { ascending: false })
                     .limit(10);
 
@@ -104,7 +110,7 @@ export function RecentActivityTable() {
         };
 
         fetchActivity();
-    }, [user?._id]);
+    }, [userId]);
 
     if (loading) {
         return (

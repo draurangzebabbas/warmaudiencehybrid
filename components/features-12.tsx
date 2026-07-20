@@ -50,12 +50,12 @@ export default function Features() {
                             <AccordionTrigger>
                                 <div className="flex items-center gap-2 text-base">
                                     <Database className="size-4" />
-                                    Realtime Database (Convex)
+                                    Realtime Database (Supabase)
                                 </div>
                             </AccordionTrigger>
                             <AccordionContent>
                                 Forget about manual caching and complex state management.
-                                Convex provides a realtime, reactive backend that syncs data instantly to your frontend.
+                                Supabase provides a realtime, reactive backend that syncs data instantly to your frontend.
                             </AccordionContent>
                         </AccordionItem>
                         <AccordionItem value="item-2">

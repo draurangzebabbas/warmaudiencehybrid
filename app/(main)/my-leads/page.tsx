@@ -1,7 +1,5 @@
 "use client";
 
-import { useQuery, useMutation, useAction } from "convex/react";
-import { api } from "@/convex/_generated/api";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
@@ -73,7 +71,7 @@ import {
 import { toast } from "sonner";
 import { useState, useMemo } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { supabase, getAuthenticatedSupabaseClient } from "@/src/lib/supabase";
+import { supabase } from "@/src/lib/supabase";
 import { useEffect } from "react";
 
 // --- Types ---
@@ -232,8 +230,13 @@ type FacebookLead = {
 // --- Page Component ---
 
 export default function ProfilesPage() {
-    const user = useQuery(api.auth.getCurrentUser);
-    const getToken = useAction(api.actions.supabaseAuth.getSupabaseToken);
+    const [userId, setUserId] = useState<string | undefined>(undefined);
+
+    useEffect(() => {
+        supabase.auth.getUser().then(({ data: { user } }) => {
+            if (user) setUserId(user.id);
+        });
+    }, []);
 
     // --- Helper hook for Supabase fetching ---
     function useLeadsFromSupabase(userId: string | undefined, profileType: string) {
@@ -247,17 +250,9 @@ export default function ProfilesPage() {
             if (!userId) return;
             setLoading(true);
 
-            getToken().then((token) => {
-                if (!token) {
-                    setLoading(false);
-                    return;
-                }
-
-                const secureClient = getAuthenticatedSupabaseClient(token);
-
-                secureClient
-                    .from("user_leads")
-                    .select(`
+            supabase
+                .from("user_leads")
+                .select(`
                         id,
                         tags,
                         created_at,
@@ -271,10 +266,9 @@ export default function ProfilesPage() {
                         facebook: facebook_leads (*),
                         facebook_group: facebook_groups (*)
                     `)
-                    .eq("user_id", userId)
-                    .eq("profile_type", profileType)
-                    .order("created_at", { ascending: false })
-                    .then(({ data, error }) => {
+                .eq("profile_type", profileType)
+                .order("created_at", { ascending: false })
+                .then(({ data, error }) => {
                         if (error) {
                             console.error("Supabase fetch error:", error);
                             setLoading(false);
@@ -447,26 +441,26 @@ export default function ProfilesPage() {
                         }
                         setLoading(false);
                     });
-            });
         }, [userId, profileType, refreshKey]);
 
         return { leads, loading, refresh };
     }
 
     // --- State & Mutations ---
-    const { leads: personal, loading: loadingPersonal } = useLeadsFromSupabase(user?._id, "personal");
-    const { leads: company, loading: loadingCompany } = useLeadsFromSupabase(user?._id, "company");
-    const { leads: googleMaps, loading: loadingGoogleMaps } = useLeadsFromSupabase(user?._id, "google_maps");
-    const { leads: websiteContacts, loading: loadingWebsiteContacts, refresh: refreshWebsiteContacts } = useLeadsFromSupabase(user?._id, "website_contact");
-    const { leads: instagramLeads, loading: loadingInstagramLeads } = useLeadsFromSupabase(user?._id, "instagram");
-    const { leads: xLeads, loading: loadingXLeads, refresh: refreshXLeads } = useLeadsFromSupabase(user?._id, "x");
-    const { leads: facebookLeads, loading: loadingFacebookLeads, refresh: refreshFacebookLeads } = useLeadsFromSupabase(user?._id, "facebook");
-    const { leads: facebookGroups, loading: loadingFacebookGroups, refresh: refreshFacebookGroups } = useLeadsFromSupabase(user?._id, "facebook_group");
+    const { leads: personal, loading: loadingPersonal } = useLeadsFromSupabase(userId, "personal");
+    const { leads: company, loading: loadingCompany } = useLeadsFromSupabase(userId, "company");
+    const { leads: googleMaps, loading: loadingGoogleMaps } = useLeadsFromSupabase(userId, "google_maps");
+    const { leads: websiteContacts, loading: loadingWebsiteContacts, refresh: refreshWebsiteContacts } = useLeadsFromSupabase(userId, "website_contact");
+    const { leads: instagramLeads, loading: loadingInstagramLeads } = useLeadsFromSupabase(userId, "instagram");
+    const { leads: xLeads, loading: loadingXLeads, refresh: refreshXLeads } = useLeadsFromSupabase(userId, "x");
+    const { leads: facebookLeads, loading: loadingFacebookLeads, refresh: refreshFacebookLeads } = useLeadsFromSupabase(userId, "facebook");
+    const { leads: facebookGroups, loading: loadingFacebookGroups, refresh: refreshFacebookGroups } = useLeadsFromSupabase(userId, "facebook_group");
 
-    const getOrCreateKey = useAction(api.actions.supabase.getOrCreateWebhookKey);
-
-
-
+    const getKey = async () => {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error || !session) throw new Error("Authentication failed");
+        return session.access_token;
+    };
     // --- Filter State ---
     const [personalFilters, setPersonalFilters] = useState({
         hasEmail: "all" as "all" | "yes" | "no",
@@ -586,11 +580,7 @@ export default function ProfilesPage() {
     const handleDeleteProfile = async (id: any) => {
         if (!confirm("Are you sure you want to remove this lead from your list? (Global data will be preserved)")) return;
         try {
-            const token = await getToken();
-            if (!token) throw new Error("Unauthorized");
-            const secureClient = getAuthenticatedSupabaseClient(token);
-
-            const { error } = await secureClient
+            const { error } = await supabase
                 .from("user_leads")
                 .delete()
                 .eq("id", id);
@@ -607,12 +597,12 @@ export default function ProfilesPage() {
     const handleUpdateWebsiteContact = async (domain: string) => {
         try {
             toast.loading(`Updating data for ${domain}...`, { id: 'update-contact' });
-            const token = await getToken();
+            const key = await getKey();
             const res = await fetch(`${process.env.NEXT_PUBLIC_RENDER_BACKEND_URL || "http://localhost:8000"}/api/update-website-contact`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
+                    'Authorization': `Bearer ${key}`
                 },
                 body: JSON.stringify({ domain })
             });
@@ -631,14 +621,13 @@ export default function ProfilesPage() {
     const handleUpdateProfile = async (url: string) => {
         try {
             toast.info("Queueing update...");
-            const apiData = await getOrCreateKey();
-            if (!apiData?.key) throw new Error("Could not retrieve API Key");
+            const key = await getKey();
 
             const res = await fetch(`${process.env.NEXT_PUBLIC_RENDER_BACKEND_URL || "http://localhost:8000"}/api/scrape-linkedin`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${apiData.key}`
+                    "Authorization": `Bearer ${key}`
                 },
                 body: JSON.stringify({ profileUrls: [url], force: true })
             });
@@ -656,14 +645,13 @@ export default function ProfilesPage() {
     const handleUpdateInstagramProfile = async (username: string) => {
         try {
             toast.info("Queueing update...");
-            const apiData = await getOrCreateKey();
-            if (!apiData?.key) throw new Error("Could not retrieve API Key");
+            const key = await getKey();
 
             const res = await fetch(`${process.env.NEXT_PUBLIC_RENDER_BACKEND_URL || "http://localhost:8000"}/api/scrape-instagram-profiles`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${apiData.key}`
+                    "Authorization": `Bearer ${key}`
                 },
                 body: JSON.stringify({ usernames: [username], force: true })
             });
@@ -681,14 +669,13 @@ export default function ProfilesPage() {
     const handleUpdateXProfile = async (username: string) => {
         try {
             toast.info("Queueing update...");
-            const apiData = await getOrCreateKey();
-            if (!apiData?.key) throw new Error("Could not retrieve API Key");
+            const key = await getKey();
 
             const res = await fetch(`${process.env.NEXT_PUBLIC_RENDER_BACKEND_URL || "http://localhost:8000"}/api/scrape-x-profiles`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${apiData.key}`
+                    "Authorization": `Bearer ${key}`
                 },
                 body: JSON.stringify({ usernames: [username], force: true })
             });
@@ -2427,13 +2414,12 @@ export default function ProfilesPage() {
                                     onBulkUpdate={async (urls) => {
                                         toast.info(`Queueing update for ${urls.length} profiles...`);
                                         try {
-                                            const apiData = await getOrCreateKey();
-                                            if (!apiData?.key) throw new Error("Could not retrieve API Key");
+                                            const key = await getKey();
                                             const res = await fetch(`${process.env.NEXT_PUBLIC_RENDER_BACKEND_URL || "http://localhost:8000"}/api/scrape-linkedin`, {
                                                 method: "POST",
                                                 headers: {
                                                     "Content-Type": "application/json",
-                                                    "Authorization": `Bearer ${apiData.key}`
+                                                    "Authorization": `Bearer ${key}`
                                                 },
                                                 body: JSON.stringify({ profileUrls: urls, force: true })
                                             });
@@ -2470,13 +2456,12 @@ export default function ProfilesPage() {
                                     onBulkUpdate={async (urls) => {
                                         toast.info(`Queueing update for ${urls.length} companies...`);
                                         try {
-                                            const apiData = await getOrCreateKey();
-                                            if (!apiData?.key) throw new Error("Could not retrieve API Key");
+                                            const key = await getKey();
                                             const res = await fetch(`${process.env.NEXT_PUBLIC_RENDER_BACKEND_URL || "http://localhost:8000"}/api/scrape-linkedin`, {
                                                 method: "POST",
                                                 headers: {
                                                     "Content-Type": "application/json",
-                                                    "Authorization": `Bearer ${apiData.key}`
+                                                    "Authorization": `Bearer ${key}`
                                                 },
                                                 body: JSON.stringify({ profileUrls: urls, force: true })
                                             });
@@ -2563,13 +2548,12 @@ export default function ProfilesPage() {
                                     onBulkUpdate={async (urls) => {
                                         toast.info(`Queueing update for ${urls.length} Instagram profiles...`);
                                         try {
-                                            const apiData = await getOrCreateKey();
-                                            if (!apiData?.key) throw new Error("Could not retrieve API Key");
+                                            const key = await getKey();
                                             const res = await fetch(`${process.env.NEXT_PUBLIC_RENDER_BACKEND_URL || "http://localhost:8000"}/api/scrape-instagram-profiles`, {
                                                 method: "POST",
                                                 headers: {
                                                     "Content-Type": "application/json",
-                                                    "Authorization": `Bearer ${apiData.key}`
+                                                    "Authorization": `Bearer ${key}`
                                                 },
                                                 body: JSON.stringify({ usernames: urls, force: true })
                                             });
@@ -2686,14 +2670,13 @@ export default function ProfilesPage() {
                                     onBulkUpdate={async (urls) => {
                                         toast.info(`Queueing update for ${urls.length} X profiles...`);
                                         try {
-                                            const apiData = await getOrCreateKey();
-                                            if (!apiData?.key) throw new Error("Could not retrieve API Key");
+                                            const key = await getKey();
 
                                             const res = await fetch(`${process.env.NEXT_PUBLIC_RENDER_BACKEND_URL || "http://localhost:8000"}/api/scrape-x-profiles`, {
                                                 method: "POST",
                                                 headers: {
                                                     "Content-Type": "application/json",
-                                                    "Authorization": `Bearer ${apiData.key}`
+                                                    "Authorization": `Bearer ${key}`
                                                 },
                                                 body: JSON.stringify({ usernames: urls, force: true })
                                             });

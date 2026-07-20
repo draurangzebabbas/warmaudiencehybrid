@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Check, CheckCircle2 } from 'lucide-react'
-import { authClient } from '@/lib/auth-client'
+import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
@@ -12,7 +12,8 @@ import { motion } from "motion/react"
 
 export default function Pricing() {
     const router = useRouter();
-    const { data: session } = authClient.useSession();
+    const supabase = createClient();
+    const [session, setSession] = useState<any>(null);
     const [loading, setLoading] = useState<string | null>(null);
     const [activeSubscription, setActiveSubscription] = useState<string | null>(null);
 
@@ -20,52 +21,33 @@ export default function Pricing() {
 
     // Check for active subscriptions on load
     useEffect(() => {
-        if (!session) {
-            setActiveSubscription(null);
-            setHasFetched(false);
-            return;
-        }
-
-        if (!hasFetched) {
-            authClient.customer.state().then(({ data, error }) => {
-                if (error) {
-                    // Suppress empty error logs or 404s for users without customers yet
-                    if (Object.keys(error).length > 0) {
-                        console.error("❌ Polar Error Details:", error);
-                    } else {
-                        console.log("ℹ️ Polar: No active customer record found for this session (standard for non-paying users).");
-                    }
-                    setHasFetched(true);
-                    return;
-                }
-
-                const customerState = data as any;
+        const fetchSession = async () => {
+            const { data: { session: currentSession } } = await supabase.auth.getSession();
+            setSession(currentSession);
+            
+            if (!currentSession) {
+                setActiveSubscription(null);
                 setHasFetched(true);
+                return;
+            }
 
-                const subs = customerState?.activeSubscriptions || customerState?.subscriptions;
+            const { data: profile, error } = await supabase
+                .from('profiles')
+                .select('plan_slug, subscription_status')
+                .eq('id', currentSession.user.id)
+                .single();
 
-                if (subs && Array.isArray(subs)) {
-                    const activeSub = subs.find((s: any) =>
-                        s.status === 'active' || s.status === 'trialing'
-                    );
-
-                    if (activeSub) {
-                        const pId = activeSub.productId || activeSub.product?.id || activeSub.product_id;
-
-                        if (pId === process.env.NEXT_PUBLIC_POLAR_PRODUCT_ID_GROWTH) {
-                            setActiveSubscription("pro");
-                        }
-                        if (pId === process.env.NEXT_PUBLIC_POLAR_PRODUCT_ID_SCALE) {
-                            setActiveSubscription("elite");
-                        }
-                    }
+            if (profile) {
+                if (profile.subscription_status === 'active' || profile.subscription_status === 'trialing') {
+                    if (profile.plan_slug === 'growth' || profile.plan_slug === 'pro') setActiveSubscription('pro');
+                    if (profile.plan_slug === 'scale' || profile.plan_slug === 'elite') setActiveSubscription('elite');
                 }
-            }).catch(err => {
-                console.error("Failed to fetch customer state", err);
-                setHasFetched(true);
-            });
-        }
-    }, [session, hasFetched]);
+            }
+            
+            setHasFetched(true);
+        };
+        fetchSession();
+    }, [supabase, hasFetched]);
 
     const handleCheckout = async (slug: string) => {
         if (!session) {
@@ -77,19 +59,35 @@ export default function Pricing() {
         if (activeSubscription) {
             setLoading("portal");
             toast.info("Redirecting to billing portal...");
-            await authClient.customer.portal();
-            setLoading(null);
+            try {
+                const res = await fetch('/api/billing/portal', { method: 'POST' });
+                const data = await res.json();
+                if (data.url) {
+                    window.location.href = data.url;
+                } else {
+                    toast.error(data.error || "Failed to load portal");
+                }
+            } catch (err) {
+                toast.error("Something went wrong");
+            } finally {
+                setLoading(null);
+            }
             return;
         }
 
         setLoading(slug);
         try {
-            const result = await authClient.checkout({
-                slug: slug,
+            const res = await fetch('/api/billing/checkout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ slug })
             });
-
-            if (result?.error) {
-                toast.error(result.error.message || "Checkout failed");
+            const data = await res.json();
+            
+            if (data.url) {
+                window.location.href = data.url;
+            } else {
+                toast.error(data.error || "Checkout failed");
             }
         } catch (error) {
             toast.error("Something went wrong");

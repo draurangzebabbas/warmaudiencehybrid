@@ -1,8 +1,8 @@
 "use client";
 import { useState, useEffect } from "react";
 
-import { useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
+// Convex removed
+
 import { supabase } from "@/src/lib/supabase";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +10,7 @@ import { IconTrendingUp, IconUsers, IconBuildingCommunity, IconRadar, IconDataba
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function DashboardStats() {
-    const user = useQuery(api.auth.getCurrentUser);
+    const [user, setUser] = useState<any>(null);
     const [stats, setStats] = useState({
         totalPersonalProfiles: 0,
         totalCompanyProfiles: 0,
@@ -22,17 +22,25 @@ export function DashboardStats() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (!user?._id) return;
+        const fetchUser = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            setUser(user);
+        };
+        fetchUser();
+    }, []);
+
+    useEffect(() => {
+        if (!user?.id) return;
 
         const fetchStats = async () => {
             try {
                 const [personal, company, gmaps, instagram, website, trackers] = await Promise.all([
-                    supabase.from("user_leads").select("*", { count: "exact", head: true }).eq("user_id", user._id).eq("profile_type", "personal"),
-                    supabase.from("user_leads").select("*", { count: "exact", head: true }).eq("user_id", user._id).eq("profile_type", "company"),
-                    supabase.from("user_leads").select("*", { count: "exact", head: true }).eq("user_id", user._id).eq("profile_type", "google_maps"),
-                    supabase.from("user_leads").select("*", { count: "exact", head: true }).eq("user_id", user._id).eq("profile_type", "instagram"),
-                    supabase.from("user_leads").select("*", { count: "exact", head: true }).eq("user_id", user._id).eq("profile_type", "website_contact"),
-                    supabase.from("trackers").select("*", { count: "exact", head: true }).eq("user_id", user._id).eq("is_active", true)
+                    supabase.from("user_leads").select("*", { count: "exact", head: true }).eq("user_id", user.id).eq("profile_type", "personal"),
+                    supabase.from("user_leads").select("*", { count: "exact", head: true }).eq("user_id", user.id).eq("profile_type", "company"),
+                    supabase.from("user_leads").select("*", { count: "exact", head: true }).eq("user_id", user.id).eq("profile_type", "google_maps"),
+                    supabase.from("user_leads").select("*", { count: "exact", head: true }).eq("user_id", user.id).eq("profile_type", "instagram"),
+                    supabase.from("user_leads").select("*", { count: "exact", head: true }).eq("user_id", user.id).eq("profile_type", "website_contact"),
+                    supabase.from("trackers").select("*", { count: "exact", head: true }).eq("user_id", user.id).eq("is_active", true)
                 ]);
 
                 setStats({

@@ -1,9 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useMutation, useAction, useQuery } from "convex/react";
-
-import { api } from "@/convex/_generated/api";
+import { useUsage } from "@/hooks/use-usage";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -24,24 +22,32 @@ export default function GoogleMapsResearcherPage() {
     const [isLimitDialogOpen, setIsLimitDialogOpen] = useState(false);
     const [profilesCount, setProfilesCount] = useState(0);
 
-    const usage = useQuery(api.usage.getUsage);
-    const user = useQuery(api.auth.getCurrentUser);
-    const getOrCreateKey = useAction(api.actions.supabase.getOrCreateWebhookKey);
+    const usage = useUsage();
+    const [user, setUser] = useState<any>(null);
 
     useEffect(() => {
-        if (!user?._id) return;
-        const fetchCount = async () => {
-            const { count } = await supabase
-                .from("user_leads")
-                .select("*", { count: "exact", head: true })
-                .eq("user_id", user._id);
-            setProfilesCount(count || 0);
+        const fetchUserAndCount = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            setUser(user);
+            if (user) {
+                const { count } = await supabase
+                    .from("user_leads")
+                    .select("*", { count: "exact", head: true })
+                    .eq("user_id", user.id);
+                setProfilesCount(count || 0);
+            }
         };
-        fetchCount();
-    }, [user?._id]);
+        fetchUserAndCount();
+    }, []);
 
     const profilesLimit = usage?.usage?.profilesLimit || 1000;
     const isLimitReached = profilesCount >= profilesLimit;
+
+    const getKey = async () => {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error || !session) throw new Error("Authentication failed");
+        return session.access_token;
+    };
 
 
     const handleScrapeGoogleMaps = async () => {
@@ -59,9 +65,7 @@ export default function GoogleMapsResearcherPage() {
                 return;
             }
 
-            const apiData = await getOrCreateKey();
-            if (!apiData?.key) throw new Error("Authentication failed: Internal API Key could not be retrieved.");
-            const key = apiData.key;
+            const key = await getKey();
 
             const tagList = tags.split(",").map(t => t.trim()).filter(Boolean);
 

@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation, useAction } from "convex/react";
-import { api } from "@/convex/_generated/api";
+import { useUsage } from "@/hooks/use-usage";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +13,6 @@ import { Loader2, Tag } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatError } from "@/lib/utils";
-import { useQuery } from "convex/react";
 import { LimitReachedDialog } from "@/components/limit-reached-dialog";
 import { supabase } from "@/src/lib/supabase";
 import { useEffect } from "react";
@@ -34,21 +32,29 @@ export default function InstagramResearchersPage() {
     const [maxPages, setMaxPages] = useState(1);
     const [sortBy, setSortBy] = useState("recent");
 
-    const usage = useQuery(api.usage.getUsage);
-    const user = useQuery(api.auth.getCurrentUser);
-    const getOrCreateKey = useAction(api.actions.supabase.getOrCreateWebhookKey);
+    const usage = useUsage();
+    const [user, setUser] = useState<any>(null);
 
     useEffect(() => {
-        if (!user?._id) return;
-        const fetchCount = async () => {
-            const { count } = await supabase
-                .from("user_leads")
-                .select("*", { count: "exact", head: true })
-                .eq("user_id", user._id);
-            setProfilesCount(count || 0);
+        const fetchUserAndCount = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            setUser(user);
+            if (user) {
+                const { count } = await supabase
+                    .from("user_leads")
+                    .select("*", { count: "exact", head: true })
+                    .eq("user_id", user.id);
+                setProfilesCount(count || 0);
+            }
         };
-        fetchCount();
-    }, [user?._id]);
+        fetchUserAndCount();
+    }, []);
+
+    const getKey = async () => {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error || !session) throw new Error("Authentication failed");
+        return session.access_token;
+    };
 
     const profilesLimit = usage?.usage?.profilesLimit || 1000;
     const isLimitReached = profilesCount >= profilesLimit;
@@ -57,9 +63,7 @@ export default function InstagramResearchersPage() {
     const handleScrapeProfiles = async () => {
         setLoading(true);
         try {
-            const apiData = await getOrCreateKey();
-            if (!apiData?.key) throw new Error("Authentication failed: Internal API Key could not be retrieved.");
-            const key = apiData.key;
+            const key = await getKey();
 
             const lines = profileUrls.split("\n").map(l => l.trim()).filter(Boolean);
             if (lines.length === 0) {
@@ -114,9 +118,7 @@ export default function InstagramResearchersPage() {
     const handleScrapeEngagers = async () => {
         setLoading(true);
         try {
-            const apiData = await getOrCreateKey();
-            if (!apiData?.key) throw new Error("Authentication failed: Internal API Key could not be retrieved.");
-            const key = apiData.key;
+            const key = await getKey();
 
             const lines = postUrls.split("\n")
                 .map(l => l.trim())
@@ -181,9 +183,7 @@ export default function InstagramResearchersPage() {
     const handleScrapeFollowers = async () => {
         setLoading(true);
         try {
-            const apiData = await getOrCreateKey();
-            if (!apiData?.key) throw new Error("Authentication failed: Internal API Key could not be retrieved.");
-            const key = apiData.key;
+            const key = await getKey();
 
             const lines = followerUrls.split("\n")
                 .map(l => l.trim())

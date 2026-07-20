@@ -1,7 +1,5 @@
 "use client"
 
-import { useQuery, useMutation, useAction } from "convex/react";
-import { api } from "@/convex/_generated/api";
 import { Progress } from "./ui/progress";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardAction } from "./ui/card";
 import { IconBolt, IconUsers, IconRadar, IconAlertCircle } from "@tabler/icons-react";
@@ -9,42 +7,61 @@ import { Skeleton } from "./ui/skeleton";
 import { Button } from "./ui/button";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { authClient } from "@/lib/auth-client";
 import { Badge } from "./ui/badge";
 import { supabase } from "@/src/lib/supabase";
+import { createClient } from "@/lib/supabase/client";
 
 
 export function PlanUsage() {
-    const { data: session } = authClient.useSession();
-    const usage = useQuery(api.usage.getUsage);
-    const ensureSub = useMutation(api.usage.ensureSubscription);
-    const syncFromPolar = useAction(api.polar.syncFromPolar);
-
+    const supabaseClient = createClient();
     const [counts, setCounts] = useState({ profiles: 0, trackers: 0 });
+    const [usage, setUsage] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (session?.user?.email) {
-            ensureSub();
-            syncFromPolar({ email: session.user.email });
-        }
-    }, [session?.user?.email, ensureSub, syncFromPolar]);
+        const fetchUsage = async () => {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session?.user?.id) {
+                setLoading(false);
+                return;
+            }
 
-    useEffect(() => {
-        if (!session?.user?.id) return;
-        const fetchCounts = async () => {
-            const [profiles, trackers] = await Promise.all([
+            const [profiles, trackers, profileData] = await Promise.all([
                 supabase.from("user_leads").select("*", { count: "exact", head: true }).eq("user_id", session.user.id),
-                supabase.from("trackers").select("*", { count: "exact", head: true }).eq("user_id", session.user.id).eq("is_active", true)
+                supabase.from("trackers").select("*", { count: "exact", head: true }).eq("user_id", session.user.id).eq("is_active", true),
+                supabase.from("profiles").select("plan_slug").eq("id", session.user.id).single()
             ]);
+
+            const planSlug = profileData?.data?.plan_slug || "free";
+            let planName = "Free";
+            let profilesLimit = 50;
+            let trackersLimit = 1;
+
+            if (planSlug === "growth" || planSlug === "pro") {
+                planName = "Growth";
+                profilesLimit = 1000;
+                trackersLimit = 5;
+            } else if (planSlug === "scale" || planSlug === "elite") {
+                planName = "Scale";
+                profilesLimit = 10000;
+                trackersLimit = 20;
+            }
+
             setCounts({ 
                 profiles: profiles.count || 0, 
                 trackers: trackers.count || 0 
             });
-        };
-        fetchCounts();
-    }, [session?.user?.id]);
 
-    if (usage === undefined) {
+            setUsage({
+                plan: { name: planName },
+                usage: { profilesLimit, trackersLimit }
+            });
+            setLoading(false);
+        };
+        fetchUsage();
+    }, [supabaseClient]);
+
+    if (loading) {
         return (
             <Card className="animate-pulse bg-gradient-to-t from-primary/5 to-card border-none shadow-none">
                 <CardHeader>

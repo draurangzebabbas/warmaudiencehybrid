@@ -8,12 +8,13 @@ import {
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
 
 export default async function MainLayout({ children }: { children: React.ReactNode }) {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("better-auth.session_token") || cookieStore.get("__Secure-better-auth.session_token");
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
-    if (!token) {
+    if (!user) {
         redirect("/login");
     }
     return (

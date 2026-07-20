@@ -27,10 +27,10 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  useSidebar,
-} from "@/components/ui/sidebar"
-import { authClient } from "@/lib/auth-client"
+import { useSidebar } from "@/components/ui/sidebar"
+import { supabase } from "@/src/lib/supabase"
 import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
 
 export function NavUser({
   user, // Optional fallback or initial data
@@ -43,13 +43,27 @@ export function NavUser({
 }) {
   const { isMobile } = useSidebar()
   const router = useRouter()
-  const { data: session, isPending } = authClient.useSession()
+  const [session, setSession] = useState<any>(null);
+  const [isPending, setIsPending] = useState(true);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setIsPending(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   // Use session data if available, otherwise fallback to prop or empty
   const userData = session ? {
-    name: session.user.name,
+    name: session.user.user_metadata?.full_name || session.user.email?.split("@")[0] || "User",
     email: session.user.email,
-    avatar: session.user.image,
+    avatar: session.user.user_metadata?.avatar_url,
   } : user || {
     name: "Guest",
     email: "",
@@ -57,22 +71,12 @@ export function NavUser({
   }
 
   const handleLogout = async () => {
-    await authClient.signOut({
-      fetchOptions: {
-        onSuccess: () => {
-          router.push("/login")
-        },
-      },
-    })
+    await supabase.auth.signOut()
+    router.push("/login")
   }
 
   const handleBilling = async () => {
-    const { data, error } = await authClient.customer.portal();
-    if (data?.url) {
-      window.location.href = data.url;
-    } else {
-      console.error("Could not open billing portal", error);
-    }
+    router.push("/settings"); // Fallback, update to point to actual billing
   }
 
   if (isPending) {

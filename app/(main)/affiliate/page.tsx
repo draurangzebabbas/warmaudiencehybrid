@@ -1,8 +1,7 @@
 "use client";
 import React from "react";
 
-import { useQuery, useMutation } from "convex/react";
-import { api } from "@/convex/_generated/api";
+import { supabase } from "@/src/lib/supabase";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -44,8 +43,8 @@ const generateChartData = (commissions: any[], days = 30) => {
     // Group commissions by date
     if (commissions) {
         commissions.forEach((c: any) => {
-            const date = new Date(c.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            map.set(date, (map.get(date) || 0) + c.commissionAmount);
+            const date = new Date(c.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            map.set(date, (map.get(date) || 0) + c.commission_amount);
         });
     }
 
@@ -111,15 +110,54 @@ function AffiliateDashboardContent() {
         );
     }
 
-    // 1. Fetch Data
-    const profile = useQuery(api.affiliate_program.getMyProfile);
-    const referrals = useQuery(api.affiliate_program.getMyReferrals);
-    const payouts = useQuery(api.affiliate_program.getMyPayouts);
-    const commissions = useQuery(api.affiliate_program.getMyCommissions);
+    // 1. Fetch Data via Supabase API routes
+    const [profile, setProfile] = useState<any>(undefined);
+    const [referrals, setReferrals] = useState<any[]>([]);
+    const [payouts, setPayouts] = useState<any[]>([]);
+    const [commissions, setCommissions] = useState<any[]>([]);
 
-    // Mutations
-    const createProfile = useMutation(api.affiliate_program.createMyProfile);
-    const updateSettings = useMutation(api.affiliate_program.updatePayoutSettings);
+    const fetchData = async () => {
+        // Profile (auto-creates if missing)
+        const profileRes = await fetch("/api/affiliate/profile");
+        const profileData = await profileRes.json();
+        setProfile(profileData.profile ?? null);
+
+        if (!profileData.profile) return;
+
+        const affiliateId = profileData.profile.id;
+
+        // Referrals
+        const { data: refs } = await supabase
+            .from("affiliate_referrals")
+            .select("*")
+            .eq("affiliate_id", affiliateId)
+            .order("signup_date", { ascending: false });
+        setReferrals(refs || []);
+
+        // Payouts
+        const { data: pays } = await supabase
+            .from("affiliate_payouts")
+            .select("*")
+            .eq("affiliate_id", affiliateId)
+            .order("requested_at", { ascending: false });
+        setPayouts(pays || []);
+
+        // Commissions
+        const { data: comms } = await supabase
+            .from("affiliate_commissions")
+            .select("*")
+            .eq("affiliate_id", affiliateId)
+            .order("created_at", { ascending: false });
+        setCommissions(comms || []);
+    };
+
+    useEffect(() => { fetchData(); }, []);
+
+    // Mutations replaced by API calls
+    const createProfile = async () => {
+        await fetch("/api/affiliate/profile"); // GET auto-creates
+        await fetchData();
+    };
 
     const [isPayoutLoading, setIsPayoutLoading] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
@@ -144,16 +182,16 @@ function AffiliateDashboardContent() {
     useEffect(() => {
         setMounted(true);
         if (profile) {
-            setPayoutEmail(profile.payoutEmail || "");
-            setPayoutName(profile.payoutName || "");
-            setPayoutMethod(profile.payoutMethod || "wise_email");
-            setPayoutBankCountry(profile.payoutBankCountry || "US");
-            setPayoutBankCurrency(profile.payoutBankCurrency || "USD");
-            setPayoutAccountNumber(profile.payoutAccountNumber || "");
-            setPayoutRoutingNumber(profile.payoutRoutingNumber || "");
-            setPayoutIban(profile.payoutIban || "");
-            setPayoutSwiftCode(profile.payoutSwiftCode || "");
-            setAutoPayoutEnabled(profile.autoPayoutEnabled || false);
+            setPayoutEmail(profile.payout_email || "");
+            setPayoutName(profile.payout_name || "");
+            setPayoutMethod(profile.payout_method || "wise_email");
+            setPayoutBankCountry(profile.payout_bank_country || "US");
+            setPayoutBankCurrency(profile.payout_bank_currency || "USD");
+            setPayoutAccountNumber(profile.payout_account_number || "");
+            setPayoutRoutingNumber(profile.payout_routing_number || "");
+            setPayoutIban(profile.payout_iban || "");
+            setPayoutSwiftCode(profile.payout_swift_code || "");
+            setAutoPayoutEnabled(profile.auto_payout_enabled || false);
         }
     }, [profile]);
 
@@ -161,10 +199,12 @@ function AffiliateDashboardContent() {
         generateChartData(commissions || [], parseInt(timeRange)),
         [commissions, timeRange]);
 
+    // Sync payout settings from profile
+
     const handleActivate = async () => {
         setIsCreating(true);
         try {
-            await createProfile({});
+            await createProfile();
             toast.success("Affiliate account activated!");
         } catch (error) {
             toast.error("Failed to activate account");
@@ -204,7 +244,7 @@ function AffiliateDashboardContent() {
 
     // 4. Helper Functions
     const copyLink = () => {
-        const link = `${window.location.origin}?ref=${profile.referralCode}`;
+        const link = `${window.location.origin}?ref=${profile.referral_code}`;
         navigator.clipboard.writeText(link);
         toast.success("Referral link copied!");
     };
@@ -230,7 +270,7 @@ function AffiliateDashboardContent() {
             return;
         }
 
-        if (profile.availableBalance < 50) {
+        if (profile.available_balance < 50) {
             toast.error("Minimum payout is $50");
             return;
         }
@@ -240,7 +280,7 @@ function AffiliateDashboardContent() {
             const response = await fetch("/api/affiliate/payout", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ amount: profile.availableBalance })
+                body: JSON.stringify({ amount: profile.available_balance })
             });
 
             const data = await response.json();
@@ -261,18 +301,23 @@ function AffiliateDashboardContent() {
         e.preventDefault();
         try {
             setIsSavingSettings(true);
-            await updateSettings({
-                payoutEmail,
-                payoutName,
-                payoutMethod,
-                payoutBankCountry,
-                payoutBankCurrency,
-                payoutAccountNumber,
-                payoutRoutingNumber,
-                payoutIban,
-                payoutSwiftCode,
-                autoPayoutEnabled
+            const res = await fetch("/api/affiliate/profile", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    payout_email: payoutEmail,
+                    payout_name: payoutName,
+                    payout_method: payoutMethod,
+                    payout_bank_country: payoutBankCountry,
+                    payout_bank_currency: payoutBankCurrency,
+                    payout_account_number: payoutAccountNumber,
+                    payout_routing_number: payoutRoutingNumber,
+                    payout_iban: payoutIban,
+                    payout_swift_code: payoutSwiftCode,
+                    auto_payout_enabled: autoPayoutEnabled,
+                }),
             });
+            if (!res.ok) throw new Error("Save failed");
             toast.success("Payout method saved!");
         } catch (error) {
             toast.error("Failed to save payout method");
@@ -296,7 +341,7 @@ function AffiliateDashboardContent() {
                     <div className="hidden md:flex items-center gap-2 rounded-lg border bg-background px-3 py-2 text-sm text-muted-foreground shadow-sm">
                         <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">Ref Code</span>
                         <div className="h-4 w-[1px] bg-border" />
-                        <span className="font-mono font-medium text-foreground">{profile.referralCode}</span>
+                        <span className="font-mono font-medium text-foreground">{profile.referral_code}</span>
                     </div>
                     <Button onClick={copyLink} variant="outline" className="gap-2">
                         <IconCopy className="h-4 w-4" />
@@ -313,7 +358,7 @@ function AffiliateDashboardContent() {
                         <IconCurrencyDollar className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{formatCurrency(profile.totalEarnings)}</div>
+                        <div className="text-2xl font-bold">{formatCurrency(profile.total_earnings)}</div>
                         <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
                             <span className="text-green-500 font-medium">Lifetime</span> commission
                         </p>
@@ -325,14 +370,13 @@ function AffiliateDashboardContent() {
                         <IconCurrencyDollar className="h-4 w-4 text-green-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-green-600">{formatCurrency(profile.availableBalance)}</div>
+                        <div className="text-2xl font-bold text-green-600">{formatCurrency(profile.available_balance)}</div>
                         <Button
                             variant="link"
-                            className="h-auto p-0 text-xs text-muted-foreground mt-1"
-                            onClick={handleRequestPayout}
-                            disabled={profile.availableBalance < 50 || isPayoutLoading}
+                            className="h-auto p-0 text-xs text-muted-foreground mt-1 cursor-not-allowed opacity-50"
+                            disabled={true}
                         >
-                            {isPayoutLoading ? "Processing..." : "Request Payout (Min $50)"}
+                            Payouts Coming Soon
                         </Button>
                     </CardContent>
                 </Card>
@@ -342,9 +386,9 @@ function AffiliateDashboardContent() {
                         <IconUsers className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{profile.totalSignups}</div>
+                        <div className="text-2xl font-bold">{profile.total_signups}</div>
                         <p className="text-xs text-muted-foreground mt-1">
-                            {profile.totalConversions} paid customers
+                            {profile.total_conversions} paid customers
                         </p>
                     </CardContent>
                 </Card>
@@ -355,10 +399,10 @@ function AffiliateDashboardContent() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">
-                            {(profile.totalClicks > 0 ? (profile.totalSignups / profile.totalClicks * 100).toFixed(1) : 0)}%
+                            {(profile.total_clicks > 0 ? (profile.total_signups / profile.total_clicks * 100).toFixed(1) : 0)}%
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
-                            {profile.totalClicks} total clicks
+                            {profile.total_clicks} total clicks
                         </p>
                     </CardContent>
                 </Card>
@@ -434,14 +478,14 @@ function AffiliateDashboardContent() {
                     <div className="grid grid-cols-2 gap-3 w-full max-w-xs">
                         <Button variant="outline" className="w-full" onClick={() => {
                             const text = encodeURIComponent("Check out this amazing tool! I highly recommend it.");
-                            const url = encodeURIComponent(`${window.location.origin}?ref=${profile.referralCode}`);
+                            const url = encodeURIComponent(`${window.location.origin}?ref=${profile.referral_code}`);
                             window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank');
                         }}>
                             Twitter
                         </Button>
                         <Button variant="outline" className="w-full" onClick={() => {
                             const text = encodeURIComponent("Check out this amazing tool! I highly recommend it. ");
-                            const url = encodeURIComponent(`${window.location.origin}?ref=${profile.referralCode}`);
+                            const url = encodeURIComponent(`${window.location.origin}?ref=${profile.referral_code}`);
                             window.open(`https://www.linkedin.com/feed/?shareActive=true&text=${text}${url}`, '_blank');
                         }}>
                             LinkedIn
@@ -482,8 +526,8 @@ function AffiliateDashboardContent() {
                                 ) : (
                                     referrals.map((ref: any) => (
                                         <TableRow key={ref._id}>
-                                            <TableCell className="font-medium">{ref.referredUserEmail}</TableCell>
-                                            <TableCell>{new Date(ref.signupDate).toLocaleDateString()}</TableCell>
+                                            <TableCell className="font-medium">{ref.referred_user_email}</TableCell>
+                                            <TableCell>{new Date(ref.signup_date).toLocaleDateString()}</TableCell>
                                             <TableCell>
                                                 <Badge className={ref.status === "paid" ? "bg-green-500 hover:bg-green-600 text-white" : ""} variant={ref.status === "paid" ? "default" : "secondary"}>
                                                     {ref.status}
@@ -520,7 +564,7 @@ function AffiliateDashboardContent() {
                                 ) : (
                                     payouts.map((payout: any) => (
                                         <TableRow key={payout._id}>
-                                            <TableCell>{new Date(payout.requestedAt).toLocaleDateString()}</TableCell>
+                                            <TableCell>{new Date(payout.requested_at).toLocaleDateString()}</TableCell>
                                             <TableCell className="font-medium">${payout.amount.toFixed(2)}</TableCell>
                                             <TableCell>
                                                 <Badge className={payout.status === "completed" ? "bg-green-500 hover:bg-green-600 text-white" : ""} variant={
@@ -531,7 +575,7 @@ function AffiliateDashboardContent() {
                                                 </Badge>
                                             </TableCell>
                                             <TableCell>
-                                                {payout.completedAt ? new Date(payout.completedAt).toLocaleDateString() : "-"}
+                                                {payout.completed_at ? new Date(payout.completed_at).toLocaleDateString() : "-"}
                                             </TableCell>
                                         </TableRow>
                                     ))
@@ -698,3 +742,4 @@ function IconBadge({ className }: { className?: string }) {
         </svg>
     )
 }
+

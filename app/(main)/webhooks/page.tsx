@@ -1,48 +1,88 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useMutation, useAction } from "convex/react";
-
-import { api } from "@/convex/_generated/api";
+import { useState, useEffect, useCallback } from "react";
+import { supabase } from "@/src/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Copy, Check, Loader2, ExternalLink, Zap, Shield, RefreshCw } from "lucide-react";
+import { Copy, Check, Loader2, ExternalLink, Zap, Shield, RefreshCw, AlertTriangle, Key, Trash2, Eye } from "lucide-react";
 import { toast } from "sonner";
-import { authClient } from "@/lib/auth-client";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default function WebhookPage() {
-    const getOrCreateKey = useAction(api.actions.supabase.getOrCreateWebhookKey);
-
-    const { data: session } = authClient.useSession();
-    const [apiKey, setApiKey] = useState<string | null>(null);
+    const [hasKey, setHasKey] = useState(false);
+    const [newlyGeneratedKey, setNewlyGeneratedKey] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
+    const [generatingKey, setGeneratingKey] = useState(false);
+    const [revokingKey, setRevokingKey] = useState(false);
     const [mounted, setMounted] = useState(false);
     const [copiedUrl, setCopiedUrl] = useState(false);
     const [copiedKey, setCopiedKey] = useState(false);
 
     const backendUrl = process.env.NEXT_PUBLIC_RENDER_BACKEND_URL || "http://localhost:8000";
+    const displayKey = newlyGeneratedKey || "YOUR_API_KEY";
+
+    const checkKeyStatus = useCallback(async () => {
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+            const res = await fetch("/api/actions/get-webhook-key");
+            const result = await res.json();
+            setHasKey(!!result?.hasKey);
+        } catch (error) {
+            console.error("Failed to check API key status", error);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
 
     useEffect(() => {
         setMounted(true);
-        if (!session) return;
+        checkKeyStatus();
+    }, [checkKeyStatus]);
 
-        const fetchKey = async () => {
-            try {
-                const result = await getOrCreateKey();
-                if (result) {
-                    setApiKey(result.key);
-                }
-            } catch (error) {
-                console.error("Failed to fetch API key", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchKey();
-    }, [getOrCreateKey, session]);
+    const handleGenerateKey = async () => {
+        setGeneratingKey(true);
+        try {
+            const res = await fetch("/api/actions/get-webhook-key", { method: "POST" });
+            const result = await res.json();
+            if (!res.ok || !result?.key) throw new Error(result?.error || "Failed to generate key");
+            setNewlyGeneratedKey(result.key);
+            setHasKey(true);
+            toast.success("New API key generated — copy it now, it won't be shown again!");
+        } catch (error: any) {
+            toast.error(error.message);
+        } finally {
+            setGeneratingKey(false);
+        }
+    };
+
+    const handleRevokeKey = async () => {
+        setRevokingKey(true);
+        try {
+            const res = await fetch("/api/actions/get-webhook-key", { method: "DELETE" });
+            if (!res.ok) throw new Error("Failed to revoke key");
+            setHasKey(false);
+            setNewlyGeneratedKey(null);
+            toast.success("API key revoked successfully.");
+        } catch (error: any) {
+            toast.error(error.message);
+        } finally {
+            setRevokingKey(false);
+        }
+    };
 
     const copyToClipboard = (text: string, isUrl: boolean) => {
         navigator.clipboard.writeText(text);
@@ -78,17 +118,17 @@ export default function WebhookPage() {
     };
 
     const curlProfileCommand = `curl -X POST ${backendUrl}/api/scrape-profiles \\
-  -H "Authorization: Bearer ${apiKey || "YOUR_API_KEY"}" \\
+  -H "Authorization: Bearer ${displayKey}" \\
   -H "Content-Type: application/json" \\
   -d '${JSON.stringify(sampleProfilePayload)}'`;
 
     const curlEngagerCommand = `curl -X POST ${backendUrl}/api/scrape-engagers \\
-  -H "Authorization: Bearer ${apiKey || "YOUR_API_KEY"}" \\
+  -H "Authorization: Bearer ${displayKey}" \\
   -H "Content-Type: application/json" \\
   -d '${JSON.stringify(sampleEngagerPayload)}'`;
 
     const curlGoogleMapsCommand = `curl -X POST ${backendUrl}/api/scrape-google-maps \\
-  -H "Authorization: Bearer ${apiKey || "YOUR_API_KEY"}" \\
+  -H "Authorization: Bearer ${displayKey}" \\
   -H "Content-Type: application/json" \\
   -d '${JSON.stringify(sampleGoogleMapsPayload)}'`;
 
@@ -112,14 +152,19 @@ export default function WebhookPage() {
 
             <div className="px-6 md:px-8 pb-8 space-y-8">
 
+                {/* API Key Management Card */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>API Credentials</CardTitle>
+                        <CardTitle className="flex items-center gap-2">
+                            <Key className="size-4" /> API Credentials
+                        </CardTitle>
                         <CardDescription>
-                            Use these credentials to authenticate your API requests securely.
+                            Use these credentials to authenticate external API requests (Zapier, Make, custom scripts).
+                            Keys are hashed and stored securely — we only show them once at creation.
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="grid gap-6 md:grid-cols-2">
+                        {/* Backend URL */}
                         <div className="space-y-2">
                             <Label htmlFor="url">Base API URL</Label>
                             <div className="flex items-center gap-2">
@@ -139,25 +184,119 @@ export default function WebhookPage() {
                             </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="apiKey">Bearer Token</Label>
-                            <div className="flex items-center gap-2">
-                                <Input
-                                    id="apiKey"
-                                    value={loading ? "Loading..." : apiKey || ""}
-                                    readOnly
-                                    type="password"
-                                    className="font-mono bg-muted/50"
-                                />
-                                <Button
-                                    variant="outline"
-                                    size="icon"
-                                    onClick={() => apiKey && copyToClipboard(apiKey, false)}
-                                    disabled={loading || !apiKey}
-                                >
-                                    {copiedKey ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                                </Button>
-                            </div>
+                        {/* API Key Management */}
+                        <div className="space-y-3">
+                            <Label>Developer API Key</Label>
+
+                            {loading ? (
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <Loader2 className="h-4 w-4 animate-spin" /> Checking key status...
+                                </div>
+                            ) : newlyGeneratedKey ? (
+                                /* Show newly generated key ONCE */
+                                <div className="space-y-2">
+                                    <div className="flex items-center gap-2 p-2 bg-amber-500/10 border border-amber-500/30 rounded-md">
+                                        <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
+                                        <p className="text-xs text-amber-700 dark:text-amber-400 font-medium">
+                                            Copy this key now — it will never be shown again.
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Input
+                                            id="apiKey"
+                                            value={newlyGeneratedKey}
+                                            readOnly
+                                            className="font-mono bg-muted/50 text-xs"
+                                        />
+                                        <Button
+                                            variant="outline"
+                                            size="icon"
+                                            onClick={() => copyToClipboard(newlyGeneratedKey, false)}
+                                        >
+                                            {copiedKey ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                                        </Button>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">Refresh the page to dismiss this banner.</p>
+                                </div>
+                            ) : hasKey ? (
+                                /* Key exists but is hidden */
+                                <div className="space-y-2">
+                                    <div className="flex items-center gap-2 p-3 bg-muted/50 border rounded-md">
+                                        <Shield className="h-4 w-4 text-green-500 shrink-0" />
+                                        <span className="text-sm text-muted-foreground">Active key (hidden for security)</span>
+                                        <span className="ml-auto text-xs font-mono bg-green-500/10 text-green-600 px-2 py-0.5 rounded-full">Active</span>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Button variant="outline" size="sm" className="flex-1">
+                                                    <RefreshCw className="h-3 w-3 mr-1" /> Regenerate
+                                                </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Regenerate API Key?</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                        This will immediately revoke your existing key and generate a new one.
+                                                        Any integrations (Zapier, Make, custom scripts) using the old key will stop working until updated.
+                                                    </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={handleGenerateKey} disabled={generatingKey}>
+                                                        {generatingKey ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+                                                        Yes, Regenerate
+                                                    </AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Button variant="outline" size="sm" className="text-destructive hover:bg-destructive/10">
+                                                    <Trash2 className="h-3 w-3 mr-1" /> Revoke
+                                                </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Revoke API Key?</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                        This will permanently delete your API key. Any external integrations using this key
+                                                        will immediately stop working. You can generate a new key at any time.
+                                                    </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                    <AlertDialogAction
+                                                        onClick={handleRevokeKey}
+                                                        disabled={revokingKey}
+                                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                                    >
+                                                        {revokingKey ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+                                                        Yes, Revoke Key
+                                                    </AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    </div>
+                                </div>
+                            ) : (
+                                /* No key exists */
+                                <div className="space-y-2">
+                                    <div className="flex items-center gap-2 p-3 bg-muted/50 border rounded-md border-dashed">
+                                        <Key className="h-4 w-4 text-muted-foreground shrink-0" />
+                                        <span className="text-sm text-muted-foreground">No API key generated yet</span>
+                                    </div>
+                                    <Button
+                                        onClick={handleGenerateKey}
+                                        disabled={generatingKey}
+                                        size="sm"
+                                        className="w-full"
+                                    >
+                                        {generatingKey ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Key className="h-4 w-4 mr-2" />}
+                                        Generate API Key
+                                    </Button>
+                                </div>
+                            )}
                         </div>
                     </CardContent>
                 </Card>

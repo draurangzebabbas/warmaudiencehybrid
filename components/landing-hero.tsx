@@ -5,10 +5,16 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { WordRotate } from "@/components/ui/word-rotate"
 import { ArrowRight, Sparkles } from "lucide-react"
-import { authClient } from "@/lib/auth-client"
+import { supabase } from "@/src/lib/supabase"
 
 export default function LandingHero() {
-    const { data: session } = authClient.useSession()
+    const [session, setSession] = React.useState<any>(null);
+
+    React.useEffect(() => {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            setSession(session);
+        });
+    }, []);
 
     return (
         <section className="relative overflow-hidden">

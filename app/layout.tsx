@@ -4,7 +4,6 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
-import { ConvexClientProvider } from "./ConvexClientProvider";
 import { ReferralTracker } from "@/components/referral-tracker";
 
 const geistSans = Geist({
@@ -101,13 +100,11 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <ConvexClientProvider>
-            <React.Suspense fallback={null}>
-              <ReferralTracker />
-            </React.Suspense>
-            {children}
-            <Toaster />
-          </ConvexClientProvider>
+          <React.Suspense fallback={null}>
+            <ReferralTracker />
+          </React.Suspense>
+          {children}
+          <Toaster />
         </ThemeProvider>
 
         {/* Beehiiv Newsletter Attribution */}

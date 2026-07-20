@@ -1,13 +1,21 @@
 "use client";
 
-import { useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
+import { useEffect, useState } from "react";
+import { supabase } from "@/src/lib/supabase";
 import { LiveJobProgress } from "./live-job-progress";
 
 export function GlobalProgress() {
-    const user = useQuery(api.auth.getCurrentUser);
+    const [userId, setUserId] = useState<string | null>(null);
 
-    if (!user?._id) return null;
+    useEffect(() => {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session?.user?.id) {
+                setUserId(session.user.id);
+            }
+        });
+    }, []);
 
-    return <LiveJobProgress userId={user._id} />;
+    if (!userId) return null;
+
+    return <LiveJobProgress userId={userId} />;
 }

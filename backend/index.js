@@ -29,8 +29,22 @@ app.get("/health", (req, res) => {
     res.json({ status: "ok" });
 });
 
+const rateLimit = require("express-rate-limit");
+const crypto = require("crypto");
+
 // ─────────────────────────────────────────
-// Auth Middleware (Bearer token via Convex)
+// Rate Limiters
+// ─────────────────────────────────────────
+const apiRateLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minute
+    max: 60, // Limit each API key to 60 requests per windowMs
+    message: { error: "Too many requests from this API key, please try again after a minute" },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+// ─────────────────────────────────────────
+// Auth Middleware (Supabase JWT or Hashed API Key)
 // ─────────────────────────────────────────
 app.use(async (req, res, next) => {
     const skipPaths = ["/", "/health", "/api/heartbeat"];
@@ -42,17 +56,33 @@ app.use(async (req, res, next) => {
     }
 
     const token = authHeader.split(" ")[1];
+    
     try {
-        const result = await supabaseApi.validateWebhookKey(token);
+        // 1. Check if token is a Supabase JWT (contains two dots)
+        if (token.split('.').length === 3) {
+            const { data: { user }, error } = await supabaseApi.supabase.auth.getUser(token);
+            if (error || !user) throw new Error("Invalid JWT");
+            req.userId = user.id;
+            return next();
+        }
+        
+        // 2. Otherwise, treat as API Key
+        // Hash the token since DB stores SHA-256 hashes
+        const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+        const result = await supabaseApi.validateWebhookKey(hashedToken);
+        
         if (!result || !result.isValid) {
             throw new Error("Invalid API Key");
         }
+        
         req.userId = result.userId;
-        next();
+        
+        // Apply rate limiter specifically to API key users
+        return apiRateLimiter(req, res, next);
+
     } catch (e) {
         return res.status(403).json({ error: "Forbidden: Invalid Token" });
     }
-
 });
 
 // ─────────────────────────────────────────

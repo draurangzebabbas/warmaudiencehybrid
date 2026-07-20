@@ -7,12 +7,13 @@ import { Label } from '@/components/ui/label'
 import Link from 'next/link'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { authClient } from '@/lib/auth-client'
+import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { IconEye, IconEyeOff } from '@tabler/icons-react'
 
 export default function LoginPage() {
     const router = useRouter()
+    const supabase = createClient()
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
     const [loading, setLoading] = useState(false)
@@ -21,25 +22,27 @@ export default function LoginPage() {
     const handleSignIn = async (e: React.FormEvent) => {
         e.preventDefault()
         setLoading(true)
-        await authClient.signIn.email({
+        
+        const { error } = await supabase.auth.signInWithPassword({
             email,
             password,
-        }, {
-            onSuccess: () => {
-                toast.success("Signed in successfully")
-                router.push("/dashboard") // Redirect to dashboard or home
-            },
-            onError: (ctx: any) => {
-                toast.error(ctx.error.message)
-                setLoading(false)
-            }
         })
+        
+        if (error) {
+            toast.error(error.message)
+            setLoading(false)
+        } else {
+            toast.success("Signed in successfully")
+            router.push("/dashboard")
+        }
     }
 
     const handleGoogleSignIn = async () => {
-        await authClient.signIn.social({
+        await supabase.auth.signInWithOAuth({
             provider: "google",
-            callbackURL: "/dashboard" // Redirect to dashboard after login
+            options: {
+                redirectTo: `${window.location.origin}/api/auth/callback?next=/dashboard`
+            }
         })
     }
 

@@ -1,10 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useQuery, useMutation, useAction } from "convex/react";
 
-import { api } from "@/convex/_generated/api";
-import { supabase, getAuthenticatedSupabaseClient } from "@/src/lib/supabase";
+import { supabase } from "@/src/lib/supabase";
+import { useUsage } from "@/hooks/use-usage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -49,14 +48,10 @@ type Tracker = {
 };
 
 export default function TrackersPage() {
-    const user = useQuery(api.auth.getCurrentUser);
-    const getOrCreateKey = useAction(api.actions.supabase.getOrCreateWebhookKey);
-
-
-    const getToken = useAction(api.actions.supabaseAuth.getSupabaseToken);
+    const usage = useUsage();
+    const [user, setUser] = useState<any>(null);
 
     const [trackers, setTrackers] = useState<any[] | undefined>(undefined);
-    const usage = useQuery(api.usage.getUsage);
     const [loading, setLoading] = useState(false);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isLimitDialogOpen, setIsLimitDialogOpen] = useState(false);
@@ -67,16 +62,13 @@ export default function TrackersPage() {
     
     // --- Supabase Logic ---
     const fetchTrackers = async () => {
-        if (!user?._id) return;
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        if (!currentUser) return;
+        setUser(currentUser);
         try {
-            const token = await getToken();
-            if (!token) return;
-            const secureClient = getAuthenticatedSupabaseClient(token);
-
-            const { data, error } = await secureClient
+            const { data, error } = await supabase
                 .from("trackers")
                 .select("*")
-                .eq("user_id", user._id)
                 .order("created_at", { ascending: false });
             
             if (error) throw error;
@@ -89,7 +81,7 @@ export default function TrackersPage() {
 
     useEffect(() => {
         fetchTrackers();
-    }, [user?._id]);
+    }, []);
 
     const [targetType, setTargetType] = useState<"keyword" | "profile">("keyword");
     const [targetValue, setTargetValue] = useState("");
@@ -101,8 +93,9 @@ export default function TrackersPage() {
     const handleCreateTracker = async () => {
         setActionLoading(true);
         try {
-            const apiKeyData = await getOrCreateKey();
-            if (!apiKeyData?.key) throw new Error("Could not retrieve API Key");
+            const { data: { session }, error: authError } = await supabase.auth.getSession();
+            if (authError || !session) throw new Error("Authentication failed");
+            const key = session.access_token;
 
             const targets = [];
             if (extractCommenters) targets.push("commenters");
@@ -117,7 +110,7 @@ export default function TrackersPage() {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${apiKeyData.key}`
+                    "Authorization": `Bearer ${key}`
                 },
                 body: JSON.stringify({
                     type: targetType,
@@ -146,11 +139,7 @@ export default function TrackersPage() {
 
     const handleToggle = async (id: string, isActive: boolean) => {
         try {
-            const token = await getToken();
-            if (!token) throw new Error("Unauthorized");
-            const secureClient = getAuthenticatedSupabaseClient(token);
-
-            const { error } = await secureClient
+            const { error } = await supabase
                 .from("trackers")
                 .update({ is_active: isActive })
                 .eq("id", id);
@@ -166,11 +155,7 @@ export default function TrackersPage() {
     const handleDelete = async (id: string) => {
         if (!confirm("Are you sure you want to delete this agent?")) return;
         try {
-            const token = await getToken();
-            if (!token) throw new Error("Unauthorized");
-            const secureClient = getAuthenticatedSupabaseClient(token);
-
-            const { error } = await secureClient
+            const { error } = await supabase
                 .from("trackers")
                 .delete()
                 .eq("id", id);

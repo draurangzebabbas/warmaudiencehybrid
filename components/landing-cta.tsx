@@ -3,10 +3,17 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Sparkles } from "lucide-react"
-import { authClient } from "@/lib/auth-client"
+import { supabase } from "@/src/lib/supabase"
+import { useState, useEffect } from "react"
 
 export default function LandingCTA() {
-    const { data: session } = authClient.useSession()
+    const [session, setSession] = useState<any>(null);
+
+    useEffect(() => {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            setSession(session);
+        });
+    }, []);
 
     return (
         <section className="relative overflow-hidden py-24 sm:py-32">
