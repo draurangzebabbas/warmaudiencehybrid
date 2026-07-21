@@ -39,8 +39,10 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const admin = getAdminClient();
+
     // Revoke old keys before creating a new one
-    await supabase.from("webhook_api_keys").delete().eq("user_id", user.id);
+    await admin.from("webhook_api_keys").delete().eq("user_id", user.id);
 
     // Generate random 32 character hex string
     const newKey = Array.from(crypto.getRandomValues(new Uint8Array(16)))
@@ -50,7 +52,7 @@ export async function POST(req: Request) {
     // Hash the key using SHA-256 for secure storage
     const hashedKey = crypto.createHash("sha256").update(newKey).digest("hex");
 
-    const { error } = await supabase
+    const { error } = await admin
         .from("webhook_api_keys")
         .insert({
             user_id: user.id,
@@ -74,7 +76,8 @@ export async function DELETE(req: Request) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { error } = await supabase.from("webhook_api_keys").delete().eq("user_id", user.id);
+    const admin = getAdminClient();
+    const { error } = await admin.from("webhook_api_keys").delete().eq("user_id", user.id);
 
     if (error) {
         return NextResponse.json({ error: error.message }, { status: 500 });

@@ -36,9 +36,8 @@ export default function WebhookPage() {
 
     const checkKeyStatus = useCallback(async () => {
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
             const res = await fetch("/api/actions/get-webhook-key");
+            if (res.status === 401) return; // not logged in
             const result = await res.json();
             setHasKey(!!result?.hasKey);
         } catch (error) {
