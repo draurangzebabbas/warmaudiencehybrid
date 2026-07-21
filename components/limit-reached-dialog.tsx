@@ -32,8 +32,7 @@ export function LimitReachedDialog({
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[420px] p-0 overflow-hidden border-border/60 shadow-2xl gap-0">
-                {/* Top accent bar */}
-                <div className="h-1 w-full bg-red-600" />
+
 
                 <div className="flex flex-col items-center text-center px-8 pt-8 pb-8 gap-5">
                     {/* Icon */}
