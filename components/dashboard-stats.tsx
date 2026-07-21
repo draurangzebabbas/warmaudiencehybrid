@@ -6,7 +6,9 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/src/lib/supabase";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { IconTrendingUp, IconUsers, IconBuildingCommunity, IconRadar, IconDatabase, IconBrandGoogleMaps, IconBrandLinkedin, IconBrandInstagram, IconBrandFacebook, IconBrandX, IconBrandTiktok, IconWorldSearch } from "@tabler/icons-react";
+import { IconTrendingUp, IconUsers, IconBuildingCommunity, IconRadar, IconDatabase, IconWorldSearch } from "@tabler/icons-react";
+import { GoogleMapsIcon } from "@/components/icons/google-maps-icon";
+import { LinkedInIcon, InstagramIcon, TikTokIcon, FacebookIcon, XIcon } from "@/components/icons/social-icons";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function DashboardStats() {
@@ -98,7 +100,7 @@ export function DashboardStats() {
             title: "Linkedin Lead",
             value: (stats?.totalPersonalProfiles || 0) + (stats?.totalCompanyProfiles || 0),
             description: `${stats?.totalPersonalProfiles || 0} Personal Profiles, ${stats?.totalCompanyProfiles || 0} Company Profiles`,
-            icon: IconBrandLinkedin,
+            icon: LinkedInIcon,
             color: "text-foreground",
             bg: "bg-muted"
         },
@@ -106,7 +108,7 @@ export function DashboardStats() {
             title: "Instagram Lead",
             value: stats?.instagramLeads || 0,
             description: "Target Instagram profiles",
-            icon: IconBrandInstagram,
+            icon: InstagramIcon,
             color: "text-foreground",
             bg: "bg-muted"
         },
@@ -114,7 +116,7 @@ export function DashboardStats() {
             title: "Facebook Lead",
             value: stats?.facebookLeads || 0,
             description: "Target Facebook profiles",
-            icon: IconBrandFacebook,
+            icon: FacebookIcon,
             color: "text-foreground",
             bg: "bg-muted"
         },
@@ -122,7 +124,7 @@ export function DashboardStats() {
             title: "X Lead",
             value: stats?.xLeads || 0,
             description: "Target X profiles",
-            icon: IconBrandX,
+            icon: XIcon,
             color: "text-foreground",
             bg: "bg-muted"
         },
@@ -130,7 +132,7 @@ export function DashboardStats() {
             title: "TikTok Lead",
             value: stats?.tiktokLeads || 0,
             description: "Target TikTok profiles",
-            icon: IconBrandTiktok,
+            icon: TikTokIcon,
             color: "text-foreground",
             bg: "bg-muted"
         },
@@ -138,7 +140,7 @@ export function DashboardStats() {
             title: "Google Map Lead",
             value: stats?.googleMapsLeads || 0,
             description: "Local business discoveries",
-            icon: IconBrandGoogleMaps,
+            icon: GoogleMapsIcon,
             color: "text-foreground",
             bg: "bg-muted"
         },
