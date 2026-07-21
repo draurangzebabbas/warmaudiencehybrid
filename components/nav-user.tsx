@@ -45,7 +45,8 @@ export function NavUser({
   const { isMobile } = useSidebar()
   const router = useRouter()
   const [session, setSession] = useState<any>(null);
-  const [isPending, setIsPending] = useState(true);
+  // If user prop is provided from server, start without a pending state
+  const [isPending, setIsPending] = useState(!user);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {

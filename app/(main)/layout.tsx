@@ -26,7 +26,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
                 } as React.CSSProperties
             }
         >
-            <AppSidebar />
+            <AppSidebar user={{ name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User', email: user.email || '', avatar: user.user_metadata?.avatar_url || '' }} />
             <SidebarInset>
                 <SiteHeader />
                 <div className="flex flex-1 flex-col">
