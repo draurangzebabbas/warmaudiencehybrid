@@ -27,7 +27,8 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-import { useSidebar } from "@/components/ui/sidebar"
+  useSidebar
+} from "@/components/ui/sidebar"
 import { supabase } from "@/src/lib/supabase"
 import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"

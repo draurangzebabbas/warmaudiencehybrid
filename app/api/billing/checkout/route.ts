@@ -28,8 +28,8 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Invalid plan slug' }, { status: 400 });
         }
 
-        const checkout = await polar.checkouts.custom.create({
-            productId: productId,
+        const checkout = await polar.checkouts.create({
+            products: [productId],
             customerEmail: user.email,
             successUrl: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/dashboard?checkout_id={CHECKOUT_ID}`,
         });
