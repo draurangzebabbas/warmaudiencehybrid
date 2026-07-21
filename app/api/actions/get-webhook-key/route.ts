@@ -1,6 +1,14 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createClient as createAdminClient } from "@supabase/supabase-js";
 import crypto from "crypto";
+
+function getAdminClient() {
+    return createAdminClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+}
 
 export async function GET(req: Request) {
     const supabase = await createClient();
@@ -10,7 +18,9 @@ export async function GET(req: Request) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { data: existing } = await supabase
+    // Use admin client to reliably check — bypasses any RLS edge cases
+    const admin = getAdminClient();
+    const { data: existing } = await admin
         .from("webhook_api_keys")
         .select("is_active")
         .eq("user_id", user.id)
