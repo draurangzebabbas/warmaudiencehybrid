@@ -45,17 +45,17 @@ export function LimitReachedDialog({
                         {description || defaultDescription}
                     </DialogDescription>
                 </DialogHeader>
-                <DialogFooter className="flex flex-col sm:flex-row gap-2 pt-4">
+                <DialogFooter className="flex flex-row justify-center gap-3 pt-4">
                     <Button
                         variant="outline"
                         onClick={() => onOpenChange(false)}
-                        className="w-full sm:w-auto"
+                        className="px-6"
                     >
                         Maybe Later
                     </Button>
                     <Button
                         asChild
-                        className="w-full sm:w-auto font-bold bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20"
+                        className="px-6 font-bold bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20"
                     >
                         <Link href="/#pricing" className="flex items-center gap-2">
                             <IconBolt className="size-4" />
