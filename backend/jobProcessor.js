@@ -147,11 +147,38 @@ async function handleGoogleMapsScrape(userId, input, keyManager, tags = ["Google
         try {
             if (jobId) await supabaseApi.updateJobProgress(jobId, 20);
 
-            const results = await executeWithRetry(
-                keyManager,
-                "Google Maps Scrape",
-                (key) => scraper.scrapeGoogleMaps(input, key)
-            );
+            let results = [];
+            let needsApify = true;
+            const keyword = (input.searchStringsArray || []).join(", ");
+            const location = input.locationQuery;
+            const requestedCount = input.maxCrawledPlacesPerSearch || 10;
+            
+            const cachedSearch = await supabaseApi.getSearchCache("google_maps", keyword, location);
+            
+            if (cachedSearch && cachedSearch.results_count >= requestedCount) {
+                console.log(`✨ Cache hit: Found ${cachedSearch.results_count} profiles in DB for '${keyword}' in '${location}'. Skipping Apify.`);
+                const existingLeads = await supabaseApi.getLeadsForGoogleMapsSearch(keyword, location);
+                const limitedLeads = existingLeads.slice(0, requestedCount);
+                if (limitedLeads.length > 0) {
+                    const sids = limitedLeads.map(s => s.id);
+                    await supabaseApi.linkUserToLeadsBulk(userId, sids, "google_maps", tags);
+                    needsApify = false;
+                    
+                    if (jobId) {
+                        await supabaseApi.updateJobProgress(jobId, 100, limitedLeads.length);
+                    }
+                    console.log(`✅ Successfully linked ${limitedLeads.length} cached Google Maps leads to user`);
+                    return; // Exit early since we used cache
+                }
+            }
+
+            if (needsApify) {
+                results = await executeWithRetry(
+                    keyManager,
+                    "Google Maps Scrape",
+                    (key) => scraper.scrapeGoogleMaps(input, key)
+                );
+            }
 
             if (jobId) await supabaseApi.updateJobProgress(jobId, 80);
 
@@ -219,6 +246,10 @@ async function handleGoogleMapsScrape(userId, input, keyManager, tags = ["Google
                 if (saved && saved.length > 0) {
                     const sids = saved.map(s => s.id);
                     await supabaseApi.linkUserToLeadsBulk(userId, sids, "google_maps", tags);
+                    
+                    const keyword = (input.searchStringsArray || []).join(", ");
+                    const location = input.locationQuery;
+                    await supabaseApi.upsertSearchCache("google_maps", keyword, location, saved.length);
                 }
 
                 

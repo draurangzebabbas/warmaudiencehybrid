@@ -14,7 +14,9 @@ import { supabase } from "@/src/lib/supabase";
 
 export default function GoogleMapsResearcherPage() {
     const [keywords, setKeywords] = useState("");
-    const [location, setLocation] = useState("");
+    const [country, setCountry] = useState("");
+    const [stateLoc, setStateLoc] = useState("");
+    const [city, setCity] = useState("");
     const [maxListings, setMaxListings] = useState(10);
     const [tags, setTags] = useState("");
     const [loading, setLoading] = useState(false);
@@ -59,11 +61,13 @@ export default function GoogleMapsResearcherPage() {
                 setLoading(false);
                 return;
             }
-            if (!location.trim()) {
-                toast.error("Please enter a location (e.g., 'Paris')");
+            if (!country.trim() || !stateLoc.trim() || !city.trim()) {
+                toast.error("Please enter Country, State, and City");
                 setLoading(false);
                 return;
             }
+
+            const locationQuery = `${city.trim()}, ${stateLoc.trim()}, ${country.trim()}`;
 
             const key = await getKey();
 
@@ -77,7 +81,7 @@ export default function GoogleMapsResearcherPage() {
                 },
                 body: JSON.stringify({
                     searchStringsArray: keywordList,
-                    locationQuery: location,
+                    locationQuery: locationQuery,
                     maxCrawledPlacesPerSearch: Math.min(maxListings, 100),
                     tags: tagList
                 })
@@ -90,7 +94,9 @@ export default function GoogleMapsResearcherPage() {
 
             toast.success("Google Maps extraction started in background. Leads will appear in your collection shortly.");
             setKeywords("");
-            setLocation("");
+            setCountry("");
+            setStateLoc("");
+            setCity("");
             setTags("");
         } catch (e: any) {
             const formatted = formatError(e);
@@ -133,17 +139,31 @@ export default function GoogleMapsResearcherPage() {
                             />
                         </div>
 
-                        <div className="space-y-2">
+                        <div className="space-y-4">
                             <Label className="flex items-center gap-2">
                                 <MapPin className="size-3.5 text-muted-foreground" />
                                 Location
                             </Label>
-                            <Input
-                                placeholder="e.g. Paris, New York, London"
-                                value={location}
-                                onChange={(e) => setLocation(e.target.value)}
-                                className="bg-muted/20"
-                            />
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <Input
+                                    placeholder="Country (e.g. US)"
+                                    value={country}
+                                    onChange={(e) => setCountry(e.target.value)}
+                                    className="bg-muted/20"
+                                />
+                                <Input
+                                    placeholder="State/Province (e.g. NY)"
+                                    value={stateLoc}
+                                    onChange={(e) => setStateLoc(e.target.value)}
+                                    className="bg-muted/20"
+                                />
+                                <Input
+                                    placeholder="City (e.g. New York)"
+                                    value={city}
+                                    onChange={(e) => setCity(e.target.value)}
+                                    className="bg-muted/20"
+                                />
+                            </div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

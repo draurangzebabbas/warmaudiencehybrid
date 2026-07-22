@@ -1339,6 +1339,11 @@ export default function ProfilesPage() {
             cell: ({ row }) => row.original.phone || "-",
         },
         {
+            accessorKey: "city",
+            header: "City",
+            cell: ({ row }) => row.original.city || "-",
+        },
+        {
             accessorKey: "website",
             header: "Website",
             cell: ({ row }) => (

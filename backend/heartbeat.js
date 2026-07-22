@@ -15,6 +15,7 @@ async function runHeartbeat() {
     // 1. Ensure background poller is running as fallback
     if (!pollerStarted) {
         startTrackerPoller();
+        startAgentPoller();
     }
 
     // 2. Cleanup any orphaned/stuck jobs
@@ -92,4 +93,76 @@ async function executeTracker(tracker) {
     }
 }
 
-module.exports = { runHeartbeat, startTrackerPoller };
+let agentPollerStarted = false;
+
+function startAgentPoller() {
+    if (agentPollerStarted) return;
+    agentPollerStarted = true;
+    
+    console.log("🕒 Agent Poller: Started (1-minute precision)");
+    
+    setInterval(async () => {
+        try {
+            const dueAgents = await supabaseApi.getDueAgents();
+            
+            if (dueAgents && dueAgents.length > 0) {
+                console.log(`🤖 Poller: Found ${dueAgents.length} agents due!`);
+                
+                for (const agent of dueAgents) {
+                    await executeAgent(agent);
+                }
+            }
+        } catch (err) {
+            console.error("❌ Agent Poller Error:", err.message);
+        }
+    }, 60 * 1000); // Every 60 seconds
+}
+
+async function executeAgent(agent) {
+    console.log(`📡 Executing Agent: ${agent.name} (${agent.type})`);
+    
+    // We only process one city per minute.
+    const config = agent.config || {};
+    const locations = config.locations || []; // e.g. ["US, NY, New York"]
+    const currentIndex = config.currentIndex || 0;
+
+    if (currentIndex >= locations.length) {
+        console.log(`✅ Agent ${agent.id} completed all locations.`);
+        await supabaseApi.supabase.from("agents").update({ status: "completed" }).eq("id", agent.id);
+        return;
+    }
+
+    const currentLocation = locations[currentIndex];
+    
+    // Next run in 1 minute
+    const nextRun = new Date(Date.now() + 60 * 1000).toISOString();
+    
+    try {
+        await supabaseApi.markAgentExecuted(agent.id, nextRun);
+        // Update current index for the next run
+        await supabaseApi.supabase.from("agents").update({
+            config: { ...config, currentIndex: currentIndex + 1 }
+        }).eq("id", agent.id);
+    } catch (err) {
+        console.error(`❌ Failed to mark agent ${agent.id} as running:`, err.message);
+        return; // Don't proceed if we can't lock it
+    }
+
+    const jobData = {
+        userId: agent.user_id,
+        type: agent.type,
+        input: {
+            ...config,
+            locationQuery: currentLocation,
+            tags: [...(config.tags || []), `Agent-${agent.name}`]
+        }
+    };
+
+    try {
+        await processJob(jobData);
+    } catch (err) {
+        console.error(`❌ Agent failed [${agent.id}]:`, err.message);
+    }
+}
+
+module.exports = { runHeartbeat, startTrackerPoller, startAgentPoller };

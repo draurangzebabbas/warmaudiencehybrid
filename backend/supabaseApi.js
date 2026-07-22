@@ -842,6 +842,109 @@ async function cleanupStuckJobs() {
     }
 }
 
+async function getActiveAgentsCount(userId) {
+    const { count, error } = await supabase
+        .from("agents")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .in("status", ["active", "processing", "pending", "paused"]);
+
+    if (error) {
+        console.error("❌ Error fetching active agents count:", error);
+        return 0;
+    }
+    return count || 0;
+}
+
+async function getDueAgents() {
+    const now = new Date().toISOString();
+    const { data, error } = await supabase
+        .from("agents")
+        .select("*")
+        .eq("status", "active")
+        .or(`next_run_at.is.null,next_run_at.lte.${now}`);
+    
+    if (error) {
+        console.error("❌ Error fetching due agents:", error);
+        return [];
+    }
+    return data || [];
+}
+
+async function markAgentExecuted(agentId, nextRunAt) {
+    await supabase
+        .from("agents")
+        .update({ 
+            last_run_at: new Date().toISOString(),
+            next_run_at: nextRunAt
+        })
+        .eq("id", agentId);
+}
+
+async function getSearchCache(searchType, keyword, location) {
+    const { data, error } = await supabase
+        .from("search_cache")
+        .select("*")
+        .eq("search_type", searchType)
+        .eq("keyword", keyword)
+        .eq("location", location)
+        .maybeSingle();
+
+    if (error) {
+        console.error("❌ Error fetching search cache:", error);
+        return null;
+    }
+    return data;
+}
+
+async function upsertSearchCache(searchType, keyword, location, resultsCount) {
+    const { data, error } = await supabase
+        .from("search_cache")
+        .upsert({
+            search_type: searchType,
+            keyword,
+            location,
+            results_count: resultsCount,
+            last_scraped_at: new Date().toISOString()
+        }, {
+            onConflict: "search_type, keyword, location" // Wait, I didn't set a unique constraint. Let me just use insert and limit 1. Actually it's better to find if exists, then update.
+        });
+    
+    if (error) {
+        // Fallback manually if upsert fails due to no constraint
+        const existing = await getSearchCache(searchType, keyword, location);
+        if (existing) {
+            await supabase.from("search_cache").update({
+                results_count: resultsCount,
+                last_scraped_at: new Date().toISOString()
+            }).eq("id", existing.id);
+        } else {
+            await supabase.from("search_cache").insert({
+                search_type: searchType,
+                keyword,
+                location,
+                results_count: resultsCount
+            });
+        }
+    }
+}
+
+async function getLeadsForGoogleMapsSearch(keyword, location) {
+    // Basic text match on category/title and city/address
+    // It's a rough approximation for matching existing leads in google_maps_leads
+    const { data, error } = await supabase
+        .from("google_maps_leads")
+        .select("*")
+        .or(`category.ilike.%${keyword}%,title.ilike.%${keyword}%`)
+        .or(`city.ilike.%${location}%,address.ilike.%${location}%`);
+
+    if (error) {
+        console.error("❌ Error fetching existing google maps leads:", error);
+        return [];
+    }
+    return data || [];
+}
+
 module.exports = {
     getCachedProfile,
     getCachedInstagramProfile,
@@ -875,5 +978,11 @@ module.exports = {
     validateWebhookKey,
     getOrCreateWebhookKey,
     getUserSubscription,
+    getActiveAgentsCount,
+    getDueAgents,
+    markAgentExecuted,
+    getSearchCache,
+    upsertSearchCache,
+    getLeadsForGoogleMapsSearch,
     supabase
 };
