@@ -72,6 +72,7 @@ import {
 import { toast } from "sonner";
 import { useState, useMemo } from "react";
 import { formatDistanceToNow } from "date-fns";
+import { getSelectString, applyFilters } from "@/src/lib/supabase-filters";
 import { supabase } from "@/src/lib/supabase";
 import { useEffect } from "react";
 
@@ -231,6 +232,7 @@ type FacebookLead = {
 // --- Page Component ---
 
 export default function ProfilesPage() {
+    const [activeTab, setActiveTab] = useState("personal");
     const [userId, setUserId] = useState<string | undefined>(undefined);
 
     useEffect(() => {
@@ -240,7 +242,7 @@ export default function ProfilesPage() {
     }, []);
 
     // --- Server-side paginated Supabase hook ---
-    function useLeadsFromSupabase(userId: string | undefined, profileType: string) {
+    function useLeadsFromSupabase(userId: string | undefined, profileType: string, isActive: boolean, filters: any = {}) {
         const [leads, setLeads] = useState<any[]>([]);
         const [totalCount, setTotalCount] = useState(0);
         const [loading, setLoading] = useState(false);
@@ -426,22 +428,7 @@ export default function ProfilesPage() {
 
 
     // --- State & Mutations ---
-    const { leads: personal, totalCount: personalTotal, loading: loadingPersonal, page: personalPage, pageSize: personalPageSize, goToPage: personalGoToPage, changePageSize: personalChangePageSize } = useLeadsFromSupabase(userId, "personal");
-    const { leads: company, totalCount: companyTotal, loading: loadingCompany, page: companyPage, pageSize: companyPageSize, goToPage: companyGoToPage, changePageSize: companyChangePageSize } = useLeadsFromSupabase(userId, "company");
-    const { leads: googleMaps, totalCount: googleMapsTotal, loading: loadingGoogleMaps, page: googleMapsPage, pageSize: googleMapsPageSize, goToPage: googleMapsGoToPage, changePageSize: googleMapsChangePageSize } = useLeadsFromSupabase(userId, "google_maps");
-    const { leads: websiteContacts, totalCount: websiteContactsTotal, loading: loadingWebsiteContacts, refresh: refreshWebsiteContacts, page: websiteContactsPage, pageSize: websiteContactsPageSize, goToPage: websiteContactsGoToPage, changePageSize: websiteContactsChangePageSize } = useLeadsFromSupabase(userId, "website_contact");
-    const { leads: instagramLeads, totalCount: instagramTotal, loading: loadingInstagramLeads, page: instagramPage, pageSize: instagramPageSize, goToPage: instagramGoToPage, changePageSize: instagramChangePageSize } = useLeadsFromSupabase(userId, "instagram");
-    const { leads: xLeads, totalCount: xTotal, loading: loadingXLeads, refresh: refreshXLeads, page: xPage, pageSize: xPageSize, goToPage: xGoToPage, changePageSize: xChangePageSize } = useLeadsFromSupabase(userId, "x");
-    const { leads: facebookLeads, totalCount: facebookTotal, loading: loadingFacebookLeads, refresh: refreshFacebookLeads, page: facebookPage, pageSize: facebookPageSize, goToPage: facebookGoToPage, changePageSize: facebookChangePageSize } = useLeadsFromSupabase(userId, "facebook");
-    const { leads: facebookGroups, totalCount: facebookGroupsTotal, loading: loadingFacebookGroups, refresh: refreshFacebookGroups, page: facebookGroupsPage, pageSize: facebookGroupsPageSize, goToPage: facebookGroupsGoToPage, changePageSize: facebookGroupsChangePageSize } = useLeadsFromSupabase(userId, "facebook_group");
-
-    const getKey = async () => {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error || !session) throw new Error("Authentication failed");
-        return session.access_token;
-    };
-    // --- Filter State ---
-    const [personalFilters, setPersonalFilters] = useState({
+const [personalFilters, setPersonalFilters] = useState({
         hasEmail: "all" as "all" | "yes" | "no",
         hasAbout: "all" as "all" | "yes" | "no",
         hasHeadline: "all" as "all" | "yes" | "no",
@@ -552,6 +539,23 @@ export default function ProfilesPage() {
         category: "",
         tags: "",
     });
+
+    const { leads: personal, totalCount: personalTotal, loading: loadingPersonal, page: personalPage, pageSize: personalPageSize, goToPage: personalGoToPage, changePageSize: personalChangePageSize } = useLeadsFromSupabase(userId, "personal", activeTab === "personal", personalFilters);
+    const { leads: company, totalCount: companyTotal, loading: loadingCompany, page: companyPage, pageSize: companyPageSize, goToPage: companyGoToPage, changePageSize: companyChangePageSize } = useLeadsFromSupabase(userId, "company", activeTab === "company", companyFilters);
+    const { leads: googleMaps, totalCount: googleMapsTotal, loading: loadingGoogleMaps, page: googleMapsPage, pageSize: googleMapsPageSize, goToPage: googleMapsGoToPage, changePageSize: googleMapsChangePageSize } = useLeadsFromSupabase(userId, "google_maps", activeTab === "google_maps", googleMapsFilters);
+    const { leads: websiteContacts, totalCount: websiteContactsTotal, loading: loadingWebsiteContacts, refresh: refreshWebsiteContacts, page: websiteContactsPage, pageSize: websiteContactsPageSize, goToPage: websiteContactsGoToPage, changePageSize: websiteContactsChangePageSize } = useLeadsFromSupabase(userId, "website_contact", activeTab === "website_contact", websiteContactsFilters);
+    const { leads: instagramLeads, totalCount: instagramTotal, loading: loadingInstagramLeads, page: instagramPage, pageSize: instagramPageSize, goToPage: instagramGoToPage, changePageSize: instagramChangePageSize } = useLeadsFromSupabase(userId, "instagram", activeTab === "instagram", instagramFilters);
+    const { leads: xLeads, totalCount: xTotal, loading: loadingXLeads, refresh: refreshXLeads, page: xPage, pageSize: xPageSize, goToPage: xGoToPage, changePageSize: xChangePageSize } = useLeadsFromSupabase(userId, "x", activeTab === "x", xFilters);
+    const { leads: facebookLeads, totalCount: facebookTotal, loading: loadingFacebookLeads, refresh: refreshFacebookLeads, page: facebookPage, pageSize: facebookPageSize, goToPage: facebookGoToPage, changePageSize: facebookChangePageSize } = useLeadsFromSupabase(userId, "facebook", activeTab === "facebook", facebookFilters);
+    const { leads: facebookGroups, totalCount: facebookGroupsTotal, loading: loadingFacebookGroups, refresh: refreshFacebookGroups, page: facebookGroupsPage, pageSize: facebookGroupsPageSize, goToPage: facebookGroupsGoToPage, changePageSize: facebookGroupsChangePageSize } = useLeadsFromSupabase(userId, "facebook_group", activeTab === "facebook_groups", {});
+
+    const getKey = async () => {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error || !session) throw new Error("Authentication failed");
+        return session.access_token;
+    };
+    // --- Filter State ---
+    
     
     const [selectedInstagramLead, setSelectedInstagramLead] = useState<InstagramLead | null>(null);
 
@@ -706,308 +710,19 @@ export default function ProfilesPage() {
     };
 
     // --- Filtered Data ---
-    const filteredPersonal = useMemo(() => {
-        return personal.filter((p) => {
-            if (personalFilters.hasEmail === "yes" && !p.email) return false;
-            if (personalFilters.hasEmail === "no" && p.email) return false;
-            if (personalFilters.hasAbout === "yes" && !p.about) return false;
-            if (personalFilters.hasAbout === "no" && p.about) return false;
-            if (personalFilters.hasHeadline === "yes" && !p.headline) return false;
-            if (personalFilters.hasHeadline === "no" && p.headline) return false;
-            if (personalFilters.hasProfilePic === "yes" && !p.profilePic) return false;
-            if (personalFilters.hasProfilePic === "no" && p.profilePic) return false;
+    
 
-            const connections = p.connections || 0;
-            if (connections < personalFilters.minConnections) return false;
-            if (personalFilters.maxConnections > 0 && connections > personalFilters.maxConnections) return false;
+    
 
-            const followers = p.followers || 0;
-            if (followers < personalFilters.minFollowers) return false;
-            if (personalFilters.maxFollowers > 0 && followers > personalFilters.maxFollowers) return false;
+    
 
-            if (personalFilters.location) {
-                const loc = (p.country || p.location?.country || "").toLowerCase();
-                const city = (p.city || p.location?.city || "").toLowerCase();
-                const q = personalFilters.location.toLowerCase();
-                if (!loc.includes(q) && !city.includes(q)) return false;
-            }
+    
 
-            if (personalFilters.tags) {
-                const q = personalFilters.tags.toLowerCase();
-                const hasMatch = (p.tags || []).some((t: string) => t.toLowerCase().includes(q));
-                if (!hasMatch) return false;
-            }
+    
 
-            if (personalFilters.isPremium === "yes" && !p.isPremium) return false;
-            if (personalFilters.isPremium === "no" && p.isPremium) return false;
-            if (personalFilters.isInfluencer === "yes" && !p.isInfluencer) return false;
-            if (personalFilters.isInfluencer === "no" && p.isInfluencer) return false;
-            if (personalFilters.isOpenToWork === "yes" && !p.openToWork) return false;
-            if (personalFilters.isOpenToWork === "no" && p.openToWork) return false;
-            if (personalFilters.isVerified === "yes" && !p.isVerified) return false;
-            if (personalFilters.isVerified === "no" && p.isVerified) return false;
+    
 
-            return true;
-        });
-    }, [personal, personalFilters]);
-
-    const filteredCompany = useMemo(() => {
-        return company.filter((c) => {
-            if (companyFilters.hasWebsite === "yes" && !c.websiteUrl) return false;
-            if (companyFilters.hasWebsite === "no" && c.websiteUrl) return false;
-            if (companyFilters.hasLogo === "yes" && !c.logoUrl) return false;
-            if (companyFilters.hasLogo === "no" && c.logoUrl) return false;
-            if (companyFilters.hasDescription === "yes" && !c.description) return false;
-            if (companyFilters.hasDescription === "no" && c.description) return false;
-
-            const employees = c.employeeCount || 0;
-            if (employees < companyFilters.minEmployees) return false;
-            if (companyFilters.maxEmployees > 0 && employees > companyFilters.maxEmployees) return false;
-
-            const followers = c.followerCount || 0;
-            if (followers < companyFilters.minFollowers) return false;
-            if (companyFilters.maxFollowers > 0 && followers > companyFilters.maxFollowers) return false;
-
-            if (companyFilters.location) {
-                const loc = (c.country || "").toLowerCase();
-                const city = (c.city || "").toLowerCase();
-                const q = companyFilters.location.toLowerCase();
-                if (!loc.includes(q) && !city.includes(q)) return false;
-            }
-
-            if (companyFilters.tags) {
-                const q = companyFilters.tags.toLowerCase();
-                const hasMatch = (c.tags || []).some((t: string) => t.toLowerCase().includes(q));
-                if (!hasMatch) return false;
-            }
-
-            if (companyFilters.isVerified === "yes" && !c.isVerified) return false;
-            if (companyFilters.isVerified === "no" && c.isVerified) return false;
-
-            return true;
-        });
-    }, [company, companyFilters]);
-
-    const filteredGoogleMaps = useMemo(() => {
-        return googleMaps.filter((g) => {
-            if (googleMapsFilters.hasEmail === "yes" && (!g.emails || g.emails.length === 0)) return false;
-            if (googleMapsFilters.hasEmail === "no" && g.emails && g.emails.length > 0) return false;
-            if (googleMapsFilters.hasPhone === "yes" && !g.phone) return false;
-            if (googleMapsFilters.hasPhone === "no" && g.phone) return false;
-            if (googleMapsFilters.hasWebsite === "yes" && !g.website) return false;
-            if (googleMapsFilters.hasWebsite === "no" && g.website) return false;
-            if (googleMapsFilters.hasInstagram === "yes" && !g.socials?.instagram) return false;
-            if (googleMapsFilters.hasInstagram === "no" && g.socials?.instagram) return false;
-            if (googleMapsFilters.hasTikTok === "yes" && !g.socials?.tiktok) return false;
-            if (googleMapsFilters.hasTikTok === "no" && g.socials?.tiktok) return false;
-            if (googleMapsFilters.hasFacebook === "yes" && !g.socials?.facebook) return false;
-            if (googleMapsFilters.hasFacebook === "no" && g.socials?.facebook) return false;
-            if (googleMapsFilters.hasTwitter === "yes" && !g.socials?.twitter) return false;
-            if (googleMapsFilters.hasTwitter === "no" && g.socials?.twitter) return false;
-            if (googleMapsFilters.hasLinkedIn === "yes" && !g.socials?.linkedin) return false;
-            if (googleMapsFilters.hasLinkedIn === "no" && g.socials?.linkedin) return false;
-
-            if (g.totalScore && g.totalScore < googleMapsFilters.minScore) return false;
-            if (g.reviewsCount && g.reviewsCount < googleMapsFilters.minReviews) return false;
-            if (googleMapsFilters.location && !g.city?.toLowerCase().includes(googleMapsFilters.location.toLowerCase())) return false;
-
-            if (googleMapsFilters.tags) {
-                const q = googleMapsFilters.tags.toLowerCase();
-                const hasMatch = (g.tags || []).some((t: string) => t.toLowerCase().includes(q));
-                if (!hasMatch) return false;
-            }
-
-            return true;
-        });
-    }, [googleMaps, googleMapsFilters]);
-
-    const filteredWebsiteContacts = useMemo(() => {
-        return websiteContacts.filter((w) => {
-            if (websiteContactsFilters.hasEmail === "yes" && (!w.emails || w.emails.length === 0)) return false;
-            if (websiteContactsFilters.hasEmail === "no" && w.emails && w.emails.length > 0) return false;
-            if (websiteContactsFilters.hasPhone === "yes" && (!w.phones || w.phones.length === 0)) return false;
-            if (websiteContactsFilters.hasPhone === "no" && w.phones && w.phones.length > 0) return false;
-
-            if (websiteContactsFilters.hasInstagram === "yes" && !w.socials?.instagram) return false;
-            if (websiteContactsFilters.hasInstagram === "no" && w.socials?.instagram) return false;
-            if (websiteContactsFilters.hasTikTok === "yes" && !w.socials?.tiktok) return false;
-            if (websiteContactsFilters.hasTikTok === "no" && w.socials?.tiktok) return false;
-            if (websiteContactsFilters.hasFacebook === "yes" && !w.socials?.facebook) return false;
-            if (websiteContactsFilters.hasFacebook === "no" && w.socials?.facebook) return false;
-            if (websiteContactsFilters.hasTwitter === "yes" && !w.socials?.twitter) return false;
-            if (websiteContactsFilters.hasTwitter === "no" && w.socials?.twitter) return false;
-            if (websiteContactsFilters.hasLinkedIn === "yes" && !w.socials?.linkedin) return false;
-            if (websiteContactsFilters.hasLinkedIn === "no" && w.socials?.linkedin) return false;
-
-            if (websiteContactsFilters.tags) {
-                const q = websiteContactsFilters.tags.toLowerCase();
-                const hasMatch = (w.tags || []).some((t: string) => t.toLowerCase().includes(q));
-                if (!hasMatch) return false;
-            }
-
-            return true;
-        });
-    }, [websiteContacts, websiteContactsFilters]);
-
-    const filteredInstagram = useMemo(() => {
-        return instagramLeads.filter((ig) => {
-            if (instagramFilters.hasEmail === "yes" && !ig.email && !ig.publicEmail) return false;
-            if (instagramFilters.hasEmail === "no" && (ig.email || ig.publicEmail)) return false;
-            if (instagramFilters.hasPhone === "yes" && !ig.phone && !ig.publicPhoneNumber) return false;
-            if (instagramFilters.hasPhone === "no" && (ig.phone || ig.publicPhoneNumber)) return false;
-
-            const followers = ig.followersCount || 0;
-            if (followers < instagramFilters.minFollowers) return false;
-            if (instagramFilters.maxFollowers > 0 && followers > instagramFilters.maxFollowers) return false;
-
-            const following = ig.followingCount || 0;
-            if (following < instagramFilters.minFollowing) return false;
-            if (instagramFilters.maxFollowing > 0 && following > instagramFilters.maxFollowing) return false;
-
-            if (instagramFilters.isVerified === "yes" && !ig.isVerified) return false;
-            if (instagramFilters.isVerified === "no" && ig.isVerified) return false;
-            if (instagramFilters.isBusinessAccount === "yes" && !ig.isBusinessAccount) return false;
-            if (instagramFilters.isBusinessAccount === "no" && ig.isBusinessAccount) return false;
-            if (instagramFilters.isPrivate === "yes" && !ig.isPrivate) return false;
-            if (instagramFilters.isPrivate === "no" && ig.isPrivate) return false;
-            if (instagramFilters.isProfessionalAccount === "yes" && !ig.isProfessionalAccount) return false;
-            if (instagramFilters.isProfessionalAccount === "no" && ig.isProfessionalAccount) return false;
-            if (instagramFilters.mutualFollow === "yes" && !ig.mutualFollow) return false;
-            if (instagramFilters.mutualFollow === "no" && ig.mutualFollow) return false;
-            if (instagramFilters.hasChannel === "yes" && !ig.hasChannel) return false;
-            if (instagramFilters.hasChannel === "no" && ig.hasChannel) return false;
-            
-            if (instagramFilters.hasWebsite === "yes" && !ig.externalUrl && (!ig.bioLinks || ig.bioLinks.length === 0)) return false;
-            if (instagramFilters.hasWebsite === "no" && (ig.externalUrl || (ig.bioLinks && ig.bioLinks.length > 0))) return false;
-            
-            if (instagramFilters.hasExternalUrl === "yes" && (!ig.bioLinks || ig.bioLinks.length === 0)) return false;
-            if (instagramFilters.hasExternalUrl === "no" && ig.bioLinks && ig.bioLinks.length > 0) return false;
-
-            if ((ig.postsCount || 0) < instagramFilters.minPosts) return false;
-            if ((ig.reelsCount || 0) < instagramFilters.minReels) return false;
-            if (instagramFilters.minViews > 0 && (ig.medianViews || 0) < instagramFilters.minViews) return false;
-            
-            if (instagramFilters.minER > 0) {
-                const erValue = typeof ig.medianEr === 'string' ? parseFloat(ig.medianEr.replace('%', '')) : (ig.medianEr || 0);
-                if (erValue < instagramFilters.minER) return false;
-            }
-
-            if (instagramFilters.maxLastPostDays > 0) {
-                if (ig.lastPostDays === null || ig.lastPostDays === undefined || ig.lastPostDays > instagramFilters.maxLastPostDays) return false;
-            }
-
-            if (instagramFilters.quality !== "all") {
-                if (ig.quality !== instagramFilters.quality) return false;
-            }
-
-            if (instagramFilters.location) {
-                const city = (ig.cityName || "").toLowerCase();
-                const street = (ig.addressStreet || "").toLowerCase();
-                const q = instagramFilters.location.toLowerCase();
-                if (!city.includes(q) && !street.includes(q)) return false;
-            }
-
-            if (instagramFilters.tags) {
-                const q = instagramFilters.tags.toLowerCase();
-                const hasMatch = (ig.tags || []).some((t: string) => t.toLowerCase().includes(q));
-                if (!hasMatch) return false;
-            }
-
-            return true;
-        });
-    }, [instagramLeads, instagramFilters]);
-
-    const filteredX = useMemo(() => {
-        return xLeads.filter((xProfile) => {
-            const followers = xProfile.followersCount || 0;
-            if (followers < xFilters.minFollowers) return false;
-            if (xFilters.maxFollowers > 0 && followers > xFilters.maxFollowers) return false;
-
-            const following = xProfile.followingCount || 0;
-            if (following < xFilters.minFollowing) return false;
-            if (xFilters.maxFollowing > 0 && following > xFilters.maxFollowing) return false;
-
-            const tweets = xProfile.tweetsCount || 0;
-            if (tweets < xFilters.minTweets) return false;
-            if (xFilters.maxTweets > 0 && tweets > xFilters.maxTweets) return false;
-
-            const media = xProfile.mediaCount || 0;
-            if (media < xFilters.minMedia) return false;
-            if (xFilters.maxMedia > 0 && media > xFilters.maxMedia) return false;
-
-            if (xFilters.joinedBefore || xFilters.joinedAfter) {
-                const createdAtStr = xProfile.accountCreatedAt || xProfile.createdAt;
-                if (createdAtStr) {
-                    const createdDate = new Date(createdAtStr).getTime();
-                    if (xFilters.joinedAfter) {
-                        const afterDate = new Date(xFilters.joinedAfter).getTime();
-                        if (createdDate < afterDate) return false;
-                    }
-                    if (xFilters.joinedBefore) {
-                        const beforeDate = new Date(xFilters.joinedBefore).getTime();
-                        if (createdDate > beforeDate) return false;
-                    }
-                }
-            }
-
-            if (xFilters.isVerified === "yes" && !xProfile.isVerified) return false;
-            if (xFilters.isVerified === "no" && xProfile.isVerified) return false;
-
-            if (xFilters.isProtected === "yes" && !xProfile.isProtected) return false;
-            if (xFilters.isProtected === "no" && xProfile.isProtected) return false;
-
-            if (xFilters.hasEmail === "yes" && !xProfile.email) return false;
-            if (xFilters.hasEmail === "no" && xProfile.email) return false;
-
-            if (xFilters.hasPhone === "yes" && !xProfile.phone) return false;
-            if (xFilters.hasPhone === "no" && xProfile.phone) return false;
-
-            if (xFilters.hasWebsite === "yes" && !xProfile.externalUrl) return false;
-            if (xFilters.hasWebsite === "no" && xProfile.externalUrl) return false;
-
-            if (xFilters.location) {
-                const loc = (xProfile.location || "").toLowerCase();
-                const q = xFilters.location.toLowerCase();
-                if (!loc.includes(q)) return false;
-            }
-
-            if (xFilters.tags) {
-                const q = xFilters.tags.toLowerCase();
-                const hasMatch = (xProfile.tags || []).some((t: string) => t.toLowerCase().includes(q));
-                if (!hasMatch) return false;
-            }
-
-            return true;
-        });
-    }, [xLeads, xFilters]);
-
-    const filteredFacebook = useMemo(() => {
-        return facebookLeads.filter((fb) => {
-            if (facebookFilters.hasEmail === "yes" && !fb.email) return false;
-            if (facebookFilters.hasEmail === "no" && fb.email) return false;
-            if (facebookFilters.hasPhone === "yes" && !fb.phone) return false;
-            if (facebookFilters.hasPhone === "no" && fb.phone) return false;
-            if (facebookFilters.hasWebsite === "yes" && !fb.website) return false;
-            if (facebookFilters.hasWebsite === "no" && fb.website) return false;
-            const followers = fb.followers_count || 0;
-            if (followers < facebookFilters.minFollowers) return false;
-            if (facebookFilters.maxFollowers > 0 && followers > facebookFilters.maxFollowers) return false;
-            const likes = fb.likes_count || 0;
-            if (likes < facebookFilters.minLikes) return false;
-            if (facebookFilters.category) {
-                const cat = (fb.category || "").toLowerCase();
-                const cats = (fb.categories || []).join(" ").toLowerCase();
-                const q = facebookFilters.category.toLowerCase();
-                if (!cat.includes(q) && !cats.includes(q)) return false;
-            }
-            if (facebookFilters.tags) {
-                const q = facebookFilters.tags.toLowerCase();
-                const hasMatch = (fb.tags || []).some((t: string) => t.toLowerCase().includes(q));
-                if (!hasMatch) return false;
-            }
-            return true;
-        });
-    }, [facebookLeads, facebookFilters]);
+    
 
     // --- Column Definitions ---
     const personalColumns = useMemo<ColumnDef<PersonalProfile>[]>(() => [
@@ -2412,7 +2127,7 @@ export default function ProfilesPage() {
 
                             <TabsContent value="personal">
                                 <GenericProfileTable
-                                    data={filteredPersonal}
+                                    data={personal}
                                     columns={personalColumns}
                                     isLoading={loadingPersonal}
                                     totalCount={personalTotal}
@@ -2460,7 +2175,7 @@ export default function ProfilesPage() {
 
                             <TabsContent value="company">
                                 <GenericProfileTable
-                                    data={filteredCompany}
+                                    data={company}
                                     columns={companyColumns}
                                     isLoading={loadingCompany}
                                     totalCount={companyTotal}
@@ -2508,7 +2223,7 @@ export default function ProfilesPage() {
 
                             <TabsContent value="google_maps">
                                 <GenericProfileTable
-                                    data={filteredGoogleMaps}
+                                    data={googleMaps}
                                     columns={googleMapsColumns}
                                     isLoading={loadingGoogleMaps}
                                     totalCount={googleMapsTotal}
@@ -2536,7 +2251,7 @@ export default function ProfilesPage() {
                             </TabsContent>
                             <TabsContent value="website_contact">
                                 <GenericProfileTable
-                                    data={filteredWebsiteContacts}
+                                    data={websiteContacts}
                                     columns={websiteContactColumns}
                                     isLoading={loadingWebsiteContacts}
                                     totalCount={websiteContactsTotal}
@@ -2574,7 +2289,7 @@ export default function ProfilesPage() {
                             </TabsContent>
                             <TabsContent value="instagram">
                                 <GenericProfileTable
-                                    data={filteredInstagram}
+                                    data={instagramLeads}
                                     columns={instagramColumns}
                                     isLoading={loadingInstagramLeads}
                                     totalCount={instagramTotal}
@@ -2627,7 +2342,7 @@ export default function ProfilesPage() {
                             </TabsContent>
                             <TabsContent value="facebook">
                                 <GenericProfileTable
-                                    data={filteredFacebook}
+                                    data={facebookLeads}
                                     columns={facebookColumns}
                                     isLoading={loadingFacebookLeads}
                                     totalCount={facebookTotal}
@@ -2717,7 +2432,7 @@ export default function ProfilesPage() {
                             </TabsContent>
                             <TabsContent value="x">
                                 <GenericProfileTable
-                                    data={filteredX}
+                                    data={xLeads}
                                     columns={xColumns}
                                     isLoading={loadingXLeads}
                                     totalCount={xTotal}

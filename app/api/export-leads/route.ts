@@ -77,6 +77,157 @@ const TYPE_CONFIG: Record<string, { table: string; idField: string; columns: str
     },
 };
 
+// Shared auth helper
+function makeSupabaseClient(authHeader: string | null): ReturnType<typeof createClient> | null {
+    if (!authHeader) return null;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    return createClient(supabaseUrl, supabaseAnonKey, {
+        global: { headers: { Authorization: authHeader } },
+    });
+}
+
+// Shared CSV build logic
+async function buildCSVResponse(
+    supabase: ReturnType<typeof createClient>,
+    userId: string,
+    type: string,
+    filterJunctionIds: string[] | null
+): Promise<NextResponse> {
+    const config = TYPE_CONFIG[type];
+    if (!config) {
+        return NextResponse.json({ error: `Unknown lead type: ${type}` }, { status: 400 });
+    }
+
+    // Step 1: Get user_leads junction rows, optionally filtered to specific IDs
+    let query = supabase
+        .from("user_leads")
+        .select(`${config.idField}, id, tags`)
+        .eq("user_id", userId)
+        .eq("profile_type", type)
+        .not(config.idField, "is", null);
+
+    if (filterJunctionIds && filterJunctionIds.length > 0) {
+        query = query.in("id", filterJunctionIds);
+    }
+
+    const userLeadsResult = await (query as unknown as Promise<{
+        data: Record<string, unknown>[] | null;
+        error: { message: string } | null;
+    }>);
+
+    const { data: userLeads, error: userLeadsError } = userLeadsResult;
+
+    if (userLeadsError) {
+        console.error("Error fetching user_leads:", userLeadsError);
+        return NextResponse.json({ error: "Failed to fetch leads" }, { status: 500 });
+    }
+
+    if (!userLeads || userLeads.length === 0) {
+        return NextResponse.json({ error: "No leads found for export" }, { status: 404 });
+    }
+
+    // Build tags map: leadId -> tags[]
+    const tagsMap = new Map<string, string[]>();
+    const leadIds: string[] = [];
+    for (const ul of userLeads) {
+        const id = ul[config.idField];
+        if (id && typeof id === "string") {
+            leadIds.push(id);
+            tagsMap.set(id, ul.tags as string[] || []);
+        }
+    }
+
+    // Step 2: Fetch lead details from real table
+    const selectColumns = ["id", ...config.columns].join(",");
+    const { data: leadDetails, error: detailsError } = await supabase
+        .from(config.table)
+        .select(selectColumns)
+        .in("id", leadIds);
+
+    if (detailsError) {
+        console.error("Error fetching lead details:", JSON.stringify(detailsError));
+        return NextResponse.json({ error: "Failed to fetch lead details", detail: detailsError.message }, { status: 500 });
+    }
+
+    if (!leadDetails || leadDetails.length === 0) {
+        return NextResponse.json({ error: "No lead details found" }, { status: 404 });
+    }
+
+    // Step 3: Merge lead details with tags
+    const formattedData = (leadDetails as Record<string, any>[]).map((lead) => {
+        const row: Record<string, any> = {};
+        for (const col of config.columns) {
+            row[col] = lead[col] ?? "";
+        }
+        const tags = tagsMap.get(String(lead.id)) || [];
+        row["tags"] = tags.length > 0 ? tags.join("; ") : "";
+        return row;
+    });
+
+    // Build CSV
+    const csvColumns = [...config.columns, "tags"];
+    const headerLabel = (col: string) =>
+        col.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+    const escapeCSV = (val: any): string => {
+        if (val === null || val === undefined || val === "") return '""';
+        let str = "";
+        if (typeof val === "object") {
+            if (Array.isArray(val)) str = val.join("; ");
+            else str = JSON.stringify(val);
+        } else {
+            str = String(val);
+        }
+        str = str.replace(/"/g, '""');
+        return `"${str}"`;
+    };
+
+    const csvLines: string[] = [];
+    csvLines.push(csvColumns.map(headerLabel).map(escapeCSV).join(","));
+    formattedData.forEach((row) => {
+        csvLines.push(csvColumns.map((col) => escapeCSV(row[col])).join(","));
+    });
+
+    const csvContent = csvLines.join("\n");
+
+    return new NextResponse(csvContent, {
+        headers: {
+            "Content-Type": "text/csv; charset=utf-8",
+            "Content-Disposition": `attachment; filename="${type}-leads-${new Date().toISOString().split("T")[0]}.csv"`,
+        },
+    });
+}
+
+// POST: filtered export — accepts { type, junctionIds? }
+export async function POST(req: Request) {
+    try {
+        const authHeader = req.headers.get("Authorization");
+        const supabase = makeSupabaseClient(authHeader);
+        if (!supabase) {
+            return NextResponse.json({ error: "Missing Authorization header" }, { status: 401 });
+        }
+
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        if (authError || !user) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        const body = await req.json().catch(() => ({}));
+        const { type, junctionIds } = body;
+
+        if (!type) {
+            return NextResponse.json({ error: "Missing type parameter" }, { status: 400 });
+        }
+
+        return await buildCSVResponse(supabase, user.id, type, junctionIds || null);
+
+    } catch (error: any) {
+        console.error("Export API error:", error);
+        return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
+    }
+}
+
+// GET: backward-compatible, exports all leads for a type
 export async function GET(req: Request) {
     try {
         const url = new URL(req.url);
@@ -86,127 +237,18 @@ export async function GET(req: Request) {
             return NextResponse.json({ error: "Missing type parameter" }, { status: 400 });
         }
 
-        const config = TYPE_CONFIG[type];
-        if (!config) {
-            return NextResponse.json({ error: `Unknown lead type: ${type}` }, { status: 400 });
-        }
-
         const authHeader = req.headers.get("Authorization");
-        if (!authHeader) {
+        const supabase = makeSupabaseClient(authHeader);
+        if (!supabase) {
             return NextResponse.json({ error: "Missing Authorization header" }, { status: 401 });
         }
-
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-        const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-            global: { headers: { Authorization: authHeader } },
-        });
 
         const { data: { user }, error: authError } = await supabase.auth.getUser();
         if (authError || !user) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        // Step 1: Get the user's lead IDs + tags from the junction table
-        const userLeadsResult = await (supabase
-            .from("user_leads")
-            .select(`${config.idField}, tags`)
-            .eq("user_id", user.id)
-            .eq("profile_type", type)
-            .not(config.idField, "is", null) as unknown as Promise<{
-                data: Record<string, unknown>[] | null;
-                error: { message: string } | null;
-            }>);
-
-        const { data: userLeads, error: userLeadsError } = userLeadsResult;
-
-        if (userLeadsError) {
-            console.error("Error fetching user_leads:", userLeadsError);
-            return NextResponse.json({ error: "Failed to fetch leads" }, { status: 500 });
-        }
-
-        if (!userLeads || userLeads.length === 0) {
-            return NextResponse.json({ error: "No leads found for export" }, { status: 404 });
-        }
-
-        // Build a tags map: leadId -> tags[]
-        const tagsMap = new Map<string, string[]>();
-        const leadIds: string[] = [];
-        for (const ul of userLeads) {
-            const id = ul[config.idField];
-            if (id && typeof id === "string") {
-                leadIds.push(id);
-                tagsMap.set(id, ul.tags as string[] || []);
-            }
-        }
-
-        // Step 2: Fetch the actual lead details from the real table
-        // leadIds contains values of config.idField (e.g. lead_id, linkedin_id)
-        // which are foreign keys referencing the leads table's `id` column
-        const selectColumns = ["id", ...config.columns].join(",");
-        const { data: leadDetails, error: detailsError } = await supabase
-            .from(config.table)
-            .select(selectColumns)
-            .in("id", leadIds);
-
-        if (detailsError) {
-            console.error("Error fetching lead details:", JSON.stringify(detailsError));
-            return NextResponse.json({ error: "Failed to fetch lead details", detail: detailsError.message }, { status: 500 });
-        }
-
-        if (!leadDetails || leadDetails.length === 0) {
-            return NextResponse.json({ error: "No lead details found" }, { status: 404 });
-        }
-
-        // Step 3: Merge lead details with tags
-        // tagsMap is keyed by the idField value (which equals the lead's `id`)
-        const formattedData = (leadDetails as Record<string, any>[]).map((lead) => {
-            const row: Record<string, any> = {};
-            for (const col of config.columns) {
-                row[col] = lead[col] ?? "";
-            }
-            // The idField values stored in user_leads reference the lead's `id`
-            const tags = tagsMap.get(String(lead.id)) || [];
-            row["tags"] = tags.length > 0 ? tags.join("; ") : "";
-            return row;
-        });
-
-        // Build CSV columns = defined columns + Tags
-        const csvColumns = [...config.columns, "tags"];
-
-        // Human-readable header labels
-        const headerLabel = (col: string) =>
-            col.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-
-        // CSV escape helper
-        const escapeCSV = (val: any): string => {
-            if (val === null || val === undefined || val === "") return '""';
-            let str = "";
-            if (typeof val === "object") {
-                if (Array.isArray(val)) str = val.join("; ");
-                else str = JSON.stringify(val);
-            } else {
-                str = String(val);
-            }
-            str = str.replace(/"/g, '""');
-            return `"${str}"`;
-        };
-
-        const csvLines: string[] = [];
-        csvLines.push(csvColumns.map(headerLabel).map(escapeCSV).join(","));
-        formattedData.forEach((row) => {
-            csvLines.push(csvColumns.map((col) => escapeCSV(row[col])).join(","));
-        });
-
-        const csvContent = csvLines.join("\n");
-
-        return new NextResponse(csvContent, {
-            headers: {
-                "Content-Type": "text/csv; charset=utf-8",
-                "Content-Disposition": `attachment; filename="${type}-leads-${new Date().toISOString().split("T")[0]}.csv"`,
-            },
-        });
+        return await buildCSVResponse(supabase, user.id, type, null);
 
     } catch (error: any) {
         console.error("Export API error:", error);
