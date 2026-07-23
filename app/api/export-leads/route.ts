@@ -146,14 +146,17 @@ export async function GET(req: Request) {
         }
 
         // Step 2: Fetch the actual lead details from the real table
+        // leadIds contains values of config.idField (e.g. lead_id, linkedin_id)
+        // which are foreign keys referencing the leads table's `id` column
+        const selectColumns = ["id", ...config.columns].join(",");
         const { data: leadDetails, error: detailsError } = await supabase
             .from(config.table)
-            .select(["id", ...config.columns].join(", "))
+            .select(selectColumns)
             .in("id", leadIds);
 
         if (detailsError) {
-            console.error("Error fetching lead details:", detailsError);
-            return NextResponse.json({ error: "Failed to fetch lead details" }, { status: 500 });
+            console.error("Error fetching lead details:", JSON.stringify(detailsError));
+            return NextResponse.json({ error: "Failed to fetch lead details", detail: detailsError.message }, { status: 500 });
         }
 
         if (!leadDetails || leadDetails.length === 0) {
@@ -161,12 +164,14 @@ export async function GET(req: Request) {
         }
 
         // Step 3: Merge lead details with tags
-        const formattedData = leadDetails.map((lead: any) => {
+        // tagsMap is keyed by the idField value (which equals the lead's `id`)
+        const formattedData = (leadDetails as Record<string, any>[]).map((lead) => {
             const row: Record<string, any> = {};
             for (const col of config.columns) {
                 row[col] = lead[col] ?? "";
             }
-            const tags = tagsMap.get(lead.id) || [];
+            // The idField values stored in user_leads reference the lead's `id`
+            const tags = tagsMap.get(String(lead.id)) || [];
             row["tags"] = tags.length > 0 ? tags.join("; ") : "";
             return row;
         });
