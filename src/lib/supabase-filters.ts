@@ -84,7 +84,9 @@ export function applyFilters(query: any, profileType: string, filters: any) {
         if (filters.hasWebsite === "no") query = query.or("website.is.null,website.eq.,website.eq.-", { foreignTable: "google_maps" });
 
         if (filters.minScore > 0) query = query.gte("google_maps.total_score", filters.minScore);
+        if (filters.maxScore > 0) query = query.lte("google_maps.total_score", filters.maxScore);
         if (filters.minReviews > 0) query = query.gte("google_maps.reviews_count", filters.minReviews);
+        if (filters.maxReviews > 0) query = query.lte("google_maps.reviews_count", filters.maxReviews);
         
         if (filters.location) query = query.ilike("google_maps.city", `%${filters.location}%`);
         if (filters.tags) query = query.contains("tags", [filters.tags]);

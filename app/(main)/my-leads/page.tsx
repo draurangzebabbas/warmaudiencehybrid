@@ -465,7 +465,9 @@ const [personalFilters, setPersonalFilters] = useState({
         hasTwitter: "all" as "all" | "yes" | "no",
         hasLinkedIn: "all" as "all" | "yes" | "no",
         minScore: 0,
+        maxScore: 5,
         minReviews: 0,
+        maxReviews: 1000000,
         location: "",
         tags: "",
     });
@@ -3255,7 +3257,7 @@ function FilterSheet({ type, filters, setFilters }: { type: "personal" | "compan
                                 setFilters({
                                     hasEmail: "all", hasPhone: "all", hasWebsite: "all",
                                     hasInstagram: "all", hasTikTok: "all", hasFacebook: "all", hasTwitter: "all", hasLinkedIn: "all",
-                                    minScore: 0, minReviews: 0, location: "", tags: ""
+                                    minScore: 0, maxScore: 5, minReviews: 0, maxReviews: 1000000, location: "", tags: ""
                                 });
                             } else if (type === "instagram") {
                                 setFilters({
@@ -3493,12 +3495,33 @@ function FilterSheet({ type, filters, setFilters }: { type: "personal" | "compan
                                         />
                                     </div>
                                     <div className="space-y-1">
+                                        <Label className="text-[10px]">Max Rating</Label>
+                                        <Input
+                                            type="number"
+                                            step="0.1"
+                                            placeholder="5.0"
+                                            value={filters.maxScore || ""}
+                                            onChange={(e) => setFilters({ ...filters, maxScore: e.target.value === "" ? 0 : parseFloat(e.target.value) })}
+                                            className="h-8 text-xs"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
                                         <Label className="text-[10px]">Min Reviews</Label>
                                         <Input
                                             type="number"
                                             placeholder="0"
                                             value={filters.minReviews || ""}
                                             onChange={(e) => setFilters({ ...filters, minReviews: e.target.value === "" ? 0 : parseInt(e.target.value) })}
+                                            className="h-8 text-xs"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label className="text-[10px]">Max Reviews</Label>
+                                        <Input
+                                            type="number"
+                                            placeholder="0"
+                                            value={filters.maxReviews || ""}
+                                            onChange={(e) => setFilters({ ...filters, maxReviews: e.target.value === "" ? 0 : parseInt(e.target.value) })}
                                             className="h-8 text-xs"
                                         />
                                     </div>
