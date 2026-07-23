@@ -32,7 +32,9 @@ import {
     TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge";
-import { IconTrash, IconPlayerPause, IconPlayerPlay, IconClock, IconBrandLinkedin, IconMap2 } from "@tabler/icons-react";
+import { IconTrash, IconPlayerPause, IconPlayerPlay, IconClock } from "@tabler/icons-react";
+import { LinkedInIcon } from "@/components/icons/social-icons";
+import { GoogleMapsIcon } from "@/components/icons/google-maps-icon";
 import { formatDistanceToNow } from "date-fns";
 import { formatError } from "@/src/lib/utils";
 
@@ -365,7 +367,7 @@ export default function TrackersPage() {
                             ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20" 
                             : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
                     }`}>
-                        {isLinkedIn ? <IconBrandLinkedin className="size-3.5" /> : <IconMap2 className="size-3.5" />}
+                        {isLinkedIn ? <LinkedInIcon className="size-3.5" /> : <GoogleMapsIcon className="size-3.5" />}
                         {isLinkedIn ? "LinkedIn" : "Google Maps"}
                     </Badge>
                 );
@@ -529,7 +531,7 @@ export default function TrackersPage() {
                                     onClick={() => setActiveStep("linkedin")}
                                 >
                                     <div className="p-3 bg-blue-500/10 text-blue-600 rounded-lg">
-                                        <IconBrandLinkedin className="size-8" />
+                                        <LinkedInIcon className="size-8" />
                                     </div>
                                     <div className="flex-1">
                                         <h3 className="font-semibold text-base">LinkedIn Engagement Tracker</h3>
@@ -541,7 +543,7 @@ export default function TrackersPage() {
                                     onClick={() => setActiveStep("google_maps")}
                                 >
                                     <div className="p-3 bg-emerald-500/10 text-emerald-600 rounded-lg">
-                                        <IconMap2 className="size-8" />
+                                        <GoogleMapsIcon className="size-8" />
                                     </div>
                                     <div className="flex-1">
                                         <h3 className="font-semibold text-base">Google Maps Sweep Agent</h3>
@@ -639,14 +641,14 @@ export default function TrackersPage() {
                                 <div className="space-y-2">
                                     <Label>Cities List (One per line)</Label>
                                     <Textarea
-                                        placeholder={`e.g.\nUSA, New York, New York City\nUSA, California, Los Angeles`}
+                                        placeholder={`e.g.\nCountry , State , City\nUSA , New York , New York City\nUSA , California , Los Angeles`}
                                         rows={4}
                                         value={mapsCitiesText}
                                         onChange={(e) => setMapsCitiesText(e.target.value)}
                                         className="font-mono text-xs"
                                     />
                                     <p className="text-[10px] text-muted-foreground">
-                                        Use the format: Country, State/Province, City
+                                        Use the format: Country , State , City
                                     </p>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
@@ -661,7 +663,7 @@ export default function TrackersPage() {
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label>Custom Tags (comma separated)</Label>
+                                        <Label>Custom Tags</Label>
                                         <Input
                                             placeholder="e.g. dentists, map-sweep"
                                             value={mapsTags}
@@ -669,17 +671,12 @@ export default function TrackersPage() {
                                         />
                                     </div>
                                 </div>
-
-                                <div className="flex items-start gap-2 text-[10px] text-amber-600 dark:text-amber-400 bg-amber-500/10 p-2 rounded">
-                                    <AlertTriangle className="size-3.5 mt-0.5 flex-shrink-0" />
-                                    <span>This agent runs sequentially. It sweeps one city, pauses for 1 minute to avoid rate limits, and then proceeds to the next city.</span>
-                                </div>
                             </div>
                         )}
 
-                        <DialogFooter className="gap-2 sm:gap-0">
+                        <DialogFooter>
                             {activeStep !== "selector" ? (
-                                <>
+                                <div className="flex items-center justify-between w-full mt-2">
                                     <Button variant="outline" onClick={() => setActiveStep("selector")}>Back</Button>
                                     {activeStep === "linkedin" ? (
                                         <Button onClick={handleCreateLinkedInTracker} disabled={actionLoading}>
@@ -692,9 +689,9 @@ export default function TrackersPage() {
                                             Launch Agent
                                         </Button>
                                     )}
-                                </>
+                                </div>
                             ) : (
-                                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
+                                <Button variant="outline" className="w-full mt-2" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
                             )}
                         </DialogFooter>
                     </DialogContent>

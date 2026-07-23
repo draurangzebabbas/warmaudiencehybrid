@@ -153,6 +153,7 @@ async function executeAgent(agent) {
         type: agent.type,
         input: {
             ...config,
+            searchStringsArray: config.searchStringsArray || (config.keyword ? [config.keyword] : []),
             locationQuery: currentLocation,
             tags: [...(config.tags || []), `Agent-${agent.name}`]
         }
