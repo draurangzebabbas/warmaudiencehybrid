@@ -5,7 +5,7 @@ import { createClient } from "@supabase/supabase-js";
 const TYPE_CONFIG: Record<string, { table: string; idField: string; columns: string[] }> = {
     google_maps: {
         table: "google_maps_leads",
-        idField: "google_maps_id",
+        idField: "lead_id",
         columns: [
             "title", "total_score", "reviews_count", "address", "phone",
             "emails", "website", "city", "image_url", "place_id", "url"
@@ -100,7 +100,7 @@ async function buildCSVResponse(
     }
 
     // Step 1: Get user_leads junction rows, optionally filtered to specific IDs
-    let query = supabase
+    let junctionQuery = supabase
         .from("user_leads")
         .select(`${config.idField}, id, tags`)
         .eq("user_id", userId)
@@ -108,19 +108,14 @@ async function buildCSVResponse(
         .not(config.idField, "is", null);
 
     if (filterJunctionIds && filterJunctionIds.length > 0) {
-        query = query.in("id", filterJunctionIds);
+        junctionQuery = junctionQuery.in("id", filterJunctionIds);
     }
 
-    const userLeadsResult = await (query as unknown as Promise<{
-        data: Record<string, unknown>[] | null;
-        error: { message: string } | null;
-    }>);
-
-    const { data: userLeads, error: userLeadsError } = userLeadsResult;
+    const { data: userLeads, error: userLeadsError } = await junctionQuery;
 
     if (userLeadsError) {
-        console.error("Error fetching user_leads:", userLeadsError);
-        return NextResponse.json({ error: "Failed to fetch leads" }, { status: 500 });
+        console.error("Error fetching user_leads:", JSON.stringify(userLeadsError));
+        return NextResponse.json({ error: "Failed to fetch leads", detail: userLeadsError.message }, { status: 500 });
     }
 
     if (!userLeads || userLeads.length === 0) {
@@ -130,17 +125,25 @@ async function buildCSVResponse(
     // Build tags map: leadId -> tags[]
     const tagsMap = new Map<string, string[]>();
     const leadIds: string[] = [];
-    for (const ul of userLeads) {
+    for (const ul of userLeads as Record<string, any>[]) {
         const id = ul[config.idField];
         if (id && typeof id === "string") {
             leadIds.push(id);
-            tagsMap.set(id, ul.tags as string[] || []);
+            tagsMap.set(id, (ul.tags as string[]) || []);
         }
     }
 
-    // Step 2: Fetch lead details from real table
+    if (leadIds.length === 0) {
+        return NextResponse.json({ error: "No valid lead IDs found" }, { status: 404 });
+    }
+
+    // Step 2: Fetch lead details from real table using service role key to bypass RLS
+    const serviceSupabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
     const selectColumns = ["id", ...config.columns].join(",");
-    const { data: leadDetails, error: detailsError } = await supabase
+    const { data: leadDetails, error: detailsError } = await serviceSupabase
         .from(config.table)
         .select(selectColumns)
         .in("id", leadIds);
