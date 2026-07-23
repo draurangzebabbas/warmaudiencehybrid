@@ -111,11 +111,12 @@ async function buildCSVResponse(
         junctionQuery = junctionQuery.in("id", filterJunctionIds);
     }
 
-    const { data: userLeads, error: userLeadsError } = await junctionQuery;
+    const { data: userLeadsRaw, error: userLeadsError } = await junctionQuery;
+    const userLeads = userLeadsRaw as Record<string, any>[] | null;
 
     if (userLeadsError) {
         console.error("Error fetching user_leads:", JSON.stringify(userLeadsError));
-        return NextResponse.json({ error: "Failed to fetch leads", detail: userLeadsError.message }, { status: 500 });
+        return NextResponse.json({ error: "Failed to fetch leads", detail: (userLeadsError as any).message }, { status: 500 });
     }
 
     if (!userLeads || userLeads.length === 0) {
