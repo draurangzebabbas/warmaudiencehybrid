@@ -686,7 +686,7 @@ const [personalFilters, setPersonalFilters] = useState({
             else if (type === "website_contact") filters = websiteContactsFilters;
             else if (type === "instagram") filters = instagramFilters;
             else if (type === "facebook") filters = facebookFilters;
-            else if (type === "facebook_group") filters = facebookGroupsFilters;
+            else if (type === "facebook_group") filters = {};
             else if (type === "x") filters = xFilters;
 
             const res = await fetch(`/api/export-leads`, {
