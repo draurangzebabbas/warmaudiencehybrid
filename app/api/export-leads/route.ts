@@ -5,7 +5,7 @@ import { createClient } from "@supabase/supabase-js";
 const TYPE_CONFIG: Record<string, { table: string; idField: string; columns: string[] }> = {
     google_maps: {
         table: "google_maps_leads",
-        idField: "lead_id",
+        idField: "google_maps_id",
         columns: [
             "title", "total_score", "reviews_count", "address", "phone",
             "emails", "website", "city", "image_url", "place_id", "url"
