@@ -138,20 +138,18 @@ async function buildCSVResponse(
         return NextResponse.json({ error: "No valid lead IDs found" }, { status: 404 });
     }
 
-    // Step 2: Fetch lead details from real table using service role key to bypass RLS
-    const serviceSupabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+    // Step 2: Fetch lead details from real table
+    // All lead tables (google_maps_leads, linkedin_profiles, etc.) have open SELECT RLS policies
     const selectColumns = ["id", ...config.columns].join(",");
-    const { data: leadDetails, error: detailsError } = await serviceSupabase
+    const { data: leadDetailsRaw, error: detailsError } = await supabase
         .from(config.table)
         .select(selectColumns)
         .in("id", leadIds);
+    const leadDetails = leadDetailsRaw as Record<string, any>[] | null;
 
     if (detailsError) {
         console.error("Error fetching lead details:", JSON.stringify(detailsError));
-        return NextResponse.json({ error: "Failed to fetch lead details", detail: detailsError.message }, { status: 500 });
+        return NextResponse.json({ error: "Failed to fetch lead details", detail: (detailsError as any).message }, { status: 500 });
     }
 
     if (!leadDetails || leadDetails.length === 0) {
