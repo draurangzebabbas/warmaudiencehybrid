@@ -77,11 +77,11 @@ export function applyFilters(query: any, profileType: string, filters: any) {
         if (filters.hasEmail === "yes") query = query.not("google_maps.emails", "is", null).neq("google_maps.emails", "{}");
         if (filters.hasEmail === "no") query = query.or("emails.is.null,emails.eq.{}", { foreignTable: "google_maps" });
         
-        if (filters.hasPhone === "yes") query = query.not("google_maps.phone", "is", null);
-        if (filters.hasPhone === "no") query = query.is("google_maps.phone", null);
+        if (filters.hasPhone === "yes") query = query.not("google_maps.phone", "is", null).neq("google_maps.phone", "").neq("google_maps.phone", "-");
+        if (filters.hasPhone === "no") query = query.or("phone.is.null,phone.eq.,phone.eq.-", { foreignTable: "google_maps" });
         
-        if (filters.hasWebsite === "yes") query = query.not("google_maps.website", "is", null);
-        if (filters.hasWebsite === "no") query = query.is("google_maps.website", null);
+        if (filters.hasWebsite === "yes") query = query.not("google_maps.website", "is", null).neq("google_maps.website", "").neq("google_maps.website", "-");
+        if (filters.hasWebsite === "no") query = query.or("website.is.null,website.eq.,website.eq.-", { foreignTable: "google_maps" });
 
         if (filters.minScore > 0) query = query.gte("google_maps.total_score", filters.minScore);
         if (filters.minReviews > 0) query = query.gte("google_maps.reviews_count", filters.minReviews);
