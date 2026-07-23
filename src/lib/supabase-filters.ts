@@ -36,7 +36,7 @@ export function applyFilters(query: any, profileType: string, filters: any) {
         }
 
         if (filters.tags) {
-            query = query.contains("tags", [filters.tags]);
+            query = query.ilike("tags_text", `%${filters.tags}%`);
         }
 
         if (filters.isPremium === "yes") query = query.eq("personal.is_premium", true);
@@ -67,7 +67,7 @@ export function applyFilters(query: any, profileType: string, filters: any) {
             query = query.or(`country.ilike.%${filters.location}%,city.ilike.%${filters.location}%`, { foreignTable: "company" });
         }
 
-        if (filters.tags) query = query.contains("tags", [filters.tags]);
+        if (filters.tags) query = query.ilike("tags_text", `%${filters.tags}%`);
 
         if (filters.isVerified === "yes") query = query.eq("company.is_verified", true);
         if (filters.isVerified === "no") query = query.eq("company.is_verified", false);
@@ -89,7 +89,7 @@ export function applyFilters(query: any, profileType: string, filters: any) {
         if (filters.maxReviews > 0) query = query.lte("google_maps.reviews_count", filters.maxReviews);
         
         if (filters.location) query = query.ilike("google_maps.city", `%${filters.location}%`);
-        if (filters.tags) query = query.contains("tags", [filters.tags]);
+        if (filters.tags) query = query.ilike("tags_text", `%${filters.tags}%`);
 
         if (filters.hasInstagram === "yes") query = query.not("google_maps.socials->>instagram", "is", null);
         if (filters.hasInstagram === "no") query = query.is("google_maps.socials->>instagram", null);
@@ -121,7 +121,7 @@ export function applyFilters(query: any, profileType: string, filters: any) {
         if (filters.hasLinkedIn === "yes") query = query.not("website_contact.linkedin", "is", null);
         if (filters.hasLinkedIn === "no") query = query.is("website_contact.linkedin", null);
 
-        if (filters.tags) query = query.contains("tags", [filters.tags]);
+        if (filters.tags) query = query.ilike("tags_text", `%${filters.tags}%`);
     }
 
     else if (profileType === "instagram") {
@@ -152,7 +152,7 @@ export function applyFilters(query: any, profileType: string, filters: any) {
         if (filters.hasExternalUrl === "yes") query = query.not("instagram.external_url", "is", null);
         if (filters.hasExternalUrl === "no") query = query.is("instagram.external_url", null);
 
-        if (filters.tags) query = query.contains("tags", [filters.tags]);
+        if (filters.tags) query = query.ilike("tags_text", `%${filters.tags}%`);
     }
 
     else if (profileType === "x") {
@@ -175,7 +175,7 @@ export function applyFilters(query: any, profileType: string, filters: any) {
         if (filters.maxTweets > 0 && filters.maxTweets < 10000000) query = query.lte("x.tweets_count", filters.maxTweets);
 
         if (filters.location) query = query.ilike("x.location", `%${filters.location}%`);
-        if (filters.tags) query = query.contains("tags", [filters.tags]);
+        if (filters.tags) query = query.ilike("tags_text", `%${filters.tags}%`);
     }
 
     else if (profileType === "facebook") {
@@ -192,11 +192,11 @@ export function applyFilters(query: any, profileType: string, filters: any) {
         if (filters.minLikes > 0) query = query.gte("facebook.likes_count", filters.minLikes);
         
         if (filters.category) query = query.ilike("facebook.category", `%${filters.category}%`);
-        if (filters.tags) query = query.contains("tags", [filters.tags]);
+        if (filters.tags) query = query.ilike("tags_text", `%${filters.tags}%`);
     }
 
     else if (profileType === "facebook_group") {
-        if (filters.tags) query = query.contains("tags", [filters.tags]);
+        if (filters.tags) query = query.ilike("tags_text", `%${filters.tags}%`);
     }
 
     return query;
