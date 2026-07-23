@@ -250,32 +250,52 @@ export default function ProfilesPage() {
             if (!userId) return;
             setLoading(true);
 
-            supabase
-                .from("user_leads")
-                .select(`
-                        id,
-                        tags,
-                        created_at,
-                        updated_at,
-                        personal: linkedin_profiles (*),
-                        company: company_profiles (*),
-                        google_maps: google_maps_leads (*),
-                        website_contact: website_contacts (*),
-                        instagram: instagram_leads (*),
-                        x: x_leads (*),
-                        facebook: facebook_leads (*),
-                        facebook_group: facebook_groups (*)
-                    `)
-                .eq("profile_type", profileType)
-                .order("created_at", { ascending: false })
-                .limit(10000)
-                .then(({ data, error }) => {
-                        if (error) {
-                            console.error("Supabase fetch error:", error);
-                            setLoading(false);
-                            return;
+            const fetchAllLeads = async () => {
+                let allData: any[] = [];
+                let hasMore = true;
+                let page = 0;
+                const pageSize = 1000;
+
+                while (hasMore) {
+                    const { data, error } = await supabase
+                        .from("user_leads")
+                        .select(`
+                            id,
+                            tags,
+                            created_at,
+                            updated_at,
+                            personal: linkedin_profiles (*),
+                            company: company_profiles (*),
+                            google_maps: google_maps_leads (*),
+                            website_contact: website_contacts (*),
+                            instagram: instagram_leads (*),
+                            x: x_leads (*),
+                            facebook: facebook_leads (*),
+                            facebook_group: facebook_groups (*)
+                        `)
+                        .eq("profile_type", profileType)
+                        .order("created_at", { ascending: false })
+                        .range(page * pageSize, (page + 1) * pageSize - 1);
+
+                    if (error) {
+                        console.error("Supabase fetch error:", error);
+                        setLoading(false);
+                        return;
+                    }
+
+                    if (data && data.length > 0) {
+                        allData = [...allData, ...data];
+                        page++;
+                        if (data.length < pageSize) {
+                            hasMore = false;
                         }
-                        if (data) {
+                    } else {
+                        hasMore = false;
+                    }
+                }
+
+                if (allData) {
+                    const data = allData;
                             const formatted = data
                                 .map(d => {
                                     const detailsRaw = d.personal || d.company || d.google_maps || d.website_contact || d.instagram || d.x || d.facebook || d.facebook_group;
@@ -441,7 +461,9 @@ export default function ProfilesPage() {
                             setLeads(formatted);
                         }
                         setLoading(false);
-                    });
+                }
+                
+                fetchAllLeads();
         }, [userId, profileType, refreshKey]);
 
         return { leads, loading, refresh };
