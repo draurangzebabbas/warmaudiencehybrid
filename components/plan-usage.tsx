@@ -34,16 +34,16 @@ export function PlanUsage() {
 
             const planSlug = profileData?.data?.plan_slug || "free";
             let planName = "Free";
-            let profilesLimit = 50;
+            let profilesLimit = 1000;
             let trackersLimit = 1;
 
             if (planSlug === "growth" || planSlug === "pro") {
                 planName = "Growth";
-                profilesLimit = 1000;
+                profilesLimit = 10000;
                 trackersLimit = 5;
             } else if (planSlug === "scale" || planSlug === "elite") {
                 planName = "Scale";
-                profilesLimit = 10000;
+                profilesLimit = 1000000;
                 trackersLimit = 20;
             }
 

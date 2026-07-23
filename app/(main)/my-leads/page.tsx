@@ -268,6 +268,7 @@ export default function ProfilesPage() {
                     `)
                 .eq("profile_type", profileType)
                 .order("created_at", { ascending: false })
+                .limit(10000)
                 .then(({ data, error }) => {
                         if (error) {
                             console.error("Supabase fetch error:", error);
