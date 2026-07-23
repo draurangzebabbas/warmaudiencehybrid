@@ -565,6 +565,13 @@ async function linkUserToLeadsBulk(userId, leadIds, type, tags = [], forceUpdate
         console.error("❌ Supabase linking error:", error.message);
         throw error;
     }
+
+    // Increment monthly usage ONLY for newly discovered/linked leads
+    const newLeadsCount = leadIds.length - existingMap.size;
+    if (newLeadsCount > 0) {
+        await incrementMonthlyLeadCount(userId, newLeadsCount);
+    }
+
     return data;
 }
 
@@ -734,19 +741,61 @@ async function markTrackerExecuted(trackerId, schedule) {
  */
 async function getMonthlyLeadCount(userId) {
     const now = new Date();
-    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    const monthYear = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
     
-    const { count, error } = await supabase
-        .from("user_leads")
-        .select("*", { count: "exact", head: true })
+    const { data, error } = await supabase
+        .from("user_usage")
+        .select("leads_extracted")
         .eq("user_id", userId)
-        .gte("created_at", firstDayOfMonth);
+        .eq("month_year", monthYear)
+        .single();
     
-    if (error) {
+    if (error && error.code !== 'PGRST116') { // PGRST116 is "Rows not found"
         console.error("❌ Error fetching monthly lead count:", error);
         return 0;
     }
-    return count || 0;
+    return data ? data.leads_extracted : 0;
+}
+
+/**
+ * Increment lead extraction count for the current month in Supabase
+ */
+async function incrementMonthlyLeadCount(userId, incrementBy) {
+    if (!incrementBy || incrementBy <= 0) return;
+
+    const now = new Date();
+    const monthYear = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
+
+    // Try to get existing record
+    const { data: existing, error: getError } = await supabase
+        .from("user_usage")
+        .select("leads_extracted")
+        .eq("user_id", userId)
+        .eq("month_year", monthYear)
+        .single();
+
+    if (getError && getError.code !== 'PGRST116') {
+        console.error("❌ Error getting usage before increment:", getError);
+        return;
+    }
+
+    const currentCount = existing ? existing.leads_extracted : 0;
+    const newCount = currentCount + incrementBy;
+
+    const { error: upsertError } = await supabase
+        .from("user_usage")
+        .upsert({ 
+            user_id: userId, 
+            month_year: monthYear, 
+            leads_extracted: newCount,
+            updated_at: new Date().toISOString()
+        }, {
+            onConflict: 'user_id, month_year'
+        });
+
+    if (upsertError) {
+        console.error("❌ Error incrementing monthly lead count:", upsertError);
+    }
 }
 
 /**
@@ -983,6 +1032,8 @@ module.exports = {
     getDueTrackers,
     markTrackerExecuted,
     getMonthlyLeadCount,
+    incrementMonthlyLeadCount,
+    incrementMonthlyLeadCount,
     getActiveTrackerCount,
     validateWebhookKey,
     getOrCreateWebhookKey,
