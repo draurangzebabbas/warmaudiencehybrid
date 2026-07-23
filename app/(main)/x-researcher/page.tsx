@@ -36,10 +36,13 @@ export default function XResearchersPage() {
             const { data: { user } } = await supabase.auth.getUser();
             setUser(user);
             if (user) {
+                const now = new Date();
+                const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
                 const { count } = await supabase
                     .from("user_leads")
                     .select("*", { count: "exact", head: true })
-                    .eq("user_id", user.id);
+                    .eq("user_id", user.id)
+                    .gte("created_at", firstDayOfMonth);
                 setProfilesCount(count || 0);
             }
         };
