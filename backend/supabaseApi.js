@@ -505,7 +505,7 @@ async function getWebsiteContactsByDomains(domains) {
  * Link a user to multiple leads in Supabase (Junction Table)
  * Appends tags if lead already linked to user
  */
-async function linkUserToLeadsBulk(userId, leadIds, type, tags = []) {
+async function linkUserToLeadsBulk(userId, leadIds, type, tags = [], forceUpdate = false) {
     const idField = type === "google_maps" ? "lead_id" : 
                     type === "company" ? "company_id" : 
                     type === "website_contact" ? "website_contact_id" :
@@ -515,23 +515,24 @@ async function linkUserToLeadsBulk(userId, leadIds, type, tags = []) {
                     type === "facebook_group" ? "facebook_group_id" :
                     "linkedin_id";
 
-    // 1. Fetch existing tags for these leads for this user to allow merging
+    // 1. Fetch existing tags and created_at for these leads for this user to allow merging
     const { data: existingLeads } = await supabase
         .from("user_leads")
-        .select(`id, ${idField}, tags`)
+        .select(`id, ${idField}, tags, created_at`)
         .eq("user_id", userId)
         .in(idField, leadIds);
 
     const existingMap = new Map();
     if (existingLeads) {
         existingLeads.forEach(l => {
-            existingMap.set(l[idField], l.tags || []);
+            existingMap.set(l[idField], { tags: l.tags || [], created_at: l.created_at });
         });
     }
 
     const now = new Date().toISOString();
     const items = leadIds.map(id => {
-        const existingTags = existingMap.get(id) || [];
+        const existing = existingMap.get(id);
+        const existingTags = existing ? existing.tags : [];
         // Merge tags and remove duplicates
         const mergedTags = Array.from(new Set([...existingTags, ...tags])).filter(Boolean);
 
@@ -539,9 +540,17 @@ async function linkUserToLeadsBulk(userId, leadIds, type, tags = []) {
             user_id: userId,
             profile_type: type,
             tags: mergedTags,
-            created_at: now,
             updated_at: now  // Always update so re-scrapes refresh the user's "Last Updated" timestamp
         };
+        
+        // Preserve original created_at if it's already in the user's leads AND they didn't explicitly force an update
+        if (existing && !forceUpdate) {
+            item.created_at = existing.created_at;
+        } else {
+            // New connection OR explicitly forced update
+            item.created_at = now;
+        }
+        
         item[idField] = id;
         return item;
     });

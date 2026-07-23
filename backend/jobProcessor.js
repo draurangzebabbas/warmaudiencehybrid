@@ -629,7 +629,7 @@ async function processProfiles(userId, urls, type, keyManager, tags = [], jobId,
                 const sid = cached.profile?.id || cached.company?.id;
                 console.log(`📦 Cache Hit [${type}] (Supabase): ${url}`);
                 // Link in Supabase junction table
-                await supabaseApi.linkUserToLeadsBulk(userId, [sid], type, tags);
+                await supabaseApi.linkUserToLeadsBulk(userId, [sid], type, tags, force);
 
 
             } else {
@@ -657,7 +657,7 @@ async function processProfiles(userId, urls, type, keyManager, tags = [], jobId,
         return (async () => {
             await new Promise(r => setTimeout(r, index * 200));
             await keyManager.refreshIfLow();
-            await scrapeBatch(userId, batch, type, keyManager, tags);
+            await scrapeBatch(userId, batch, type, keyManager, tags, force);
             
             completedBatches++;
             if (jobId) {
@@ -670,7 +670,7 @@ async function processProfiles(userId, urls, type, keyManager, tags = [], jobId,
     if (jobId) await supabaseApi.updateJobProgress(jobId, 100);
 }
 
-async function scrapeBatch(userId, urls, type, keyManager, tags) {
+async function scrapeBatch(userId, urls, type, keyManager, tags, force = false) {
     try {
         const results = await executeWithRetry(
             keyManager,
@@ -740,14 +740,14 @@ async function scrapeBatch(userId, urls, type, keyManager, tags) {
                     const saved = await supabaseApi.upsertPersonalProfilesBulk(formatted);
                     if (saved && saved.length > 0) {
                         const sids = saved.map(s => s.id);
-                        await supabaseApi.linkUserToLeadsBulk(userId, sids, "personal", tags);
+                        await supabaseApi.linkUserToLeadsBulk(userId, sids, "personal", tags, force);
                         console.log(`   ✅ Linked ${saved.length} personal profiles in Supabase`);
                     }
                 } else {
                     const saved = await supabaseApi.upsertCompanyProfilesBulk(formatted);
                     if (saved && saved.length > 0) {
                         const sids = saved.map(s => s.id);
-                        await supabaseApi.linkUserToLeadsBulk(userId, sids, "company", tags);
+                        await supabaseApi.linkUserToLeadsBulk(userId, sids, "company", tags, force);
                         console.log(`   ✅ Linked ${saved.length} company profiles in Supabase`);
                     }
                 }
