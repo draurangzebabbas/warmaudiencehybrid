@@ -113,12 +113,17 @@ export async function GET(req: Request) {
         }
 
         // Step 1: Get the user's lead IDs + tags from the junction table
-        const { data: userLeads, error: userLeadsError } = await supabase
+        const userLeadsResult = await (supabase
             .from("user_leads")
             .select(`${config.idField}, tags`)
             .eq("user_id", user.id)
             .eq("profile_type", type)
-            .not(config.idField, "is", null);
+            .not(config.idField, "is", null) as unknown as Promise<{
+                data: Record<string, unknown>[] | null;
+                error: { message: string } | null;
+            }>);
+
+        const { data: userLeads, error: userLeadsError } = userLeadsResult;
 
         if (userLeadsError) {
             console.error("Error fetching user_leads:", userLeadsError);
@@ -134,9 +139,9 @@ export async function GET(req: Request) {
         const leadIds: string[] = [];
         for (const ul of userLeads) {
             const id = ul[config.idField];
-            if (id) {
+            if (id && typeof id === "string") {
                 leadIds.push(id);
-                tagsMap.set(id, ul.tags || []);
+                tagsMap.set(id, ul.tags as string[] || []);
             }
         }
 
