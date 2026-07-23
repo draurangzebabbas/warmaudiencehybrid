@@ -7,12 +7,8 @@ const TYPE_CONFIG: Record<string, { table: string; idField: string; columns: str
         table: "google_maps_leads",
         idField: "lead_id",
         columns: [
-            "title", "price_range", "description", "website", "phone",
-            "address", "city", "state", "country", "postal_code",
-            "latitude", "longitude", "total_score", "reviews_count",
-            "category_name", "email",
-            "facebook", "twitter", "instagram", "linkedin",
-            "permanently_closed", "business_status", "url",
+            "title", "total_score", "reviews_count", "address", "phone",
+            "emails", "website", "city", "image_url", "place_id", "url"
         ],
     },
     personal: {
@@ -38,7 +34,7 @@ const TYPE_CONFIG: Record<string, { table: string; idField: string; columns: str
         table: "instagram_leads",
         idField: "instagram_id",
         columns: [
-            "username", "full_name", "biography", "website", "email",
+            "username", "full_name", "biography", "external_url", "email",
             "public_phone_number", "followers_count", "following_count",
             "posts_count", "category", "is_professional_account",
             "is_verified", "profile_pic_url",
@@ -67,16 +63,16 @@ const TYPE_CONFIG: Record<string, { table: string; idField: string; columns: str
         table: "website_contacts",
         idField: "website_contact_id",
         columns: [
-            "domain", "company_name", "first_name", "last_name", "full_name",
-            "email", "phone", "job_title", "linkedin_url", "twitter_url",
-            "facebook_url", "city", "country", "website",
+            "domain", "emails", "phones", "linkedin", "twitter",
+            "instagram", "facebook", "youtube", "tiktok", "pinterest"
         ],
     },
     facebook_group: {
         table: "facebook_groups",
         idField: "facebook_group_id",
         columns: [
-            "username", "full_name", "profile_url", "email", "phone",
+            "name", "url", "member_count", "visibility", "post_frequency",
+            "viewer_join_state", "member_info", "search_keyword"
         ],
     },
 };
