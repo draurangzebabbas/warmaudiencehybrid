@@ -72,7 +72,7 @@ These leads become searchable and downloadable inside the user's account.
             Convex (Users & Plans)
                     │
                     ▼
-          Backend (Render Server)
+          Backend (Render for queues / Vercel Next.js APIs)
                     │
             Business Logic Layer
                     │
@@ -223,6 +223,15 @@ Responsibilities:
  
 ---
  
+# Usage Limits & Scraping Quotas
+
+To prevent abuse (e.g., the "scam loophole" where users delete leads to regain limits), WarmAudience tracks all lead extractions permanently in a Supabase `user_usage` table.
+- **Limits are enforced at the point of scraping**, not by counting the number of leads currently in the dashboard.
+- When an Apify Actor runs, it increments the user's `extracted_leads` count.
+- Free and premium tiers have specific monthly limits.
+
+---
+
 # Plans
  
 ## Free
@@ -649,6 +658,8 @@ Examples:
 - Keyword
 - Source
 - Location
+- Tags (supports fuzzy, case-insensitive partial matching via a `tags_text` computed column)
+- Min/Max Reviews & Rating (Google Maps)
  
 ---
  
@@ -657,6 +668,8 @@ Examples:
 Users can export their collected leads.
  
 Downloads are generated from the leads stored inside Supabase.
+- Exports are processed in **chunks (e.g., batches of 200)** to prevent '414 URI Too Long' errors when downloading massive datasets.
+- CSV Exports **respect the exact filters** applied by the user on the frontend.
  
 ---
  
@@ -773,6 +786,8 @@ Stores:
 - Extracted Leads
  
 Everything users collect is stored here.
+
+Usage tracking is also stored here via the `user_usage` table to prevent limit-reset loopholes (deleting leads does not reset the monthly extracted limit).
  
 ---
  
@@ -793,6 +808,8 @@ Apify integration
 Database writes
  
 Validation
+
+*(Note: Some backend API routes, like CSV export and frontend filtering, run on Vercel via Next.js Serverless Functions)*
  
 ---
  
@@ -877,6 +894,8 @@ When reasoning about this application, always assume the following:
 - Supabase stores all extracted leads.
 - Render hosts the backend APIs and business logic.
 - Polar manages subscriptions and payments.
+- Vercel hosts the Next.js frontend and Serverless API routes (like CSV exports).
+- Lead extraction limits are tracked in the Supabase `user_usage` table to permanently record usage, fixing the delete-to-reset loophole.
 - Every lead is stored to  a central lead table for each platform we have different table and we link each lead from there to all the users who scraped them so each user see that in his my profiles tab.
 - Users can only access their own extracted data.
 - The "My Profiles" page is the user's private lead database.
