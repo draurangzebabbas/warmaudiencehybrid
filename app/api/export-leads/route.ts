@@ -1,6 +1,87 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+// Maps profile_type to its join table and the columns we want to export for each platform
+const TYPE_CONFIG: Record<string, { table: string; joinKey: string; columns: string[] }> = {
+    google_maps: {
+        table: "google_maps_leads",
+        joinKey: "lead_id",
+        columns: [
+            "title", "price_range", "description", "website", "phone",
+            "address", "city", "state", "country", "postal_code",
+            "latitude", "longitude", "total_score", "reviews_count",
+            "category_name", "categories", "email",
+            "facebook", "twitter", "instagram", "linkedin",
+            "permanently_closed", "business_status",
+            "opening_hours", "url",
+        ],
+    },
+    personal: {
+        table: "linkedin_profiles",
+        joinKey: "linkedin_id",
+        columns: [
+            "full_name", "first_name", "last_name", "headline", "email",
+            "phone", "connections", "followers", "company_name", "job_title",
+            "location", "city", "country", "is_premium", "open_to_work",
+            "is_verified", "about", "linkedin_url",
+        ],
+    },
+    company: {
+        table: "company_profiles",
+        joinKey: "company_id",
+        columns: [
+            "company_name", "linkedin_url", "website_url", "description",
+            "employee_count", "employee_count_range", "follower_count",
+            "city", "country", "is_verified",
+        ],
+    },
+    instagram: {
+        table: "instagram_leads",
+        joinKey: "instagram_id",
+        columns: [
+            "username", "full_name", "biography", "website", "email",
+            "public_phone_number", "followers_count", "following_count",
+            "posts_count", "category", "is_professional_account",
+            "is_verified", "profile_pic_url",
+        ],
+    },
+    x: {
+        table: "x_leads",
+        joinKey: "x_id",
+        columns: [
+            "username", "full_name", "biography", "email", "phone",
+            "location", "followers_count", "following_count", "tweets_count",
+            "is_verified", "is_blue_verified", "verified_type",
+            "external_url", "url", "account_created_at",
+        ],
+    },
+    facebook: {
+        table: "facebook_leads",
+        joinKey: "facebook_id",
+        columns: [
+            "page_name", "title", "category", "email", "phone",
+            "website", "address", "facebook_url", "intro",
+            "likes_count", "followers_count", "creation_date",
+        ],
+    },
+    website_contact: {
+        table: "website_contacts",
+        joinKey: "website_contact_id",
+        columns: [
+            "domain", "company_name", "first_name", "last_name", "full_name",
+            "email", "phone", "job_title", "linkedin_url", "twitter_url",
+            "facebook_url", "city", "country", "website",
+        ],
+    },
+    facebook_group: {
+        table: "facebook_group_leads",
+        joinKey: "facebook_group_id",
+        columns: [
+            "username", "full_name", "profile_url", "email", "phone",
+        ],
+    },
+};
+
 export async function GET(req: Request) {
     try {
         const url = new URL(req.url);
@@ -8,6 +89,11 @@ export async function GET(req: Request) {
 
         if (!type) {
             return NextResponse.json({ error: "Missing type parameter" }, { status: 400 });
+        }
+
+        const config = TYPE_CONFIG[type];
+        if (!config) {
+            return NextResponse.json({ error: `Unknown lead type: ${type}` }, { status: 400 });
         }
 
         const authHeader = req.headers.get("Authorization");
@@ -32,10 +118,13 @@ export async function GET(req: Request) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        // Fetch all leads for this user and type
+        // Fetch user_leads and join with the real lead table using the correct joinKey
+        // We only select the columns we care about from the lead table (no internal DB fields)
+        const selectQuery = `tags, ${config.table}(${config.columns.join(", ")})`;
+
         const { data: leads, error } = await supabase
             .from("user_leads")
-            .select("*")
+            .select(selectQuery)
             .eq("user_id", user.id)
             .eq("profile_type", type);
 
@@ -48,61 +137,32 @@ export async function GET(req: Request) {
             return NextResponse.json({ error: "No leads found for export" }, { status: 404 });
         }
 
-        // Format data based on type
-        let formattedData = leads.map((lead) => {
-            const details = lead.profile_details || {};
-            // Base properties
-            const base: Record<string, any> = {
-                "Platform": type,
-                "Saved At": lead.created_at,
-            };
+        // Flatten: merge the joined lead data with tags into one flat row
+        const formattedData = leads
+            .map((lead: any) => {
+                const details = lead[config.table] as Record<string, any> | null;
+                if (!details) return null;
+                const row: Record<string, any> = { ...details };
+                // Add tags as a human-readable column at the end
+                if (lead.tags && lead.tags.length > 0) {
+                    row["Tags"] = lead.tags.join("; ");
+                }
+                return row;
+            })
+            .filter(Boolean) as Record<string, any>[];
 
-            // Common dynamic properties we want to put at the top level
-            if (details.name) base["Name"] = details.name;
-            if (details.full_name) base["Name"] = details.full_name;
-            if (details.title) base["Title"] = details.title;
-            if (details.company_name) base["Company"] = details.company_name;
-            if (details.domain) base["Domain"] = details.domain;
-            if (details.username) base["Username"] = details.username;
-            if (details.page_name) base["Page Name"] = details.page_name;
-            if (details.email || details.public_email) base["Email"] = details.email || details.public_email;
-            if (details.phone || details.public_phone_number) base["Phone"] = details.phone || details.public_phone_number;
-            
-            // Add all other properties from details as raw columns
-            const rawDetails = { ...details };
-            // Remove properties we already pulled out
-            delete rawDetails.name;
-            delete rawDetails.full_name;
-            delete rawDetails.title;
-            delete rawDetails.company_name;
-            delete rawDetails.domain;
-            delete rawDetails.username;
-            delete rawDetails.page_name;
-            delete rawDetails.email;
-            delete rawDetails.public_email;
-            delete rawDetails.phone;
-            delete rawDetails.public_phone_number;
-
-            return { ...base, ...rawDetails };
-        });
-
-        // Simple CSV Stringifier
         if (formattedData.length === 0) {
             return NextResponse.json({ error: "No data to export" }, { status: 400 });
         }
 
-        // Get all unique headers across all objects
-        const headersSet = new Set<string>();
-        formattedData.forEach(row => {
-            Object.keys(row).forEach(key => headersSet.add(key));
-        });
-        const headers = Array.from(headersSet);
+        // Build CSV headers from the columns config + Tags
+        const csvColumns = [...config.columns, "Tags"];
 
         // Escape helper for CSV
-        const escapeCSV = (val: any) => {
+        const escapeCSV = (val: any): string => {
             if (val === null || val === undefined) return '""';
             let str = "";
-            if (typeof val === 'object') {
+            if (typeof val === "object") {
                 if (Array.isArray(val)) str = val.join("; ");
                 else str = JSON.stringify(val);
             } else {
@@ -112,24 +172,27 @@ export async function GET(req: Request) {
             return `"${str}"`;
         };
 
-        const csvLines = [];
-        // Add header line
-        csvLines.push(headers.map(h => escapeCSV(h)).join(","));
+        // Human-readable column header mapping
+        const headerLabel = (col: string) =>
+            col.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
-        // Add data lines
-        formattedData.forEach(row => {
-            const line = headers.map(h => escapeCSV(row[h])).join(",");
+        const csvLines: string[] = [];
+        // Header row with pretty names
+        csvLines.push(csvColumns.map(headerLabel).map(escapeCSV).join(","));
+
+        // Data rows
+        formattedData.forEach((row) => {
+            const line = csvColumns.map((col) => escapeCSV(row[col])).join(",");
             csvLines.push(line);
         });
 
         const csvContent = csvLines.join("\n");
 
-        // Return as a streaming file download response
         return new NextResponse(csvContent, {
             headers: {
                 "Content-Type": "text/csv; charset=utf-8",
-                "Content-Disposition": `attachment; filename="${type}-leads-${new Date().toISOString().split('T')[0]}.csv"`,
-            }
+                "Content-Disposition": `attachment; filename="${type}-leads-${new Date().toISOString().split("T")[0]}.csv"`,
+            },
         });
 
     } catch (error: any) {
