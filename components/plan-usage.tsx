@@ -26,8 +26,13 @@ export function PlanUsage() {
                 return;
             }
 
+            const now = new Date();
+            const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
             const [profiles, trackers, profileData] = await Promise.all([
-                supabase.from("user_leads").select("*", { count: "exact", head: true }).eq("user_id", session.user.id),
+                supabase.from("user_leads").select("*", { count: "exact", head: true })
+                    .eq("user_id", session.user.id)
+                    .gte("created_at", firstDayOfMonth),
                 supabase.from("trackers").select("*", { count: "exact", head: true }).eq("user_id", session.user.id).eq("is_active", true),
                 supabase.from("profiles").select("plan_slug").eq("id", session.user.id).single()
             ]);
