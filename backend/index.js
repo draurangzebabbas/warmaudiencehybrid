@@ -893,6 +893,101 @@ app.post("/api/competitor-tracking/status", async (req, res) => {
 });
 
 // ─────────────────────────────────────────
+// Agent Management (e.g. Google Maps Sweep)
+// ─────────────────────────────────────────
+
+app.post("/api/agents", async (req, res) => {
+    try {
+        const { name, type, config, schedule } = req.body;
+
+        if (!type || !config) {
+            return res.status(400).json({ error: "Type and config are required" });
+        }
+
+        // Check active agents count against user's subscription limits
+        const [subscription, activeAgentsCount] = await Promise.all([
+            supabaseApi.getUserSubscription(req.userId),
+            supabaseApi.getActiveAgentsCount(req.userId)
+        ]);
+
+        const agentLimits = {
+            free: 1,
+            growth: 5,
+            scale: 10
+        };
+
+        const limit = agentLimits[subscription.plan_slug] || 1;
+
+        if (activeAgentsCount >= limit) {
+            return res.status(403).json({
+                error: `Limit Reached: Your ${subscription.plan_slug} plan only allows ${limit} active automated agent(s). Please upgrade to add more.`,
+                code: "LIMIT_REACHED"
+            });
+        }
+
+        const { data, error } = await supabaseApi.supabase
+            .from("agents")
+            .insert([{
+                user_id: req.userId,
+                name: name || `${type.replace(/_/g, ' ')} Agent`,
+                type,
+                config,
+                schedule: schedule || "manual",
+                status: "active",
+                next_run_at: new Date().toISOString()
+            }])
+            .select()
+            .single();
+
+        if (error) throw error;
+        res.json({ status: "ok", agentId: data.id });
+    } catch (e) {
+        console.error("Agent creation error:", e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.post("/api/agents/status", async (req, res) => {
+    try {
+        const { agentId, status } = req.body;
+
+        if (!agentId || !status) {
+            return res.status(400).json({ error: "Agent ID and status are required" });
+        }
+
+        const { error } = await supabaseApi.supabase
+            .from("agents")
+            .update({ status })
+            .eq("id", agentId)
+            .eq("user_id", req.userId);
+
+        if (error) throw error;
+        res.json({ status: "ok" });
+    } catch (e) {
+        console.error("Agent status update error:", e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.delete("/api/agents/:id", async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const { error } = await supabaseApi.supabase
+            .from("agents")
+            .delete()
+            .eq("id", id)
+            .eq("user_id", req.userId);
+
+        if (error) throw error;
+        res.json({ status: "ok" });
+    } catch (e) {
+        console.error("Agent deletion error:", e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// ─────────────────────────────────────────
 // GET /api/heartbeat
 // Called by Convex cron every 10 minutes.
 // Fetches due trackers and runs them.
