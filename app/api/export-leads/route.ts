@@ -138,18 +138,26 @@ async function buildCSVResponse(
         return NextResponse.json({ error: "No valid lead IDs found" }, { status: 404 });
     }
 
-    // Step 2: Fetch lead details from real table
-    // All lead tables (google_maps_leads, linkedin_profiles, etc.) have open SELECT RLS policies
+    // Step 2: Fetch lead details from real table in chunks to avoid URI Too Long errors
     const selectColumns = ["id", ...config.columns].join(",");
-    const { data: leadDetailsRaw, error: detailsError } = await supabase
-        .from(config.table)
-        .select(selectColumns)
-        .in("id", leadIds);
-    const leadDetails = leadDetailsRaw as Record<string, any>[] | null;
+    const leadDetails: Record<string, any>[] = [];
+    const chunkSize = 200;
 
-    if (detailsError) {
-        console.error("Error fetching lead details:", JSON.stringify(detailsError));
-        return NextResponse.json({ error: "Failed to fetch lead details", detail: (detailsError as any).message }, { status: 500 });
+    for (let i = 0; i < leadIds.length; i += chunkSize) {
+        const chunk = leadIds.slice(i, i + chunkSize);
+        const { data: chunkData, error: detailsError } = await supabase
+            .from(config.table)
+            .select(selectColumns)
+            .in("id", chunk);
+
+        if (detailsError) {
+            console.error("Error fetching lead details chunk:", JSON.stringify(detailsError));
+            return NextResponse.json({ error: "Failed to fetch lead details", detail: (detailsError as any).message }, { status: 500 });
+        }
+        
+        if (chunkData) {
+            leadDetails.push(...chunkData);
+        }
     }
 
     if (!leadDetails || leadDetails.length === 0) {
