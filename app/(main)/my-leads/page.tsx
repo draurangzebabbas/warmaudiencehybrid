@@ -254,6 +254,11 @@ export default function ProfilesPage() {
         const goToPage = (p: number) => setPage(p);
         const changePageSize = (s: number) => { setPageSizeState(s); setPage(0); };
 
+        // Reset page to 0 when filters change
+        useEffect(() => {
+            setPage(0);
+        }, [filters]);
+
         // Fetch total count (instant — HEAD request, no data transferred)
         useEffect(() => {
             if (!userId) return;
@@ -280,6 +285,7 @@ export default function ProfilesPage() {
                 .eq("user_id", userId)
                 .eq("profile_type", profileType)
                 .order("created_at", { ascending: false })
+                .order("id", { ascending: true })
                 .range(from, to);
 
             query = applyFilters(query, profileType, filters);
@@ -408,7 +414,7 @@ export default function ProfilesPage() {
                     }
                     setLoading(false);
                 });
-        }, [userId, profileType, page, pageSize, refreshKey]);
+        }, [userId, profileType, page, pageSize, refreshKey, filters]);
 
         return { leads, totalCount, loading, refresh, page, pageSize, goToPage, changePageSize };
     }
