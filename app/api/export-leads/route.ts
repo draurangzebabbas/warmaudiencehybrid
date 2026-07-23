@@ -1,34 +1,33 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-// Maps profile_type to its join table and the columns we want to export for each platform
-const TYPE_CONFIG: Record<string, { table: string; joinKey: string; columns: string[] }> = {
+// Maps profile_type -> { table, idField (in user_leads), columns to export }
+const TYPE_CONFIG: Record<string, { table: string; idField: string; columns: string[] }> = {
     google_maps: {
         table: "google_maps_leads",
-        joinKey: "lead_id",
+        idField: "lead_id",
         columns: [
             "title", "price_range", "description", "website", "phone",
             "address", "city", "state", "country", "postal_code",
             "latitude", "longitude", "total_score", "reviews_count",
-            "category_name", "categories", "email",
+            "category_name", "email",
             "facebook", "twitter", "instagram", "linkedin",
-            "permanently_closed", "business_status",
-            "opening_hours", "url",
+            "permanently_closed", "business_status", "url",
         ],
     },
     personal: {
         table: "linkedin_profiles",
-        joinKey: "linkedin_id",
+        idField: "linkedin_id",
         columns: [
             "full_name", "first_name", "last_name", "headline", "email",
-            "phone", "connections", "followers", "company_name", "job_title",
+            "connections", "followers", "company_name", "job_title",
             "location", "city", "country", "is_premium", "open_to_work",
             "is_verified", "about", "linkedin_url",
         ],
     },
     company: {
         table: "company_profiles",
-        joinKey: "company_id",
+        idField: "company_id",
         columns: [
             "company_name", "linkedin_url", "website_url", "description",
             "employee_count", "employee_count_range", "follower_count",
@@ -37,7 +36,7 @@ const TYPE_CONFIG: Record<string, { table: string; joinKey: string; columns: str
     },
     instagram: {
         table: "instagram_leads",
-        joinKey: "instagram_id",
+        idField: "instagram_id",
         columns: [
             "username", "full_name", "biography", "website", "email",
             "public_phone_number", "followers_count", "following_count",
@@ -47,7 +46,7 @@ const TYPE_CONFIG: Record<string, { table: string; joinKey: string; columns: str
     },
     x: {
         table: "x_leads",
-        joinKey: "x_id",
+        idField: "x_id",
         columns: [
             "username", "full_name", "biography", "email", "phone",
             "location", "followers_count", "following_count", "tweets_count",
@@ -57,7 +56,7 @@ const TYPE_CONFIG: Record<string, { table: string; joinKey: string; columns: str
     },
     facebook: {
         table: "facebook_leads",
-        joinKey: "facebook_id",
+        idField: "facebook_id",
         columns: [
             "page_name", "title", "category", "email", "phone",
             "website", "address", "facebook_url", "intro",
@@ -66,7 +65,7 @@ const TYPE_CONFIG: Record<string, { table: string; joinKey: string; columns: str
     },
     website_contact: {
         table: "website_contacts",
-        joinKey: "website_contact_id",
+        idField: "website_contact_id",
         columns: [
             "domain", "company_name", "first_name", "last_name", "full_name",
             "email", "phone", "job_title", "linkedin_url", "twitter_url",
@@ -74,8 +73,8 @@ const TYPE_CONFIG: Record<string, { table: string; joinKey: string; columns: str
         ],
     },
     facebook_group: {
-        table: "facebook_group_leads",
-        joinKey: "facebook_group_id",
+        table: "facebook_groups",
+        idField: "facebook_group_id",
         columns: [
             "username", "full_name", "profile_url", "email", "phone",
         ],
@@ -105,62 +104,78 @@ export async function GET(req: Request) {
         const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
         const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-            global: {
-                headers: {
-                    Authorization: authHeader,
-                },
-            },
+            global: { headers: { Authorization: authHeader } },
         });
 
         const { data: { user }, error: authError } = await supabase.auth.getUser();
-
         if (authError || !user) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        // Fetch user_leads and join with the real lead table using the correct joinKey
-        // We only select the columns we care about from the lead table (no internal DB fields)
-        const selectQuery = `tags, ${config.table}(${config.columns.join(", ")})`;
-
-        const { data: leads, error } = await supabase
+        // Step 1: Get the user's lead IDs + tags from the junction table
+        const { data: userLeads, error: userLeadsError } = await supabase
             .from("user_leads")
-            .select(selectQuery)
+            .select(`${config.idField}, tags`)
             .eq("user_id", user.id)
-            .eq("profile_type", type);
+            .eq("profile_type", type)
+            .not(config.idField, "is", null);
 
-        if (error) {
-            console.error("Supabase error fetching leads for export:", error);
+        if (userLeadsError) {
+            console.error("Error fetching user_leads:", userLeadsError);
             return NextResponse.json({ error: "Failed to fetch leads" }, { status: 500 });
         }
 
-        if (!leads || leads.length === 0) {
+        if (!userLeads || userLeads.length === 0) {
             return NextResponse.json({ error: "No leads found for export" }, { status: 404 });
         }
 
-        // Flatten: merge the joined lead data with tags into one flat row
-        const formattedData = leads
-            .map((lead: any) => {
-                const details = lead[config.table] as Record<string, any> | null;
-                if (!details) return null;
-                const row: Record<string, any> = { ...details };
-                // Add tags as a human-readable column at the end
-                if (lead.tags && lead.tags.length > 0) {
-                    row["Tags"] = lead.tags.join("; ");
-                }
-                return row;
-            })
-            .filter(Boolean) as Record<string, any>[];
-
-        if (formattedData.length === 0) {
-            return NextResponse.json({ error: "No data to export" }, { status: 400 });
+        // Build a tags map: leadId -> tags[]
+        const tagsMap = new Map<string, string[]>();
+        const leadIds: string[] = [];
+        for (const ul of userLeads) {
+            const id = ul[config.idField];
+            if (id) {
+                leadIds.push(id);
+                tagsMap.set(id, ul.tags || []);
+            }
         }
 
-        // Build CSV headers from the columns config + Tags
-        const csvColumns = [...config.columns, "Tags"];
+        // Step 2: Fetch the actual lead details from the real table
+        const { data: leadDetails, error: detailsError } = await supabase
+            .from(config.table)
+            .select(["id", ...config.columns].join(", "))
+            .in("id", leadIds);
 
-        // Escape helper for CSV
+        if (detailsError) {
+            console.error("Error fetching lead details:", detailsError);
+            return NextResponse.json({ error: "Failed to fetch lead details" }, { status: 500 });
+        }
+
+        if (!leadDetails || leadDetails.length === 0) {
+            return NextResponse.json({ error: "No lead details found" }, { status: 404 });
+        }
+
+        // Step 3: Merge lead details with tags
+        const formattedData = leadDetails.map((lead: any) => {
+            const row: Record<string, any> = {};
+            for (const col of config.columns) {
+                row[col] = lead[col] ?? "";
+            }
+            const tags = tagsMap.get(lead.id) || [];
+            row["tags"] = tags.length > 0 ? tags.join("; ") : "";
+            return row;
+        });
+
+        // Build CSV columns = defined columns + Tags
+        const csvColumns = [...config.columns, "tags"];
+
+        // Human-readable header labels
+        const headerLabel = (col: string) =>
+            col.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
+        // CSV escape helper
         const escapeCSV = (val: any): string => {
-            if (val === null || val === undefined) return '""';
+            if (val === null || val === undefined || val === "") return '""';
             let str = "";
             if (typeof val === "object") {
                 if (Array.isArray(val)) str = val.join("; ");
@@ -172,18 +187,10 @@ export async function GET(req: Request) {
             return `"${str}"`;
         };
 
-        // Human-readable column header mapping
-        const headerLabel = (col: string) =>
-            col.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-
         const csvLines: string[] = [];
-        // Header row with pretty names
         csvLines.push(csvColumns.map(headerLabel).map(escapeCSV).join(","));
-
-        // Data rows
         formattedData.forEach((row) => {
-            const line = csvColumns.map((col) => escapeCSV(row[col])).join(",");
-            csvLines.push(line);
+            csvLines.push(csvColumns.map((col) => escapeCSV(row[col])).join(","));
         });
 
         const csvContent = csvLines.join("\n");
