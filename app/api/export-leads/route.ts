@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { applyFilters, getSelectString } from "@/src/lib/supabase-filters";
 
 // Maps profile_type -> { table, idField (in user_leads), columns to export }
 const TYPE_CONFIG: Record<string, { table: string; idField: string; columns: string[] }> = {
@@ -92,23 +93,34 @@ async function buildCSVResponse(
     supabase: ReturnType<typeof createClient>,
     userId: string,
     type: string,
-    filterJunctionIds: string[] | null
+    filterJunctionIds: string[] | null,
+    filters?: any
 ): Promise<NextResponse> {
     const config = TYPE_CONFIG[type];
     if (!config) {
         return NextResponse.json({ error: `Unknown lead type: ${type}` }, { status: 400 });
     }
 
-    // Step 1: Get user_leads junction rows, optionally filtered to specific IDs
+    // Step 1: Get user_leads junction rows, optionally filtered to specific IDs or backend filters
+    let selectStr = `${config.idField}, id, tags`;
+    
+    // If we have filters, we need the inner join string to apply them properly!
+    if (filters && Object.keys(filters).length > 0) {
+        const baseSelectStr = getSelectString(type);
+        selectStr = `${baseSelectStr}, ${config.idField}`;
+    }
+
     let junctionQuery = supabase
         .from("user_leads")
-        .select(`${config.idField}, id, tags`)
+        .select(selectStr)
         .eq("user_id", userId)
         .eq("profile_type", type)
         .not(config.idField, "is", null);
 
     if (filterJunctionIds && filterJunctionIds.length > 0) {
         junctionQuery = junctionQuery.in("id", filterJunctionIds);
+    } else if (filters && Object.keys(filters).length > 0) {
+        junctionQuery = applyFilters(junctionQuery, type, filters);
     }
 
     const { data: userLeadsRaw, error: userLeadsError } = await junctionQuery;
@@ -208,7 +220,7 @@ async function buildCSVResponse(
     });
 }
 
-// POST: filtered export — accepts { type, junctionIds? }
+// POST: filtered export — accepts { type, junctionIds?, filters? }
 export async function POST(req: Request) {
     try {
         const authHeader = req.headers.get("Authorization");
@@ -223,13 +235,13 @@ export async function POST(req: Request) {
         }
 
         const body = await req.json().catch(() => ({}));
-        const { type, junctionIds } = body;
+        const { type, junctionIds, filters } = body;
 
         if (!type) {
             return NextResponse.json({ error: "Missing type parameter" }, { status: 400 });
         }
 
-        return await buildCSVResponse(supabase, user.id, type, junctionIds || null);
+        return await buildCSVResponse(supabase, user.id, type, junctionIds || null, filters || null);
 
     } catch (error: any) {
         console.error("Export API error:", error);

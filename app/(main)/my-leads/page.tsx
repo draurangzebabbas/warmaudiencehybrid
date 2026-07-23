@@ -678,11 +678,24 @@ const [personalFilters, setPersonalFilters] = useState({
         try {
             setExportingStates(prev => ({ ...prev, [type]: true }));
             const key = await getKey();
-            const res = await fetch(`/api/export-leads?type=${type}`, {
-                method: "GET",
+
+            let filters = {};
+            if (type === "personal") filters = personalFilters;
+            else if (type === "company") filters = companyFilters;
+            else if (type === "google_maps") filters = googleMapsFilters;
+            else if (type === "website_contact") filters = websiteContactsFilters;
+            else if (type === "instagram") filters = instagramFilters;
+            else if (type === "facebook") filters = facebookFilters;
+            else if (type === "facebook_group") filters = facebookGroupsFilters;
+            else if (type === "x") filters = xFilters;
+
+            const res = await fetch(`/api/export-leads`, {
+                method: "POST",
                 headers: {
-                    "Authorization": `Bearer ${key}`
-                }
+                    "Authorization": `Bearer ${key}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ type, filters })
             });
 
             if (!res.ok) {
