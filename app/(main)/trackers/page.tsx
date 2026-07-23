@@ -530,7 +530,7 @@ export default function TrackersPage() {
                                     className="cursor-pointer border-2 hover:border-primary transition-all p-4 flex gap-4 items-center bg-muted/20"
                                     onClick={() => setActiveStep("linkedin")}
                                 >
-                                    <div className="p-3 bg-blue-500/10 text-blue-600 rounded-lg">
+                                    <div className="p-2">
                                         <LinkedInIcon className="size-8" />
                                     </div>
                                     <div className="flex-1">
@@ -542,7 +542,7 @@ export default function TrackersPage() {
                                     className="cursor-pointer border-2 hover:border-primary transition-all p-4 flex gap-4 items-center bg-muted/20"
                                     onClick={() => setActiveStep("google_maps")}
                                 >
-                                    <div className="p-3 bg-emerald-500/10 text-emerald-600 rounded-lg">
+                                    <div className="p-2">
                                         <GoogleMapsIcon className="size-8" />
                                     </div>
                                     <div className="flex-1">
@@ -619,10 +619,6 @@ export default function TrackersPage() {
                                             </Label>
                                         </div>
                                     </div>
-                                    <div className="flex items-start gap-2 text-[10px] text-muted-foreground bg-muted/30 p-2 rounded">
-                                        <Info className="size-3 mt-0.5" />
-                                        <span>Each automated run scans for new engagement and adds unique profiles to your collection.</span>
-                                    </div>
                                 </div>
                             </div>
                         )}
@@ -641,18 +637,18 @@ export default function TrackersPage() {
                                 <div className="space-y-2">
                                     <Label>Cities List (One per line)</Label>
                                     <Textarea
-                                        placeholder={`e.g.\nCountry , State , City\nUSA , New York , New York City\nUSA , California , Los Angeles`}
+                                        placeholder="Country , State , City"
                                         rows={4}
                                         value={mapsCitiesText}
                                         onChange={(e) => setMapsCitiesText(e.target.value)}
-                                        className="font-mono text-xs"
+                                        className="font-mono text-sm"
                                     />
                                     <p className="text-[10px] text-muted-foreground">
                                         Use the format: Country , State , City
                                     </p>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="space-y-2 flex flex-col justify-end">
                                         <Label>Max Leads per City</Label>
                                         <Input
                                             type="number"
@@ -662,8 +658,8 @@ export default function TrackersPage() {
                                             max="200"
                                         />
                                     </div>
-                                    <div className="space-y-2">
-                                        <Label>Custom Tags</Label>
+                                    <div className="space-y-2 flex flex-col justify-end">
+                                        <Label>Custom Tags (comma separated)</Label>
                                         <Input
                                             placeholder="e.g. dentists, map-sweep"
                                             value={mapsTags}
@@ -674,9 +670,9 @@ export default function TrackersPage() {
                             </div>
                         )}
 
-                        <DialogFooter>
+                        <DialogFooter className="flex sm:justify-between w-full gap-2 mt-4 sm:space-x-0">
                             {activeStep !== "selector" ? (
-                                <div className="flex items-center justify-between w-full mt-2">
+                                <>
                                     <Button variant="outline" onClick={() => setActiveStep("selector")}>Back</Button>
                                     {activeStep === "linkedin" ? (
                                         <Button onClick={handleCreateLinkedInTracker} disabled={actionLoading}>
@@ -689,9 +685,9 @@ export default function TrackersPage() {
                                             Launch Agent
                                         </Button>
                                     )}
-                                </div>
+                                </>
                             ) : (
-                                <Button variant="outline" className="w-full mt-2" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
+                                <Button variant="outline" className="w-full" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
                             )}
                         </DialogFooter>
                     </DialogContent>

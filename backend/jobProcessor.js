@@ -151,7 +151,25 @@ async function handleGoogleMapsScrape(userId, input, keyManager, tags = ["Google
             let needsApify = true;
             const keyword = (input.searchStringsArray || []).join(", ");
             const location = input.locationQuery;
-            const requestedCount = input.maxCrawledPlacesPerSearch || 10;
+            const subscription = await supabaseApi.getUserSubscription(userId);
+            const currentCount = await supabaseApi.getMonthlyLeadCount(userId);
+            const planLimits = { free: 1000, growth: 10000, pro: 10000, elite: 1000000, scale: 1000000 };
+            const profilesLimit = planLimits[subscription?.plan_slug] || 1000;
+            const remainingLeads = Math.max(0, profilesLimit - currentCount);
+
+            if (remainingLeads <= 0) {
+                console.warn(`🛑 Limit Reached for user ${userId}. Aborting scrape.`);
+                if (jobId) await supabaseApi.failJob(jobId, "Limit reached");
+                return;
+            }
+
+            let requestedCount = input.maxCrawledPlacesPerSearch || 10;
+            // Cap the requested count to the remaining leads so we don't fetch way too many
+            if (requestedCount > remainingLeads) {
+                console.log(`⚠️  Capping requested leads from ${requestedCount} to ${remainingLeads} to respect plan limits.`);
+                requestedCount = remainingLeads;
+                input.maxCrawledPlacesPerSearch = requestedCount; // Pass updated limit to Apify
+            }
             
             const cachedSearch = await supabaseApi.getSearchCache("google_maps", keyword, location);
             

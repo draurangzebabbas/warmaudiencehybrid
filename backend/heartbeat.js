@@ -62,8 +62,41 @@ function startTrackerPoller() {
     }, 60 * 1000); // Every 60 seconds
 }
 
+async function checkAndEnforcePlanLimit(userId, entityId, entityType) {
+    try {
+        const subscription = await supabaseApi.getUserSubscription(userId);
+        const currentCount = await supabaseApi.getMonthlyLeadCount(userId);
+        
+        const planLimits = {
+            free: 1000,
+            growth: 10000,
+            pro: 10000,
+            elite: 1000000,
+            scale: 1000000
+        };
+        const profilesLimit = planLimits[subscription?.plan_slug] || 1000;
+        
+        if (currentCount >= profilesLimit) {
+            console.warn(`🛑 Limit Reached for user ${userId}. Pausing ${entityType} ${entityId}...`);
+            if (entityType === "agent") {
+                await supabaseApi.supabase.from("agents").update({ status: "paused" }).eq("id", entityId);
+            } else if (entityType === "tracker") {
+                await supabaseApi.supabase.from("trackers").update({ is_active: false }).eq("id", entityId);
+            }
+            return false; // Cannot proceed
+        }
+        return true; // Can proceed
+    } catch (err) {
+        console.error(`❌ Error checking limits for ${entityType} ${entityId}:`, err.message);
+        return true; // Proceed if limit check fails, to prevent sticking
+    }
+}
+
 async function executeTracker(tracker) {
     console.log(`📡 Executing Tracker: ${tracker.target_value} (${tracker.schedule})`);
+    
+    const canProceed = await checkAndEnforcePlanLimit(tracker.user_id, tracker.id, "tracker");
+    if (!canProceed) return;
     
     // CRITICAL: Mark as executed IMMEDIATELY to prevent double runs from poller vs heartbeat
     // This updates next_run_at so the next query won't pick it up.
@@ -120,6 +153,9 @@ function startAgentPoller() {
 
 async function executeAgent(agent) {
     console.log(`📡 Executing Agent: ${agent.name} (${agent.type})`);
+    
+    const canProceed = await checkAndEnforcePlanLimit(agent.user_id, agent.id, "agent");
+    if (!canProceed) return;
     
     // We only process one city per minute.
     const config = agent.config || {};
