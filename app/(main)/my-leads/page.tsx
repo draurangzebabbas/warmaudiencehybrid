@@ -257,13 +257,15 @@ export default function ProfilesPage() {
         // Fetch total count (instant — HEAD request, no data transferred)
         useEffect(() => {
             if (!userId) return;
-            supabase
+            const joinTable = profileType === "personal" ? "linkedin_profiles" : profileType === "company" ? "company_profiles" : profileType === "google_maps" ? "google_maps_leads" : profileType === "website_contact" ? "website_contacts" : profileType === "instagram" ? "instagram_leads" : profileType === "x" ? "x_leads" : profileType === "facebook" ? "facebook_leads" : profileType === "facebook_group" ? "facebook_groups" : "";
+            let countQuery = supabase
                 .from("user_leads")
-                .select("*", { count: "exact", head: true })
+                .select(`id${joinTable ? `, ${profileType}: ${joinTable}!inner(id)` : ''}`, { count: "exact", head: true })
                 .eq("user_id", userId)
-                .eq("profile_type", profileType)
-                .then(({ count }) => setTotalCount(count || 0));
-        }, [userId, profileType, refreshKey]);
+                .eq("profile_type", profileType);
+            countQuery = applyFilters(countQuery, profileType, filters);
+            countQuery.then(({ count }) => setTotalCount(count || 0));
+        }, [userId, profileType, refreshKey, filters]);
 
         // Fetch only the current page of data
         useEffect(() => {
@@ -272,35 +274,24 @@ export default function ProfilesPage() {
             const from = page * pageSize;
             const to = from + pageSize - 1;
 
-            supabase
+            let query = supabase
                 .from("user_leads")
-                .select(`
-                    id,
-                    tags,
-                    created_at,
-                    updated_at,
-                    personal: linkedin_profiles (*),
-                    company: company_profiles (*),
-                    google_maps: google_maps_leads (*),
-                    website_contact: website_contacts (*),
-                    instagram: instagram_leads (*),
-                    x: x_leads (*),
-                    facebook: facebook_leads (*),
-                    facebook_group: facebook_groups (*)
-                `)
+                .select(getSelectString(profileType))
                 .eq("user_id", userId)
                 .eq("profile_type", profileType)
                 .order("created_at", { ascending: false })
-                .range(from, to)
-                .then(({ data, error }) => {
+                .range(from, to);
+
+            query = applyFilters(query, profileType, filters);
+            query.then(({ data, error }) => {
                     if (error) {
                         console.error("Supabase fetch error:", error);
                         setLoading(false);
                         return;
                     }
                     if (data) {
-                        const formatted = data
-                            .map(d => {
+                        const formatted = (data as any[])
+                            .map((d: any) => {
                                 const detailsRaw = d.personal || d.company || d.google_maps || d.website_contact || d.instagram || d.x || d.facebook || d.facebook_group;
                                 if (!detailsRaw) return null;
                                 const details = Array.isArray(detailsRaw) ? detailsRaw[0] : detailsRaw;
@@ -2939,6 +2930,7 @@ function GenericProfileTable<TData, TValue>({
     const table = useReactTable({
         data,
         columns,
+        getRowId: (row: any) => row.junctionId || row._id || row.id,
         getCoreRowModel: getCoreRowModel(),
         getPaginationRowModel: getPaginationRowModel(),
         onSortingChange: setSorting,
