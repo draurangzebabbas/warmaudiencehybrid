@@ -569,7 +569,7 @@ async function linkUserToLeadsBulk(userId, leadIds, type, tags = [], forceUpdate
     // Increment monthly usage ONLY for newly discovered/linked leads
     const newLeadsCount = leadIds.length - existingMap.size;
     if (newLeadsCount > 0) {
-        await incrementMonthlyLeadCount(userId, newLeadsCount);
+        await incrementMonthlyLeadCount(userId, newLeadsCount, type);
     }
 
     return data;
@@ -758,38 +758,65 @@ async function getMonthlyLeadCount(userId) {
 }
 
 /**
- * Increment lead extraction count for the current month in Supabase
+ * Increment lead extraction count for the current month in Supabase.
+ * Also tracks per-platform extraction counts for analytics.
+ * @param {string} userId
+ * @param {number} incrementBy
+ * @param {string} [type] - profile type e.g. 'google_maps', 'personal', 'company', 'instagram', 'x', 'facebook', 'website_contact'
  */
-async function incrementMonthlyLeadCount(userId, incrementBy) {
+async function incrementMonthlyLeadCount(userId, incrementBy, type) {
     if (!incrementBy || incrementBy <= 0) return;
 
     const now = new Date();
     const monthYear = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
 
-    // Try to get existing record
+    // Map profile types to their corresponding column names
+    const columnMap = {
+        google_maps:       "google_maps_extracted",
+        personal:          "linkedin_extracted",
+        company:           "linkedin_extracted",
+        linkedin:          "linkedin_extracted",
+        website_contact:   "website_contact_extracted",
+        instagram:         "instagram_extracted",
+        x:                 "x_extracted",
+        facebook:          "facebook_extracted",
+        facebook_group:    "facebook_extracted",
+    };
+    const platformColumn = type ? (columnMap[type] || null) : null;
+
+    // Fetch existing row (all columns we may need to update)
+    const selectCols = ["leads_extracted", platformColumn].filter(Boolean).join(", ");
     const { data: existing, error: getError } = await supabase
         .from("user_usage")
-        .select("leads_extracted")
+        .select(selectCols)
         .eq("user_id", userId)
         .eq("month_year", monthYear)
-        .single();
+        .maybeSingle();
 
-    if (getError && getError.code !== 'PGRST116') {
+    if (getError) {
         console.error("❌ Error getting usage before increment:", getError);
         return;
     }
 
-    const currentCount = existing ? existing.leads_extracted : 0;
-    const newCount = currentCount + incrementBy;
+    const currentTotal = existing ? (existing.leads_extracted || 0) : 0;
+    const newTotal = currentTotal + incrementBy;
+
+    const updatePayload = {
+        user_id: userId,
+        month_year: monthYear,
+        leads_extracted: newTotal,
+        updated_at: new Date().toISOString()
+    };
+
+    // Increment platform-specific column if type is known
+    if (platformColumn) {
+        const currentPlatformCount = existing ? (existing[platformColumn] || 0) : 0;
+        updatePayload[platformColumn] = currentPlatformCount + incrementBy;
+    }
 
     const { error: upsertError } = await supabase
         .from("user_usage")
-        .upsert({ 
-            user_id: userId, 
-            month_year: monthYear, 
-            leads_extracted: newCount,
-            updated_at: new Date().toISOString()
-        }, {
+        .upsert(updatePayload, {
             onConflict: 'user_id, month_year'
         });
 
