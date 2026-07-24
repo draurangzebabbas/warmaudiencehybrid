@@ -151,43 +151,42 @@ async function handleGoogleMapsScrape(userId, input, keyManager, tags = ["Google
             let needsApify = true;
             const keyword = (input.searchStringsArray || []).join(", ");
             const location = input.locationQuery;
-            const subscription = await supabaseApi.getUserSubscription(userId);
-            const currentCount = await supabaseApi.getMonthlyLeadCount(userId);
-            const planLimits = { free: 1000, growth: 10000, pro: 10000, elite: 1000000, scale: 1000000 };
-            const profilesLimit = planLimits[subscription?.plan_slug] || 1000;
-            const remainingLeads = Math.max(0, profilesLimit - currentCount);
+
+            // Single centralised quota check (replaces inline planLimits object)
+            const remainingLeads = await supabaseApi.getUserRemainingLeads(userId);
 
             if (remainingLeads <= 0) {
-                console.warn(`🛑 Limit Reached for user ${userId}. Aborting scrape.`);
+                console.warn(`🛑 Limit Reached for user ${userId}. Aborting Google Maps scrape.`);
                 if (jobId) await supabaseApi.failJob(jobId, "Limit reached");
                 return;
             }
 
             let requestedCount = input.maxCrawledPlacesPerSearch || 10;
-            // Cap the requested count to the remaining leads so we don't fetch way too many
             if (requestedCount > remainingLeads) {
                 console.log(`⚠️  Capping requested leads from ${requestedCount} to ${remainingLeads} to respect plan limits.`);
                 requestedCount = remainingLeads;
-                input.maxCrawledPlacesPerSearch = requestedCount; // Pass updated limit to Apify
+                input.maxCrawledPlacesPerSearch = requestedCount;
             }
             
             const cachedSearch = await supabaseApi.getSearchCache("google_maps", keyword, location);
             
             if (cachedSearch && cachedSearch.results_count >= requestedCount) {
-                console.log(`✨ Cache hit: Found ${cachedSearch.results_count} profiles in DB for '${keyword}' in '${location}'. Skipping Apify.`);
-                const existingLeads = await supabaseApi.getLeadsForGoogleMapsSearch(keyword, location);
-                const limitedLeads = existingLeads.slice(0, requestedCount);
-                if (limitedLeads.length > 0) {
-                    const sids = limitedLeads.map(s => s.id);
-                    await supabaseApi.linkUserToLeadsBulk(userId, sids, "google_maps", tags);
-                    needsApify = false;
-                    
-                    if (jobId) {
-                        await supabaseApi.updateJobProgress(jobId, 100, limitedLeads.length);
+                console.log(`✨ Cache hit: Found ${cachedSearch.results_count} leads for '${keyword}' in '${location}'. Skipping Apify.`);
+                // Use stored exact lead IDs for this search — no fuzzy text match
+                const storedIds = cachedSearch.lead_ids || [];
+                if (storedIds.length > 0) {
+                    const existingLeads = await supabaseApi.getGoogleMapsLeadsByIds(storedIds);
+                    const limitedLeads = existingLeads.slice(0, requestedCount);
+                    if (limitedLeads.length > 0) {
+                        const sids = limitedLeads.map(s => s.id);
+                        await supabaseApi.linkUserToLeadsBulk(userId, sids, "google_maps", tags);
+                        needsApify = false;
+                        if (jobId) await supabaseApi.updateJobProgress(jobId, 100, limitedLeads.length);
+                        console.log(`✅ Linked ${limitedLeads.length} cached Google Maps leads to user`);
+                        return;
                     }
-                    console.log(`✅ Successfully linked ${limitedLeads.length} cached Google Maps leads to user`);
-                    return; // Exit early since we used cache
                 }
+                // No stored IDs yet (old cache rows) — fall through to Apify
             }
 
             if (needsApify) {
@@ -264,10 +263,8 @@ async function handleGoogleMapsScrape(userId, input, keyManager, tags = ["Google
                 if (saved && saved.length > 0) {
                     const sids = saved.map(s => s.id);
                     await supabaseApi.linkUserToLeadsBulk(userId, sids, "google_maps", tags);
-                    
-                    const keyword = (input.searchStringsArray || []).join(", ");
-                    const location = input.locationQuery;
-                    await supabaseApi.upsertSearchCache("google_maps", keyword, location, saved.length);
+                    // Store exact lead IDs so future cache hits for this search are precise
+                    await supabaseApi.upsertSearchCache("google_maps", keyword, location, saved.length, sids);
                 }
 
                 
@@ -284,9 +281,21 @@ async function handleGoogleMapsScrape(userId, input, keyManager, tags = ["Google
 async function handleWebsiteContactsScrape(userId, input, keyManager, tags = ["WebsiteContact"], jobId) {
     try {
         const rawDomains = input.domains || [];
-        const domains = Array.from(new Set(rawDomains.map(cleanDomain))).filter(Boolean);
+        const allDomains = Array.from(new Set(rawDomains.map(cleanDomain))).filter(Boolean);
         
-        if (domains.length === 0) return [];
+        if (allDomains.length === 0) return [];
+
+        // Pre-check quota — each domain = 1 potential lead
+        const remainingQuota = await supabaseApi.getUserRemainingLeads(userId);
+        if (remainingQuota <= 0) {
+            console.warn(`🛑 [Quota] User ${userId} at monthly limit. Aborting website contact extraction.`);
+            if (jobId) await supabaseApi.failJob(jobId, "Limit reached");
+            return [];
+        }
+        const domains = allDomains.slice(0, remainingQuota);
+        if (domains.length < allDomains.length) {
+            console.log(`⚠️ [Quota] Capping domains from ${allDomains.length} to ${domains.length}.`);
+        }
         
         console.log(`🌐 Starting website contact extraction for: ${domains.join(', ')}`);
         
@@ -549,11 +558,29 @@ async function handleScheduledTracking(userId, input, keyManager, jobId) {
         }
     } else if (keywords && keywords.length > 0) {
         console.log(`🔍 Tracking keyword(s): ${keywords.join(", ")} (${schedule})`);
+        
+        // --- Agent Level Search Deduplication ---
+        const searchKey = keywords.join(", ");
+        const cachedSearch = await supabaseApi.getSearchCache("linkedin_keyword", searchKey, schedule);
+        const AGE_THRESHOLD = 6 * 60 * 60 * 1000; // 6 hours
+
+        if (cachedSearch && (Date.now() - new Date(cachedSearch.last_scraped_at).getTime()) < AGE_THRESHOLD) {
+            console.log(`✨ Search-level cache hit for keywords: ${searchKey}. Using existing leads to avoid duplicate Apify runs.`);
+            const storedIds = cachedSearch.lead_ids || [];
+            if (storedIds.length > 0) {
+                // Link directly using the stored IDs - charges this user their own quota, but saves Apify run
+                await supabaseApi.linkUserToLeadsBulk(userId, storedIds, "personal", tags);
+                if (jobId) await supabaseApi.updateJobProgress(jobId, 100, storedIds.length);
+                return;
+            }
+        }
+        
         // Auto-tag with keywords
         keywords.forEach(k => {
             const tag = `Keyword: ${k}`;
             if (!tags.includes(tag)) tags.push(tag);
         });
+        
         try {
             const postUrls = await executeWithRetry(
                 keyManager,
@@ -563,7 +590,13 @@ async function handleScheduledTracking(userId, input, keyManager, jobId) {
 
             console.log(`📰 Found ${postUrls.length} keyword posts`);
             if (postUrls.length > 0) {
-                await handleEngagementScrape(userId, postUrls, engagementTypes, keyManager, tags, jobId);
+                const leadIds = await handleEngagementScrape(userId, postUrls, engagementTypes, keyManager, tags, jobId);
+                
+                // Cache the final discovered lead IDs for this keyword search
+                if (leadIds && leadIds.length > 0) {
+                    await supabaseApi.upsertSearchCache("linkedin_keyword", searchKey, schedule, leadIds.length, leadIds);
+                    console.log(`💾 Saved ${leadIds.length} leads to search_cache for keyword: ${searchKey}`);
+                }
             }
         } catch (err) {
             console.error("Failed to fetch keyword posts after retries.");
@@ -609,9 +642,10 @@ async function handleEngagementScrape(userId, postUrls, engagementTypes, keyMana
     if (allProfileUrls.size > 0) {
         const urls = Array.from(allProfileUrls);
         console.log(`✨ Enriching ${urls.length} unique profiles...`);
-        await processProfiles(userId, urls, "personal", keyManager, tags, jobId, 70);
+        return await processProfiles(userId, urls, "personal", keyManager, tags, jobId, 70);
     } else {
         if (jobId) await supabaseApi.updateJobProgress(jobId, 100);
+        return [];
     }
 }
 
@@ -620,6 +654,7 @@ async function processProfiles(userId, urls, type, keyManager, tags = [], jobId,
     const THRESHOLD = 5;
     const normalizedUrls = Array.from(new Set(urls.map(u => scraper.normalizeUrl(u)).filter(Boolean)));
     const toScrape = [];
+    const allLinkedIds = []; // Track all lead IDs successfully linked
 
     // 1. Initial Cache Check
     for (const url of normalizedUrls) {
@@ -630,8 +665,7 @@ async function processProfiles(userId, urls, type, keyManager, tags = [], jobId,
                 console.log(`📦 Cache Hit [${type}] (Supabase): ${url}`);
                 // Link in Supabase junction table
                 await supabaseApi.linkUserToLeadsBulk(userId, [sid], type, tags, force);
-
-
+                allLinkedIds.push(sid);
             } else {
                 toScrape.push(url);
             }
@@ -645,12 +679,26 @@ async function processProfiles(userId, urls, type, keyManager, tags = [], jobId,
         return;
     }
 
-    const batches = [];
-    for (let i = 0; i < toScrape.length; i += BATCH_SIZE) {
-        batches.push(toScrape.slice(i, i + BATCH_SIZE));
+    // Cap to remaining quota before calling Apify (prevents Apify credit waste)
+    // Note: cache hits above already consumed some quota via linkUserToLeadsBulk,
+    // so this reflects the true remaining after cached profiles are counted.
+    const remainingQuota = await supabaseApi.getUserRemainingLeads(userId);
+    if (remainingQuota <= 0) {
+        console.warn(`🛑 [Quota] User ${userId} at monthly limit. Skipping Apify scrape.`);
+        if (jobId) await supabaseApi.updateJobProgress(jobId, 100);
+        return;
+    }
+    const cappedToScrape = toScrape.slice(0, remainingQuota);
+    if (cappedToScrape.length < toScrape.length) {
+        console.log(`⚠️ [Quota] Capping LinkedIn scrape from ${toScrape.length} to ${cappedToScrape.length} profiles.`);
     }
 
-    console.log(`🚀 Starting parallel research of ${toScrape.length} profiles...`);
+    const batches = [];
+    for (let i = 0; i < cappedToScrape.length; i += BATCH_SIZE) {
+        batches.push(cappedToScrape.slice(i, i + BATCH_SIZE));
+    }
+
+    console.log(`🚀 Starting parallel research of ${cappedToScrape.length} profiles...`);
 
     let completedBatches = 0;
     await Promise.all(batches.map((batch, index) => {
@@ -741,6 +789,7 @@ async function scrapeBatch(userId, urls, type, keyManager, tags, force = false) 
                     if (saved && saved.length > 0) {
                         const sids = saved.map(s => s.id);
                         await supabaseApi.linkUserToLeadsBulk(userId, sids, "personal", tags, force);
+                        allLinkedIds.push(...sids);
                         console.log(`   ✅ Linked ${saved.length} personal profiles in Supabase`);
                     }
                 } else {
@@ -748,6 +797,7 @@ async function scrapeBatch(userId, urls, type, keyManager, tags, force = false) 
                     if (saved && saved.length > 0) {
                         const sids = saved.map(s => s.id);
                         await supabaseApi.linkUserToLeadsBulk(userId, sids, "company", tags, force);
+                        allLinkedIds.push(...sids);
                         console.log(`   ✅ Linked ${saved.length} company profiles in Supabase`);
                     }
                 }
@@ -759,6 +809,8 @@ async function scrapeBatch(userId, urls, type, keyManager, tags, force = false) 
     } catch (error) {
         console.error(`   🔴 Batch failed:`, error.message);
     }
+    
+    return allLinkedIds;
 }
 
 async function handleInstagramProfilesScrape(userId, input, keyManager, tags = ["InstagramProfile"], jobId, force = false) {
@@ -798,14 +850,26 @@ async function handleInstagramProfilesScrape(userId, input, keyManager, tags = [
         return;
     }
 
+    // Cap to remaining quota before calling Apify
+    const remainingQuota = await supabaseApi.getUserRemainingLeads(userId);
+    if (remainingQuota <= 0) {
+        console.warn(`🛑 [Quota] User ${userId} at monthly limit. Skipping Instagram scrape.`);
+        if (jobId) await supabaseApi.updateJobProgress(jobId, 100);
+        return;
+    }
+    const cappedToScrape = toScrape.slice(0, remainingQuota);
+    if (cappedToScrape.length < toScrape.length) {
+        console.log(`⚠️ [Quota] Capping Instagram scrape from ${toScrape.length} to ${cappedToScrape.length}.`);
+    }
+
     try {
         if (jobId) await supabaseApi.updateJobProgress(jobId, 20);
 
         // Batch the scraping in groups of 50
         const BATCH_SIZE = 50;
         const batches = [];
-        for (let i = 0; i < toScrape.length; i += BATCH_SIZE) {
-            batches.push(toScrape.slice(i, i + BATCH_SIZE));
+        for (let i = 0; i < cappedToScrape.length; i += BATCH_SIZE) {
+            batches.push(cappedToScrape.slice(i, i + BATCH_SIZE));
         }
 
         console.log(`🚀 Starting parallel research of ${toScrape.length} Instagram profiles across ${batches.length} batches...`);
@@ -942,10 +1006,9 @@ async function handleInstagramEngagementScrape(userId, input, keyManager, tags =
         }
 
         if (allUsernames.size > 0) {
-            const usernames = Array.from(allUsernames);
-            console.log(`✨ Enriching ${usernames.length} Instagram profiles...`);
-            // We can reuse handleInstagramProfilesScrape but maybe in smaller batches if needed
-            // For now, let's just call it directly
+            const remaining = await supabaseApi.getUserRemainingLeads(userId);
+            const usernames = Array.from(allUsernames).slice(0, Math.max(0, remaining));
+            console.log(`✨ Enriching ${usernames.length} Instagram profiles (${allUsernames.size} found, ${remaining} quota remaining)...`);
             await handleInstagramProfilesScrape(userId, { usernames, tags }, keyManager, tags, jobId);
         } else {
             if (jobId) await supabaseApi.updateJobProgress(jobId, 100);
@@ -995,8 +1058,9 @@ async function handleInstagramFollowersScrape(userId, input, keyManager, tags = 
         }
 
         if (allUsernames.size > 0) {
-            const usernames = Array.from(allUsernames);
-            console.log(`✨ Enriching ${usernames.length} extracted Instagram audience members...`);
+            const remaining = await supabaseApi.getUserRemainingLeads(userId);
+            const usernames = Array.from(allUsernames).slice(0, Math.max(0, remaining));
+            console.log(`✨ Enriching ${usernames.length} Instagram audience members (${allUsernames.size} found, ${remaining} quota remaining)...`);
             await handleInstagramProfilesScrape(userId, { usernames, tags, metadataMap }, keyManager, tags, jobId);
         } else {
             if (jobId) await supabaseApi.updateJobProgress(jobId, 100);
@@ -1043,15 +1107,26 @@ async function handleXProfilesScrape(userId, input, keyManager, tags = ["XProfil
         return;
     }
 
+    // Cap to remaining quota before calling Apify
+    const remainingQuota = await supabaseApi.getUserRemainingLeads(userId);
+    if (remainingQuota <= 0) {
+        console.warn(`🛑 [Quota] User ${userId} at monthly limit. Skipping X scrape.`);
+        if (jobId) await supabaseApi.updateJobProgress(jobId, 100);
+        return;
+    }
+    const cappedToScrape = toScrape.slice(0, remainingQuota);
+    if (cappedToScrape.length < toScrape.length) {
+        console.log(`⚠️ [Quota] Capping X scrape from ${toScrape.length} to ${cappedToScrape.length}.`);
+    }
+
     if (jobId) await supabaseApi.updateJobProgress(jobId, 10);
     
-    console.log(`🚀 Starting X Profile scrape for ${toScrape.length} usernames`);
+    console.log(`🚀 Starting X Profile scrape for ${cappedToScrape.length} usernames`);
     
-    // Batch the scraping in groups of 50 to avoid timeouts/overload
     const BATCH_SIZE = 50;
     const batches = [];
-    for (let i = 0; i < toScrape.length; i += BATCH_SIZE) {
-        batches.push(toScrape.slice(i, i + BATCH_SIZE));
+    for (let i = 0; i < cappedToScrape.length; i += BATCH_SIZE) {
+        batches.push(cappedToScrape.slice(i, i + BATCH_SIZE));
     }
 
     let completedBatches = 0;
@@ -1137,8 +1212,9 @@ async function handleXEngagementScrape(userId, input, keyManager, tags = ["XEnga
         });
 
         if (allUsernames.size > 0) {
-            const usernames = Array.from(allUsernames);
-            console.log(`✨ Enriching ${usernames.length} extracted X commenters...`);
+            const remaining = await supabaseApi.getUserRemainingLeads(userId);
+            const usernames = Array.from(allUsernames).slice(0, Math.max(0, remaining));
+            console.log(`✨ Enriching ${usernames.length} X commenters (${allUsernames.size} found, ${remaining} quota remaining)...`);
             await handleXProfilesScrape(userId, { usernames }, keyManager, tags, jobId);
         } else {
             if (jobId) await supabaseApi.updateJobProgress(jobId, 100);
@@ -1156,7 +1232,13 @@ async function handleXFollowersScrape(userId, input, keyManager, tags = ["XFollo
     const allUsernames = new Set();
     
     try {
-        const maxCount = input.maxCount || 200;
+        const remainingQuota = await supabaseApi.getUserRemainingLeads(userId);
+        if (remainingQuota <= 0) {
+            console.warn(`🛑 [Quota] User ${userId} at monthly limit. Skipping X followers scrape.`);
+            if (jobId) await supabaseApi.updateJobProgress(jobId, 100);
+            return;
+        }
+        const maxCount = Math.min(input.maxCount || 200, remainingQuota);
         const getFollowers = input.getFollowers !== undefined ? input.getFollowers : true;
         const getFollowing = input.getFollowing !== undefined ? input.getFollowing : false;
         const followers = await executeWithRetry(
@@ -1250,14 +1332,26 @@ async function handleFacebookProfilesScrape(userId, input, keyManager, tags = ["
         return;
     }
 
+    // Cap to remaining quota before calling Apify
+    const remainingQuota = await supabaseApi.getUserRemainingLeads(userId);
+    if (remainingQuota <= 0) {
+        console.warn(`🛑 [Quota] User ${userId} at monthly limit. Skipping Facebook scrape.`);
+        if (jobId) await supabaseApi.updateJobProgress(jobId, 100);
+        return;
+    }
+    const cappedToScrape = toScrape.slice(0, remainingQuota);
+    if (cappedToScrape.length < toScrape.length) {
+        console.log(`⚠️ [Quota] Capping Facebook scrape from ${toScrape.length} to ${cappedToScrape.length}.`);
+    }
+
     if (jobId) await supabaseApi.updateJobProgress(jobId, 10);
     
-    console.log(`🚀 Starting Facebook Profile scrape for ${toScrape.length} URLs`);
+    console.log(`🚀 Starting Facebook Profile scrape for ${cappedToScrape.length} URLs`);
     
     const BATCH_SIZE = 50;
     const batches = [];
-    for (let i = 0; i < toScrape.length; i += BATCH_SIZE) {
-        batches.push(toScrape.slice(i, i + BATCH_SIZE));
+    for (let i = 0; i < cappedToScrape.length; i += BATCH_SIZE) {
+        batches.push(cappedToScrape.slice(i, i + BATCH_SIZE));
     }
 
     let completedBatches = 0;
@@ -1335,8 +1429,9 @@ async function handleFacebookEngagementScrape(userId, input, keyManager, tags = 
         });
 
         if (allUrls.size > 0) {
-            const urls = Array.from(allUrls);
-            console.log(`✨ Enriching ${urls.length} extracted Facebook commenters...`);
+            const remaining = await supabaseApi.getUserRemainingLeads(userId);
+            const urls = Array.from(allUrls).slice(0, Math.max(0, remaining));
+            console.log(`✨ Enriching ${urls.length} Facebook commenters (${allUrls.size} found, ${remaining} quota remaining)...`);
             await handleFacebookProfilesScrape(userId, { urls }, keyManager, tags, jobId);
         } else {
             if (jobId) await supabaseApi.updateJobProgress(jobId, 100);
@@ -1355,8 +1450,14 @@ async function handleFacebookFollowersScrape(userId, input, keyManager, tags = [
     const metadataMap = {};
     
     try {
-        const resultsLimit = input.maxCount || 50;
-        const followType = input.followType !== undefined ? input.followType : ""; // "follower" | "following" | "" (both)
+        const remainingQuota = await supabaseApi.getUserRemainingLeads(userId);
+        if (remainingQuota <= 0) {
+            console.warn(`🛑 [Quota] User ${userId} at monthly limit. Skipping Facebook followers scrape.`);
+            if (jobId) await supabaseApi.updateJobProgress(jobId, 100);
+            return;
+        }
+        const resultsLimit = Math.min(input.maxCount || 50, remainingQuota);
+        const followType = input.followType !== undefined ? input.followType : "";
         
         const followers = await executeWithRetry(
             keyManager,
@@ -1375,12 +1476,9 @@ async function handleFacebookFollowersScrape(userId, input, keyManager, tags = [
         }
 
         if (allUrls.size > 0) {
-            const urls = Array.from(allUrls);
-            console.log(`✨ Enriching ${urls.length} extracted Facebook followers...`);
-            // The Facebook followers scraper returns mostly basic data, we should enrich it using the profile scraper if we need full emails/phones, 
-            // but we can just map it directly if that's what's preferred. The pattern in X is direct mapping.
-            // But since the actor is different, let's map directly what we can, and if not, enrich.
-            // For now, let's just pass them to profile scraper to ensure we get email/phone.
+            const remaining = await supabaseApi.getUserRemainingLeads(userId);
+            const urls = Array.from(allUrls).slice(0, Math.max(0, remaining));
+            console.log(`✨ Enriching ${urls.length} Facebook followers (${allUrls.size} found, ${remaining} quota remaining)...`);
             await handleFacebookProfilesScrape(userId, { urls }, keyManager, tags, jobId);
         } else {
             console.warn("⚠️ No followers found.");
@@ -1403,8 +1501,16 @@ function parseFollowersCount(str) {
 }
 
 async function handleFacebookGroupsSearch(userId, input, keyManager, tags = ["FacebookGroup"], jobId) {
-    const { keyword, maxItems = 200 } = input;
+    const { keyword } = input;
     if (!keyword) return;
+
+    const remainingQuota = await supabaseApi.getUserRemainingLeads(userId);
+    if (remainingQuota <= 0) {
+        console.warn(`🛑 [Quota] User ${userId} at monthly limit. Aborting Facebook groups search.`);
+        if (jobId) await supabaseApi.failJob(jobId, "Limit reached");
+        return;
+    }
+    const maxItems = Math.min(input.maxItems || 200, remainingQuota);
 
     if (jobId) await supabaseApi.updateJobProgress(jobId, 20);
 
@@ -1446,8 +1552,16 @@ async function handleFacebookGroupsSearch(userId, input, keyManager, tags = ["Fa
 }
 
 async function handleFacebookGroupMembersScrape(userId, input, keyManager, tags = ["FacebookGroupMember"], jobId) {
-    const { groupUrls, maxItems = 50 } = input;
+    const { groupUrls } = input;
     if (!groupUrls || groupUrls.length === 0) return;
+
+    const remainingQuota = await supabaseApi.getUserRemainingLeads(userId);
+    if (remainingQuota <= 0) {
+        console.warn(`🛑 [Quota] User ${userId} at monthly limit. Aborting Facebook group members scrape.`);
+        if (jobId) await supabaseApi.failJob(jobId, "Limit reached");
+        return;
+    }
+    const maxItems = Math.min(input.maxItems || 50, remainingQuota);
 
     if (jobId) await supabaseApi.updateJobProgress(jobId, 20);
 

@@ -502,8 +502,11 @@ async function getWebsiteContactsByDomains(domains) {
 
 
 /**
- * Link a user to multiple leads in Supabase (Junction Table)
- * Appends tags if lead already linked to user
+ * Link a user to multiple leads in Supabase (Junction Table).
+ * Enforces plan quota: already-linked leads always pass through (re-tag / re-scrape).
+ * New leads are hard-capped to the user's remaining monthly quota.
+ * Data is ALWAYS saved to the global DB — only the user↔lead LINK is gated,
+ * so no Apify API call is ever completely wasted.
  */
 async function linkUserToLeadsBulk(userId, leadIds, type, tags = [], forceUpdate = false) {
     const idField = type === "google_maps" ? "lead_id" : 
@@ -515,7 +518,7 @@ async function linkUserToLeadsBulk(userId, leadIds, type, tags = [], forceUpdate
                     type === "facebook_group" ? "facebook_group_id" :
                     "linkedin_id";
 
-    // 1. Fetch existing tags and created_at for these leads for this user to allow merging
+    // 1. Fetch existing user_leads rows to merge tags and detect truly-new leads
     const { data: existingLeads } = await supabase
         .from("user_leads")
         .select(`id, ${idField}, tags, created_at`)
@@ -529,25 +532,43 @@ async function linkUserToLeadsBulk(userId, leadIds, type, tags = [], forceUpdate
         });
     }
 
+    // 2. Enforce plan quota ────────────────────────────────────────────────────
+    //    Already-linked leads (re-scrape / tag update) are always allowed.
+    //    Only *new* leads consume quota.
+    const alreadyLinkedIds = leadIds.filter(id => existingMap.has(id));
+    const newIds           = leadIds.filter(id => !existingMap.has(id));
+
+    const remaining    = await getUserRemainingLeads(userId);
+    const cappedNewIds = newIds.slice(0, Math.max(0, remaining));
+
+    if (newIds.length > cappedNewIds.length) {
+        console.warn(
+            `🛑 [Quota] User ${userId}: ${remaining} leads remaining. ` +
+            `Linking ${cappedNewIds.length}/${newIds.length} new leads. ` +
+            `(${newIds.length - cappedNewIds.length} over-limit leads saved to global DB but NOT linked.)`
+        );
+    }
+
+    const finalLeadIds = [...alreadyLinkedIds, ...cappedNewIds];
+    if (finalLeadIds.length === 0) return null;
+
+    // 3. Build upsert rows using only finalLeadIds
     const now = new Date().toISOString();
-    const items = leadIds.map(id => {
+    const items = finalLeadIds.map(id => {
         const existing = existingMap.get(id);
         const existingTags = existing ? existing.tags : [];
-        // Merge tags and remove duplicates
         const mergedTags = Array.from(new Set([...existingTags, ...tags])).filter(Boolean);
 
         const item = {
             user_id: userId,
             profile_type: type,
             tags: mergedTags,
-            updated_at: now  // Always update so re-scrapes refresh the user's "Last Updated" timestamp
+            updated_at: now
         };
         
-        // Preserve original created_at if it's already in the user's leads AND they didn't explicitly force an update
         if (existing && !forceUpdate) {
             item.created_at = existing.created_at;
         } else {
-            // New connection OR explicitly forced update
             item.created_at = now;
         }
         
@@ -566,10 +587,9 @@ async function linkUserToLeadsBulk(userId, leadIds, type, tags = [], forceUpdate
         throw error;
     }
 
-    // Increment monthly usage ONLY for newly discovered/linked leads
-    const newLeadsCount = leadIds.length - existingMap.size;
-    if (newLeadsCount > 0) {
-        await incrementMonthlyLeadCount(userId, newLeadsCount, type);
+    // 4. Increment usage only for new leads that were actually linked (already capped)
+    if (cappedNewIds.length > 0) {
+        await incrementMonthlyLeadCount(userId, cappedNewIds.length, type);
     }
 
     return data;
@@ -755,6 +775,25 @@ async function getMonthlyLeadCount(userId) {
         return 0;
     }
     return data ? data.leads_extracted : 0;
+}
+
+/**
+ * Plan monthly lead limits keyed by plan slug.
+ * Single source of truth used by every quota check.
+ */
+const PLAN_LIMITS = { free: 1000, growth: 10000, pro: 10000, elite: 1000000, scale: 1000000 };
+
+/**
+ * Returns how many more leads this user can extract this month.
+ * Returns 0 when they are at or over their plan limit.
+ */
+async function getUserRemainingLeads(userId) {
+    const [subscription, currentCount] = await Promise.all([
+        getUserSubscription(userId),
+        getMonthlyLeadCount(userId)
+    ]);
+    const limit = PLAN_LIMITS[subscription?.plan_slug] || 1000;
+    return Math.max(0, limit - currentCount);
 }
 
 /**
@@ -982,34 +1021,39 @@ async function getSearchCache(searchType, keyword, location) {
     return data;
 }
 
-async function upsertSearchCache(searchType, keyword, location, resultsCount) {
-    const { data, error } = await supabase
+/**
+ * Upsert a search cache entry, storing the exact lead IDs returned for this
+ * (searchType, keyword, location) combination so cache hits use precise ID
+ * lookups instead of fuzzy text matching.
+ *
+ * NOTE: Requires a `lead_ids JSONB DEFAULT '[]'` column on the search_cache table.
+ * Migration: ALTER TABLE search_cache ADD COLUMN IF NOT EXISTS lead_ids JSONB DEFAULT '[]';
+ */
+async function upsertSearchCache(searchType, keyword, location, resultsCount, leadIds = []) {
+    const payload = {
+        search_type: searchType,
+        keyword,
+        location,
+        results_count: resultsCount,
+        lead_ids: leadIds,
+        last_scraped_at: new Date().toISOString()
+    };
+
+    const { error } = await supabase
         .from("search_cache")
-        .upsert({
-            search_type: searchType,
-            keyword,
-            location,
-            results_count: resultsCount,
-            last_scraped_at: new Date().toISOString()
-        }, {
-            onConflict: "search_type, keyword, location" // Wait, I didn't set a unique constraint. Let me just use insert and limit 1. Actually it's better to find if exists, then update.
-        });
-    
+        .upsert(payload, { onConflict: "search_type, keyword, location" });
+
     if (error) {
-        // Fallback manually if upsert fails due to no constraint
+        // Fallback: manual update/insert if constraint does not exist yet
         const existing = await getSearchCache(searchType, keyword, location);
         if (existing) {
             await supabase.from("search_cache").update({
                 results_count: resultsCount,
+                lead_ids: leadIds,
                 last_scraped_at: new Date().toISOString()
             }).eq("id", existing.id);
         } else {
-            await supabase.from("search_cache").insert({
-                search_type: searchType,
-                keyword,
-                location,
-                results_count: resultsCount
-            });
+            await supabase.from("search_cache").insert(payload);
         }
     }
 }
@@ -1025,6 +1069,24 @@ async function getLeadsForGoogleMapsSearch(keyword, location) {
 
     if (error) {
         console.error("❌ Error fetching existing google maps leads:", error);
+        return [];
+    }
+    return data || [];
+}
+
+/**
+ * Fetch Google Maps leads by their exact IDs (used for precise cache hits).
+ * Replaces the old fuzzy text-match approach so businesses found in
+ * "Dentists in Dubai" are never confused with a different city's cache.
+ */
+async function getGoogleMapsLeadsByIds(leadIds) {
+    if (!leadIds || leadIds.length === 0) return [];
+    const { data, error } = await supabase
+        .from("google_maps_leads")
+        .select("*")
+        .in("id", leadIds);
+    if (error) {
+        console.error("❌ Error fetching Google Maps leads by IDs:", error.message);
         return [];
     }
     return data || [];
@@ -1060,7 +1122,7 @@ module.exports = {
     markTrackerExecuted,
     getMonthlyLeadCount,
     incrementMonthlyLeadCount,
-    incrementMonthlyLeadCount,
+    getUserRemainingLeads,
     getActiveTrackerCount,
     validateWebhookKey,
     getOrCreateWebhookKey,
@@ -1071,5 +1133,6 @@ module.exports = {
     getSearchCache,
     upsertSearchCache,
     getLeadsForGoogleMapsSearch,
+    getGoogleMapsLeadsByIds,
     supabase
 };
