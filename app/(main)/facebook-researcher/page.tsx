@@ -52,13 +52,14 @@ export default function FacebookResearchersPage() {
             setUser(user);
             if (user) {
                 const now = new Date();
-                const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-                const { count } = await supabase
-                    .from("user_leads")
-                    .select("*", { count: "exact", head: true })
+                const monthYear = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
+                const { data } = await supabase
+                    .from("user_usage")
+                    .select("leads_extracted")
                     .eq("user_id", user.id)
-                    .gte("created_at", firstDayOfMonth);
-                setProfilesCount(count || 0);
+                    .eq("month_year", monthYear)
+                    .maybeSingle();
+                setProfilesCount(data?.leads_extracted || 0);
             }
         };
         fetchUserAndCount();

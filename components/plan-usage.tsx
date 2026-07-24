@@ -27,12 +27,14 @@ export function PlanUsage() {
             }
 
             const now = new Date();
-            const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+            const monthYear = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
 
-            const [profiles, trackers, profileData] = await Promise.all([
-                supabase.from("user_leads").select("*", { count: "exact", head: true })
+            const [usageData, trackers, profileData] = await Promise.all([
+                supabase.from("user_usage")
+                    .select("leads_extracted")
                     .eq("user_id", session.user.id)
-                    .gte("created_at", firstDayOfMonth),
+                    .eq("month_year", monthYear)
+                    .maybeSingle(),
                 supabase.from("trackers").select("*", { count: "exact", head: true }).eq("user_id", session.user.id).eq("is_active", true),
                 supabase.from("profiles").select("plan_slug").eq("id", session.user.id).single()
             ]);
@@ -52,8 +54,10 @@ export function PlanUsage() {
                 trackersLimit = 20;
             }
 
+            const leadsCount = usageData?.data?.leads_extracted || 0;
+
             setCounts({ 
-                profiles: profiles.count || 0, 
+                profiles: leadsCount, 
                 trackers: trackers.count || 0 
             });
 
@@ -127,7 +131,7 @@ export function PlanUsage() {
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2 text-sm font-semibold">
                                 <IconUsers className="size-4 text-primary" />
-                                <span>Lead Storage Slots</span>
+                                <span>Monthly Lead Extractions</span>
                             </div>
                             <div className="text-right">
                                 <span className="font-bold">{currentUsage.profiles.toLocaleString()}</span>
@@ -136,9 +140,9 @@ export function PlanUsage() {
                         </div>
                         <Progress value={profilePercent} className="h-1.5" />
                         <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                            <span>Total stored leads</span>
+                            <span>Extracted this month</span>
                             <span className={profilePercent > 90 ? "text-red-500" : "text-primary"}>
-                                {currentUsage.profilesLimit - currentUsage.profiles} Slots Remaining
+                                {currentUsage.profilesLimit - currentUsage.profiles} Extractions Remaining
                             </span>
                         </div>
                     </div>
@@ -169,7 +173,7 @@ export function PlanUsage() {
                     <div className="mt-2 flex items-start gap-3 rounded-lg border border-red-500/20 bg-red-500/5 p-3">
                         <IconAlertCircle className="size-4 text-red-600 mt-0.5" />
                         <p className="text-xs text-red-700/80">
-                            <strong>Limit Reached:</strong> You have consumed over 90% of your profile storage.
+                            <strong>Limit Reached:</strong> You have consumed over 90% of your monthly lead extractions.
                             <Link href="/#pricing" className="ml-1 font-bold underline hover:text-red-800">Upgrade your plan for more capacity.</Link>
                         </p>
                     </div>

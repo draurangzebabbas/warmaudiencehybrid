@@ -27,7 +27,7 @@ export function LimitReachedDialog({
 }: LimitReachedDialogProps) {
     const defaultDescription = limitType === "trackers"
         ? `You've reached your limit of ${currentLimit} automated agent(s). Upgrade your plan to monitor more targets simultaneously.`
-        : `You've reached your lead storage limit of ${currentLimit.toLocaleString()}. Upgrade your plan to store more leads and keep growing.`;
+        : `You've reached your monthly lead extraction limit of ${currentLimit.toLocaleString()}. Upgrade your plan to extract more leads.`;
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
